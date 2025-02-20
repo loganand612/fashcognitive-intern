@@ -35,3 +35,6 @@ def register(request):
         return redirect("login")  # Ensure 'login' exists in `urls.py`
 
     return render(request, "register.html")  # Ensure the template exists
+
+def home(request):
+    return render(request, "home.html")
