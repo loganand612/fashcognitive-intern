@@ -21,7 +21,7 @@ def register(request):
             messages.error(request, "Email already exists.")
             return redirect("register")
 
-        user = User.objects.create_user(  # ✅ Use create_user
+        user = User.objects.create_user(  # ✅ Use create_user # type: ignore
             email=email,
             password=password,  # ✅ Password will be hashed inside create_user
             f_name=f_name,
