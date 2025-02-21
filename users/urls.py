@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register, dashboard_view, user_login
+from .views import home,register, dashboard_view, user_login
 from django.contrib.auth.decorators import login_required
 
 
