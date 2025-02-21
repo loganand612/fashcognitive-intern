@@ -80,11 +80,11 @@ WSGI_APPLICATION = 'safety_culture.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Fash',       # Your database name
-        'USER': 'log',           # Your database user
-        'PASSWORD': 'log',    # Your database password
-        'HOST': 'localhost',         # Set to empty string for localhost
-        'PORT': '5432',              # Default PostgreSQL port
+        'NAME': 'Fash',       
+        'USER': 'log',          
+        'PASSWORD': 'log',    
+        'HOST': 'localhost',         
+        'PORT': '5432',             
     }
 }
 
@@ -151,3 +151,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = "users.User"
+
+AUTHENTICATION_BACKENDS = [
+    "users.backends.EmailBackend",  # Custom backend for email login
+    "django.contrib.auth.backends.ModelBackend",  # Default backend
+]
+
+LOGIN_URL = "/login/"  # Redirects unauthorized users to login
+LOGIN_REDIRECT_URL = "/dashboard/"  # Redirects authenticated users after login
+LOGOUT_REDIRECT_URL = "/login/"  # Redirects users to login after logout

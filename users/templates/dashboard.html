@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Templates Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 80px;
+            background: #ffffff;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: width 0.3s ease;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar:hover {
+            width: 200px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #1a73e8;
+            text-align: center;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            color: #5f6368;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .sidebar:hover .nav-item {
+            justify-content: flex-start;
+            padding-left: 20px;
+        }
+
+        .nav-item:hover {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .nav-item.active {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .nav-item span {
+            display: none;
+        }
+
+        .sidebar:hover .nav-item span {
+            display: inline;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px 40px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            padding: 10px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 20px;
+            background: #ffffff;
+            color: #333;
+            width: 250px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            font-weight: bold;
+        }
+
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        .button-primary {
+            background: #1a73e8;
+            color: #ffffff;
+        }
+
+        .button-primary:hover {
+            background: #1765cc;
+        }
+
+        .button-secondary {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .button-secondary:hover {
+            background-color: #d2e3fc;
+        }
+
+        .template-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .template-card {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
+
+        .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon-placeholder {
+            width: 60px;
+            height: 60px;
+            background: #e8f0fe;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a73e8;
+            font-size: 24px;
+        }
+
+        .template-list {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
+
+        .template-header {
+            padding: 20px;
+            border-bottom: 1px solid #dadce0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .template-filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filter-input {
+            padding: 10px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 20px;
+            background: #ffffff;
+            color: #333;
+            width: 300px;
+        }
+
+        .template-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .template-table th, .template-table td {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 1px solid #dadce0;
+        }
+
+        .template-table th {
+            color: #5f6368;
+            font-weight: 600;
+        }
+
+        #templateCreator {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #333;
+        }
+
+        .template-creator-container {
+            display: flex;
+            gap: 40px;
+        }
+
+        .template-form {
+            flex: 1;
+        }
+
+        .preview-container {
+            width: 375px;
+            position: sticky;
+            top: 20px;
+            align-self: flex-start;
+        }
+
+        .mobile-preview {
+            width: 100%;
+            height: 667px;
+            border: 1px solid #dadce0;
+            border-radius: 20px;
+            overflow: auto;
+            padding: 20px;
+            background: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-upload {
+            width: 100%;
+            height: 100px;
+            border: 2px dashed #dadce0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .logo-upload:hover {
+            border-color: #1a73e8;
+        }
+
+        .logo-preview {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .page-item, .section-item, .question-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .section-item {
+            margin-left: 20px;
+        }
+
+        .question-item {
+            margin-left: 40px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .question-type-select {
+            margin-bottom: 10px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #d2e3fc;
+        }
+
+        .back-button::before {
+            content: '←';
+            margin-right: 8px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="logo">FC</div>
+        <a href="#" class="nav-item active"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-search"></i><span>Search</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-bell"></i><span>Notifications</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-file-alt"></i><span>Templates</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-clipboard-check"></i><span>Inspections</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Schedule</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-tasks"></i><span>Actions</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-graduation-cap"></i><span>Training</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-box"></i><span>Assets</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-exclamation-circle"></i><span>Issues</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-chart-bar"></i><span>Analytics</span></a>
+        <a href="#" class="nav-item"><i class="fas fa-question-circle"></i><span>Help</span></a>
+    </nav>
+
+    <main class="main-content">
+        <div id="dashboardView">
+            <div class="header">
+                <h1>Templates</h1>
+                <div class="search-bar">
+                    <input type="search" placeholder="Search" class="search-input" id="dashboardSearch">
+                    <button class="button button-primary" id="createTemplateBtn">Create</button>
+                </div>
+            </div>
+
+            <div class="template-options">
+                <div class="template-card" id="startFromScratch">
+                    <div class="icon-placeholder"><i class="fas fa-plus"></i></div>
+                    <h3>Start from scratch</h3>
+                    <p>Get started with a blank template.</p>
+                </div>
+                <div class="template-card">
+                    <div class="icon-placeholder"><i class="fas fa-clipboard-list"></i></div>
+                    <h3>Basic Inspection</h3>
+                    <p>Quick and simple inspection template.</p>
+                </div>
+                <div class="template-card">
+                    <div class="icon-placeholder"><i class="fas fa-hard-hat"></i></div>
+                    <h3>Safety Audit</h3>
+                    <p>Comprehensive safety check template.</p>
+                </div>
+            </div>
+
+            <div class="template-list">
+                <div class="template-header">
+                    <div class="template-filters">
+                        <input type="search" placeholder="Search all templates" class="filter-input" id="templateSearch">
+                        <button class="button button-secondary">+ Add filter</button>
+                    </div>
+                    <button class="button button-primary" id="createTemplateBtn2">+ Create</button>
+                </div>
+                <table class="template-table">
+                    <thead>
+                        <tr>
+                            <th>Template</th>
+                            <th>Last published</th>
+                            <th>Access</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="templateTableBody">
+                        <!-- Table content will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="templateCreator" style="display: none;">
+            <button class="back-button" onclick="showDashboard()">Back to Dashboard</button>
+            <h1>Create Template</h1>
+            <div class="template-creator-container">
+                <div class="template-form">
+                    <form id="templateForm">
+                        <div class="form-group">
+                            <label for="templateName">Template Name</label>
+                            <input type="text" id="templateName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="templateDescription">Description</label>
+                            <textarea id="templateDescription"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="logoUpload">Company Logo</label>
+                            <div id="logoUpload" class="logo-upload">
+                                <span>Click or drag to upload logo</span>
+                            </div>
+                        </div>
+                        <div id="pagesList"></div>
+                        <button type="button" id="addPageBtn" class="button button-secondary">Add Page</button>
+                        <button type="submit" class="button button-primary">Save Template</button>
+                    </form>
+                </div>
+                <div class="preview-container">
+                    <div class="mobile-preview" id="mobilePreview"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let templates = JSON.parse(localStorage.getItem('templates')) || [];
+        let currentTemplate = { 
+            name: '',
+            description: '',
+            logo: '',
+            pages: [
+                {
+                    title: 'Page 1',
+                    sections: [
+                        {
+                            title: 'Section 1',
+                            questions: []
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const questionTypes = [
+            'text', 'number', 'checkbox', 'slider', 'signature', 'site', 'document',
+            'asset', 'datetime', 'media', 'annotation', 'location', 'instruction'
+        ];
+
+        document.getElementById('createTemplateBtn').addEventListener('click', showTemplateCreator);
+        document.getElementById('createTemplateBtn2').addEventListener('click', showTemplateCreator);
+        document.getElementById('startFromScratch').addEventListener('click', showTemplateCreator);
+        document.getElementById('addPageBtn').addEventListener('click', addPage);
+        document.getElementById('templateForm').addEventListener('submit', saveTemplate);
+        document.getElementById('dashboardSearch').addEventListener('input', filterDashboardTemplates);
+        document.getElementById('templateSearch').addEventListener('input', filterTemplateList);
+        document.getElementById('templateName').addEventListener('input', updatePreview);
+        document.getElementById('templateDescription').addEventListener('input', updatePreview);
+        document.getElementById('logoUpload').addEventListener('click', uploadLogo);
+
+        function showTemplateCreator() {
+            document.getElementById('dashboardView').style.display = 'none';
+            document.getElementById('templateCreator').style.display = 'block';
+            if (!currentTemplate.id) {
+                currentTemplate = { 
+                    name: '',
+                    description: '',
+                    logo: '',
+                    pages: [
+                        {
+                            title: 'Page 1',
+                            sections: [
+                                {
+                                    title: 'Section 1',
+                                    questions: []
+                                }
+                            ]
+                        }
+                    ]
+                };
+                document.getElementById('templateName').value = '';
+                document.getElementById('templateDescription').value = '';
+                document.getElementById('logoUpload').innerHTML = `<span>Click or drag to upload logo</span>`;
+            }
+            renderPages();
+            updatePreview();
+        }
+
+        function addPage() {
+            currentTemplate.pages.push({
+                title: `Page ${currentTemplate.pages.length + 1}`,
+                sections: [
+                    {
+                        title: 'Section 1',
+                        questions: []
+                    }
+                ]
+            });
+            renderPages();
+            updatePreview();
+        }
+
+        function renderPages() {
+            const pagesList = document.getElementById('pagesList');
+            pagesList.innerHTML = currentTemplate.pages.map((page, pageIndex) => `
+                <div class="page-item">
+                    <input type="text" value="${page.title}" onchange="updatePageTitle(${pageIndex}, this.value)" placeholder="Page Title">
+                    ${page.sections.map((section, sectionIndex) => `
+                        <div class="section-item">
+                            <input type="text" value="${section.title}" onchange="updateSectionTitle(${pageIndex}, ${sectionIndex}, this.value)" placeholder="Section Title">
+                            ${section.questions.map((question, questionIndex) => `
+                                <div class="question-item">
+                                    <select class="question-type-select" onchange="updateQuestionType(${pageIndex}, ${sectionIndex}, ${questionIndex}, this.value)">
+                                        ${questionTypes.map(type => `
+                                            <option value="${type}" ${question.type === type ? 'selected' : ''}>${type}</option>
+                                        `).join('')}
+                                    </select>
+                                    <input type="text" value="${question.content}" onchange="updateQuestionContent(${pageIndex}, ${sectionIndex}, ${questionIndex}, this.value)" placeholder="Question content">
+                                    <button onclick="removeQuestion(${pageIndex}, ${sectionIndex}, ${questionIndex})" class="button button-secondary">Remove Question</button>
+                                </div>
+                            `).join('')}
+                            <div class="button-group">
+                                <button onclick="addQuestion(${pageIndex}, ${sectionIndex})" class="button button-secondary">Add Question</button>
+                                <button onclick="removeSection(${pageIndex}, ${sectionIndex})" class="button button-secondary">Remove Section</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    <div class="button-group">
+                        <button onclick="addSection(${pageIndex})" class="button button-secondary">Add Section</button>
+                        <button onclick="removePage(${pageIndex})" class="button button-secondary">Remove Page</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addQuestion(pageIndex, sectionIndex) {
+            currentTemplate.pages[pageIndex].sections[sectionIndex].questions.push({
+                type: 'text',
+                content: ''
+            });
+            renderPages();
+            updatePreview();
+        }
+
+        function removeQuestion(pageIndex, sectionIndex, questionIndex) {
+            currentTemplate.pages[pageIndex].sections[sectionIndex].questions.splice(questionIndex, 1);
+            renderPages();
+            updatePreview();
+        }
+
+        function addSection(pageIndex) {
+            currentTemplate.pages[pageIndex].sections.push({
+                title: `Section ${currentTemplate.pages[pageIndex].sections.length + 1}`,
+                questions: []
+            });
+            renderPages();
+            updatePreview();
+        }
+
+        function removeSection(pageIndex, sectionIndex) {
+            currentTemplate.pages[pageIndex].sections.splice(sectionIndex, 1);
+            renderPages();
+            updatePreview();
+        }
+
+        function removePage(pageIndex) {
+            currentTemplate.pages.splice(pageIndex, 1);
+            renderPages();
+            updatePreview();
+        }
+
+        function updatePageTitle(pageIndex, title) {
+            currentTemplate.pages[pageIndex].title = title;
+            updatePreview();
+        }
+
+        function updateSectionTitle(pageIndex, sectionIndex, title) {
+            currentTemplate.pages[pageIndex].sections[sectionIndex].title = title;
+            updatePreview();
+        }
+
+        function updateQuestionType(pageIndex, sectionIndex, questionIndex, type) {
+            currentTemplate.pages[pageIndex].sections[sectionIndex].questions[questionIndex].type = type;
+            updatePreview();
+        }
+
+        function updateQuestionContent(pageIndex, sectionIndex, questionIndex, content) {
+            currentTemplate.pages[pageIndex].sections[sectionIndex].questions[questionIndex].content = content;
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const preview = document.getElementById('mobilePreview');
+            preview.innerHTML = `
+                ${currentTemplate.logo ? `<img src="${currentTemplate.logo}" alt="Company Logo" class="logo-preview">` : ''}
+                <h2>${currentTemplate.name || 'Untitled Template'}</h2>
+                <p>${currentTemplate.description || 'No description'}</p>
+                ${currentTemplate.pages.map(page => `
+                    <h3>${page.title}</h3>
+                    ${page.sections.map(section => `
+                        <h4>${section.title}</h4>
+                        ${section.questions.map(question => `
+                            <div>
+                                <p>${question.content || 'Untitled Question'}</p>
+                                ${renderQuestionPreview(question)}
+                            </div>
+                        `).join('')}
+                    `).join('')}
+                `).join('')}
+            `;
+        }
+
+        function renderQuestionPreview(question) {
+            switch (question.type) {
+                case 'text':
+                    return '<input type="text" disabled>';
+                case 'number':
+                    return '<input type="number" disabled>';
+                case 'checkbox':
+                    return '<input type="checkbox" disabled>';
+                case 'slider':
+                    return '<input type="range" disabled>';
+                case 'signature':
+                    return '<div style="width: 100%; height: 100px; background: #f8f9fa;">Signature area</div>';
+                default:
+                    return `<div>[${question.type} input]</div>`;
+            }
+        }
+
+        function uploadLogo() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    currentTemplate.logo = event.target.result;
+                    document.getElementById('logoUpload').innerHTML = `<img src="${currentTemplate.logo}" alt="Company Logo" class="logo-preview">`;
+                    updatePreview();
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        function saveTemplate(e) {
+            e.preventDefault();
+            const template = {
+                id: currentTemplate.id || Date.now(),
+                name: document.getElementById('templateName').value,
+                description: document.getElementById('templateDescription').value,
+                logo: currentTemplate.logo,
+                pages: currentTemplate.pages,
+                lastPublished: new Date().toISOString(),
+                access: 'Private'
+            };
+            const existingIndex = templates.findIndex(t => t.id === template.id);
+            if (existingIndex !== -1) {
+                templates[existingIndex] = template;
+            } else {
+                templates.push(template);
+            }
+            localStorage.setItem('templates', JSON.stringify(templates));
+            showDashboard();
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboardView').style.display = 'block';
+            document.getElementById('templateCreator').style.display = 'none';
+            renderTemplateList();
+        }
+
+        function renderTemplateList() {
+            const tableBody = document.getElementById('templateTableBody');
+            tableBody.innerHTML = templates.map(template => `
+                <tr>
+                    <td>${template.name}</td>
+                    <td>${new Date(template.lastPublished).toLocaleDateString()}</td>
+                    <td>${template.access}</td>
+                    <td>
+                        <button class="button button-secondary" onclick="editTemplate(${template.id})">Edit</button>
+                        <button class="button button-secondary" onclick="deleteTemplate(${template.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function editTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (template) {
+                currentTemplate = JSON.parse(JSON.stringify(template)); // Deep copy
+                document.getElementById('templateName').value = template.name;
+                document.getElementById('templateDescription').value = template.description;
+                if (template.logo) {
+                    document.getElementById('logoUpload').innerHTML = `<img src="${template.logo}" alt="Company Logo" class="logo-preview">`;
+                } else {
+                    document.getElementById('logoUpload').innerHTML = `<span>Click or drag to upload logo</span>`;
+                }
+                renderPages();
+                updatePreview();
+                showTemplateCreator();
+            }
+        }
+
+        function deleteTemplate(id) {
+            if (confirm('Are you sure you want to delete this template?')) {
+                templates = templates.filter(t => t.id !== id);
+                localStorage.setItem('templates', JSON.stringify(templates));
+                renderTemplateList();
+            }
+        }
+
+        function filterDashboardTemplates() {
+            const searchTerm = document.getElementById('dashboardSearch').value.toLowerCase();
+            const filteredTemplates = templates.filter(template => 
+                template.name.toLowerCase().includes(searchTerm) ||
+                template.description.toLowerCase().includes(searchTerm)
+            );
+            renderTemplateList(filteredTemplates);
+        }
+
+        function filterTemplateList() {
+            const searchTerm = document.getElementById('templateSearch').value.toLowerCase();
+            const filteredTemplates = templates.filter(template => 
+                template.name.toLowerCase().includes(searchTerm) ||
+                template.description.toLowerCase().includes(searchTerm)
+            );
+            renderTemplateList(filteredTemplates);
+        }
+
+        // Initialize the dashboard
+        renderTemplateList();
+    </script>
+</body>
+</html>
