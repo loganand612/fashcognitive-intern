@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FASHCOGNITIVE</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <a href="{% url 'home' %}" class="logo">FASHCOGNITIVE</a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <div class="nav-links">
+                <div class="language-select">
+                    <button class="language-btn">
+                        <img src="{% static 'img/flag.jpg' %}" width="20"> English
+                    </button>
+                    <div class="language-dropdown">
+                        <div class="language-option">Deutsch</div>
+                        <div class="language-option">Español</div>
+                        <div class="language-option">Français</div>
+                        <div class="language-option">Nederlands</div>
+                        <div class="language-option">Português</div>
+                    </div>
+                </div>
+                <a href="#" class="btn btn-secondary notification-badge">Notifications</a>
+                <a href="#" class="btn btn-secondary">Profile</a>
+                <a href="#" class="btn btn-secondary">Log in</a>
+                <a href="{% url 'register' %}" class="btn btn-primary">Sign up for free</a>
+            </div>
+        </nav>
+
+        <!-- Sidebar -->
+        <div class="content-wrapper">
+            <aside class="sidebar">
+                <a href="#" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="#" class="sidebar-link">Templates</a>
+                <a href="#" class="sidebar-link">Inspections</a>
+                <a href="#" class="sidebar-link">Schedule</a>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <div class="landing-content">
+                    <div class="content-left">
+                        <h1>Scan the QR code to download the app</h1>
+                        <ul class="feature-list">
+                            <li>Conduct inspections and capture evidence even when offline.</li>
+                            <li>Personalize and share professional reports.</li>
+                            <li>Create and assign tasks to get the job done.</li>
+                            <li>Report issues and notify your team instantly.</li>
+                            <li>Manage your assets and operations, all in one place.</li>
+                            <li>Onboard, train and upskill on the job.</li>
+                        </ul>
+                    </div>
+                    <div class="qr-container">
+                        <img src="{% static 'img/qr.png' %}" alt="QR Code">
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Product</h3>
+                    <ul>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">Book Demo</a></li>
+                        <li><a href="#">Product updates</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Partner support</a></li>
+                        <li><a href="#">API documentation</a></li>
+                        <li><a href="#">Contact us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="#">Checklist library</a></li>
+                        <li><a href="#">App guides</a></li>
+                        <li><a href="#">Topic guides</a></li>
+                        <li><a href="#">eBooks</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Company</h3>
+                    <ul>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">News room</a></li>
+                        <li><a href="#">Brand Partnerships</a></li>
+                        <li><a href="#">Events</a></li>
+                    </ul>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{% static 'js/script.js' %}"></script>
+</body>
+</html>

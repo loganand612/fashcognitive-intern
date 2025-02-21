@@ -62,3 +62,6 @@ def user_login(request):
 @login_required
 def dashboard_view(request):
     return render(request, "dashboard.html")
+
+def home(request):
+    return render(request, "home.html")
