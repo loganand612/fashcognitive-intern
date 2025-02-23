@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'users',
 ]
 
@@ -50,6 +51,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'safety_culture.urls'
@@ -89,8 +91,6 @@ DATABASES = {
         'PORT': '5432',             
     }
 }
-
-
 
 
 # Password validation
@@ -167,3 +167,7 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "/login/"  # Redirects unauthorized users to login
 LOGIN_REDIRECT_URL = "/dashboard/"  # Redirects authenticated users after login
 LOGOUT_REDIRECT_URL = "/login/"  # Redirects users to login after logout
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Your React app URL
+]
