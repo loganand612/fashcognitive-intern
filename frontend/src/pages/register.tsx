@@ -1,209 +1,174 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, User, Phone, Lock, Building2, Briefcase, Users, Factory } from 'lucide-react';
+import "../assets/register.css";
+import flag from "../assets/img/flag.jpg";
 
 const Register: React.FC = () => {
-  const [formData, setFormData] = useState({
-    email: "",
-    firstName: "",
-    lastName: "",
-    phone: "",
-    password: "",
-    companyName: "",
-    industryType: "Fashion",
-    jobTitle: "",
-    companySize: "",
-  });
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        email: '',
+        f_name: '',
+        l_name: '',
+        phone_no: '',
+        password: '',
+        company_name: '',
+        industry_type: 'Fashion',
+        job_title: '',
+        company_size: ''
+    });
 
-  const [message, setMessage] = useState(""); // For success/error messages
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-  // Handle input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log('Form submitted', formData);
+        navigate('/');
+    };
 
-  // Handle form submission with API call
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    return (
+        <div className="register-container">
+            <div className="register-content">
+                <div className="register-left">
+                    <div className="logo-section">
+                        <img src={flag} alt="Fashcognitive Logo" className="company-logo" />
+                        <div className="welcome-text">
+                            <h1 className='tx1'>Welcome to<br />Fashcognitive</h1>
+                            <p className='tx2'>Create an account to get started with our AI-powered solutions for the apparel industry.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="register-right">
+                    <form onSubmit={handleSubmit} className="register-form">
+                        <h2>Create Account</h2>
+                        
+                        <div className="form-row">
+                            <div className="input-group">
+                                <User className="input-icon" size={18} />
+                                <input 
+                                    type="text" 
+                                    id="f_name" 
+                                    name="f_name" 
+                                    required 
+                                    placeholder="First Name"
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            
+                            <div className="input-group">
+                                <User className="input-icon" size={18} />
+                                <input 
+                                    type="text" 
+                                    id="l_name" 
+                                    name="l_name" 
+                                    required 
+                                    placeholder="Last Name"
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
 
-    try {
-      const response = await fetch("http://localhost:8000/api/users/register/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          f_name: formData.firstName,
-          l_name: formData.lastName,
-          phone_no: formData.phone,
-          password: formData.password,
-          company_name: formData.companyName,
-          industry_type: formData.industryType,
-          job_title: formData.jobTitle,
-          company_size: formData.companySize,
-        }),
-      });
+                        <div className="input-group">
+                            <Mail className="input-icon" size={18} />
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                required 
+                                placeholder="Email Address"
+                                onChange={handleChange}
+                            />
+                        </div>
 
-      if (response.ok) {
-        setMessage("User registered successfully!");
-        // Reset form after success
-        setFormData({
-          email: "",
-          firstName: "",
-          lastName: "",
-          phone: "",
-          password: "",
-          companyName: "",
-          industryType: "Fashion",
-          jobTitle: "",
-          companySize: "",
-        });
-      } else {
-        const errorData = await response.json();
-        console.error("Registration failed:", errorData);
-        setMessage("Registration failed. Please check your inputs.");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setMessage("An error occurred. Please try again later.");
-    }
-  };
+                        <div className="input-group">
+                            <Lock className="input-icon" size={18} />
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                required 
+                                placeholder="Password"
+                                onChange={handleChange}
+                            />
+                        </div>
 
-  return (
-    <div className="container">
-      <section className="form-section">
-        <div className="form-container">
-          <form onSubmit={handleSubmit}>
-            {message && <p className="form-message">{message}</p>} {/* Display messages */}
+                        <div className="input-group">
+                            <Phone className="input-icon" size={18} />
+                            <input 
+                                type="tel" 
+                                id="phone_no" 
+                                name="phone_no" 
+                                placeholder="Phone Number (Optional)"
+                                onChange={handleChange}
+                            />
+                        </div>
 
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="Enter your email"
-              />
+                        <div className="input-group">
+                            <Building2 className="input-icon" size={18} />
+                            <input 
+                                type="text" 
+                                id="company_name" 
+                                name="company_name" 
+                                required 
+                                placeholder="Company Name"
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <Factory className="input-icon" size={18} />
+                            <select 
+                                id="industry_type" 
+                                name="industry_type" 
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="">Select Industry</option>
+                                <option value="Fashion">Fashion</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                            </select>
+                        </div>
+
+                        <div className="input-group">
+                            <Briefcase className="input-icon" size={18} />
+                            <input 
+                                type="text" 
+                                id="job_title" 
+                                name="job_title" 
+                                required 
+                                placeholder="Job Title"
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <Users className="input-icon" size={18} />
+                            <input 
+                                type="number" 
+                                id="company_size" 
+                                name="company_size" 
+                                required 
+                                placeholder="Company Size"
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <button type="submit" className="submit-btn">
+                            Create Account
+                        </button>
+
+                        <p className="login-link">
+                            Already have an account? <a href="/login">Sign in</a>
+                        </p>
+                    </form>
+                </div>
             </div>
-
-            <div className="form-group name-group">
-              <div>
-                <label htmlFor="firstName">First name</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName">Last name</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="phone">Phone number (optional)</label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Phone number"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Minimum 8 characters"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="companyName">Company Name</label>
-              <input
-                type="text"
-                id="companyName"
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="industryType">Industry Type</label>
-              <select
-                id="industryType"
-                name="industryType"
-                value={formData.industryType}
-                onChange={handleChange}
-              >
-                <option value="Fashion">Fashion</option>
-                <option value="Retail">Retail</option>
-                <option value="Manufacturing">Manufacturing</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="jobTitle">Job Title</label>
-              <input
-                type="text"
-                id="jobTitle"
-                name="jobTitle"
-                value={formData.jobTitle}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="companySize">Company Size</label>
-              <input
-                type="number"
-                id="companySize"
-                name="companySize"
-                value={formData.companySize}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <button type="submit" className="submit-button">CREATE ACCOUNT</button>
-          </form>
         </div>
-      </section>
-
-      <section className="image-section">
-        <div className="image-content">
-          <div className="image-logo">
-            <img src="/static/img/flag.jpg" alt="Fashcognitive Logo" />
-          </div>
-          <h1>Transform Your Apparel Business</h1>
-          <p>Join Fashcognitive and experience the future of AI-powered apparel solutions.</p>
-        </div>
-      </section>
-    </div>
-  );
+    );
 };
 
 export default Register;
