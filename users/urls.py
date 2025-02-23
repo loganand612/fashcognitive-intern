@@ -14,9 +14,9 @@
 # ]
 
 from django.urls import path
-from users.views import user_login,register_user
+from .views import RegisterUserView,login_user
 
 urlpatterns = [
-    path('login/', user_login, name='user_login'),
-    path('register/', register_user, name='register_user'),
+    path("login/", login_user, name="login"),
+    path('register/', RegisterUserView.as_view(), name='register'),
 ]
