@@ -4,6 +4,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import User
 from django.http import HttpResponse
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import User
+#from .serializers import UserSerializer
+
 
 def register(request):
     if request.method == "POST":
