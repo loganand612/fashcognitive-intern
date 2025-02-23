@@ -1,0 +1,237 @@
+:root {
+    --primary-color: #ffffff;
+    --secondary-color: #28a745;
+    --text-color: #333;
+    --background-color: #fff;
+    --border-color: #e9ecef;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.login-container {
+    display: flex;
+    width: 100vw; /* Full screen width */
+    height: 100vh; /* Full screen height */
+    border-radius: 0; /* Remove border radius for full-screen */
+    overflow: hidden;
+    box-shadow: none; /* Remove shadow for full-screen */
+}
+
+.left-panel {
+    flex: 1;
+    background-color: var(--primary-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.logo {
+    width: 250px; /* Increased image size */
+    height: auto;
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05); /* Subtle hover effect for larger image */
+}
+
+.left-panel h2 {
+    font-size: 3rem; /* Slightly larger text to match increased image size */
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.left-panel p {
+    font-size: 1.25rem; /* Larger text for better visibility */
+    opacity: 0.8;
+}
+
+.right-panel {
+    flex: 1;
+    background-color: var(--background-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 480px; /* Slightly wider form for better balance */
+}
+
+h1 {
+    font-size: 2.5rem; /* Larger heading for prominence */
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+p {
+    font-size: 1.25rem; /* Larger subtext */
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+label {
+    display: block;
+    color: var(--text-color);
+    font-size: 1rem; /* Slightly larger labels */
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+label:focus-within {
+    opacity: 1;
+}
+
+input {
+    width: 100%;
+    padding: 1.25rem 1.5rem; /* Slightly larger padding for modern look */
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 1.125rem; /* Larger input text */
+    color: var(--text-color);
+    background: #f8f9fa;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.2);
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 1.25rem; /* Adjusted for larger input padding */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem; /* Larger password toggle icon */
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.password-toggle:hover {
+    opacity: 1;
+}
+
+.login-button {
+    width: 100%;
+    padding: 1.25rem; /* Larger padding for button */
+    background-color: #37AFE1;
+    color: rgb(255, 255, 255);
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1.125rem; /* Larger button text */
+    font-weight: 600;
+    cursor: pointer;
+    margin: 2rem 0; /* More spacing */
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+
+
+.bottom-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem; /* Larger link text */
+    color: var(--text-color);
+}
+
+
+
+.signup-button {
+    background: var(--secondary-color);
+    padding: 0.75rem 1.5rem; /* Larger padding for button */
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 600;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.signup-button:hover {
+    background: #218838;
+    transform: translateY(-2px);
+}
+.font{
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .login-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .left-panel, .right-panel {
+        flex: none;
+        width: 100%;
+        height: auto;
+        padding: 1.5rem;
+    }
+
+    .logo {
+        width: 150px; /* Reduced image size on mobile for better fit */
+    }
+
+    .left-panel h2 {
+        font-size: 2rem;
+    }
+
+    .left-panel p {
+        font-size: 1rem;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    p {
+        font-size: 1rem;
+    }
+
+    .login-card {
+        max-width: 100%;
+        padding: 1rem;
+    }
+}

@@ -1,0 +1,268 @@
+.register-container {
+    min-height: 100vh;
+    display: flex;
+    background-color: #ffffff;
+}
+
+.register-content {
+    display: flex;
+    width: 100%;
+}
+
+.register-left {
+    flex: 1;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem; /* Increased padding for spaciousness */
+    position: relative;
+}
+
+.tx1 {
+    color: #1a1a1a;
+}
+
+.tx2 {
+    color: #302d2d;
+}
+
+.logo-section {
+    max-width: 600px; /* Increased max-width for larger content */
+}
+
+.company-logo {
+    width: 250px; /* Increased logo size */
+    height: auto;
+    margin-bottom: 3rem; /* Increased margin for balance */
+}
+
+.welcome-text {
+    color: #ffffff;
+}
+
+.welcome-text h1 {
+    font-size: 4rem; /* Increased font size for prominence */
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 2rem; /* Increased margin */
+    letter-spacing: -0.02em;
+}
+
+.welcome-text p {
+    font-size: 1.5rem; /* Increased font size */
+    line-height: 1.6;
+    opacity: 0.9;
+    max-width: 500px; /* Increased max-width for text */
+}
+
+.register-right {
+    flex: 1.2; /* Increased flex to make the right side slightly larger */
+    padding: 4rem; /* Increased padding for spaciousness */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fefafa;
+}
+
+.register-form {
+    width: 100%;
+    max-width: 550px; /* Increased max-width for larger form */
+}
+
+.register-form h2 {
+    font-size: 2.5rem; /* Increased font size */
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2.5rem; /* Increased margin */
+    letter-spacing: -0.02em;
+}
+
+.form-row {
+    display: flex;
+    gap: 1.5rem; /* Increased gap for better spacing */
+    margin-bottom: 1.5rem; /* Increased margin */
+}
+
+.form-row .input-group {
+    flex: 1;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 1.5rem; /* Increased margin */
+}
+
+.input-icon {
+    position: absolute;
+    left: 1.25rem; /* Increased position for larger inputs */
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 1.125rem 1.25rem 1.125rem 3rem; /* Increased padding for larger inputs */
+    border: 1px solid #e0e0e0;
+    border-radius: 10px; /* Slightly larger radius for modern look */
+    font-size: 1.125rem; /* Increased font size */
+    color: #1a1a1a;
+    background: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.input-group input::placeholder {
+    color: #666;
+}
+
+.input-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1.25rem center; /* Adjusted position for larger inputs */
+    background-size: 1.125rem; /* Increased size */
+    padding-right: 3rem; /* Increased padding */
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    border-color: #1a1a1a;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.1); /* Increased shadow size */
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 1.25rem; /* Increased padding */
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 10px; /* Slightly larger radius */
+    font-size: 1.125rem; /* Increased font size */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 2rem; /* Increased margin */
+}
+
+.submit-btn:hover {
+    background: #333;
+    transform: translateY(-2px); /* Slightly larger transform for emphasis */
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 2rem; /* Increased margin */
+    color: #666;
+    font-size: 1.125rem; /* Increased font size */
+}
+
+.login-link a {
+    color: #1a1a1a;
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 0.5rem; /* Increased margin */
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+    .register-left {
+        padding: 3rem; /* Slightly reduced padding for balance */
+    }
+    
+    .welcome-text h1 {
+        font-size: 3rem; /* Reduced but still larger */
+    }
+    
+    .welcome-text p {
+        font-size: 1.25rem; /* Reduced but still larger */
+    }
+    
+    .register-right {
+        padding: 3rem; /* Slightly reduced padding for balance */
+    }
+    
+    .register-form {
+        max-width: 450px; /* Reduced max-width on tablets */
+    }
+    
+    .register-form h2 {
+        font-size: 2rem; /* Reduced but still larger */
+    }
+}
+
+@media (max-width: 768px) {
+    .register-left {
+        display: none;
+    }
+    
+    .register-right {
+        flex: 1;
+    }
+    
+    .register-form {
+        max-width: 400px; /* Reduced max-width on mobile */
+    }
+    
+    .welcome-text h1 {
+        font-size: 2.5rem; /* Further reduced for mobile */
+    }
+    
+    .welcome-text p {
+        font-size: 1rem; /* Further reduced for mobile */
+    }
+    
+    .register-form h2 {
+        font-size: 1.75rem; /* Reduced for mobile */
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 1rem; /* Reduced gap on mobile */
+    }
+    
+    .input-group input,
+    .input-group select {
+        padding: 0.875rem 1rem 0.875rem 2.5rem; /* Reduced padding on mobile */
+    }
+    
+    .submit-btn {
+        padding: 1rem; /* Reduced padding on mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .register-right {
+        padding: 1.5rem; /* Reduced padding for very small screens */
+    }
+    
+    .register-form {
+        max-width: 320px; /* Further reduced max-width on small mobile */
+    }
+    
+    .register-form h2 {
+        font-size: 1.5rem; /* Further reduced font size */
+    }
+    
+    .form-row {
+        gap: 0.75rem; /* Further reduced gap on mobile */
+    }
+    
+    .input-group input,
+    .input-group select {
+        padding: 0.75rem 0.875rem 0.75rem 2rem; /* Further reduced padding on mobile */
+    }
+    
+    .submit-btn {
+        padding: 0.875rem; /* Further reduced padding on mobile */
+    }
+    
+    .login-link {
+        font-size: 1rem; /* Further reduced font size */
+    }
+}
