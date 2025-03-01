@@ -1,602 +1,864 @@
-/* Reset & Base Styles */
+/* Base styles */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #ffffff;
-    color: #374151;
-    line-height: 1.5;
+  color: #000; /* Black text for contrast */
+  line-height: 1.6; /* Slightly increased line-height for readability */
+  background-color: #fff; /* White background for body */
+  font-size: 1rem; /* Base font size increased for readability */
 }
 
-/* Layout */
 .home-container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
-.main-content {
-    margin-top: 64px; /* Match navbar height */
-    padding: 0;
-    width: 100%;
+a {
+  text-decoration: none;
+  color: inherit;
 }
 
-/* Navigation */
-.navbar {
-    background: #f3f4f6;
-    height: 64px;
-    padding: 0 2rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
+ul {
+  list-style: none;
+}
+
+/* Header styles */
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 2rem; /* Increased padding for larger navbar */
+  background-color: #fff; /* White background for navbar */
+  position: relative;
+  height: 80px; /* Standard navbar height for a normal website */
+  border-top: 5px solid #1e90ff; /* Teal top border as in reference image */
+  border-bottom: 1px solid #000; /* Black border for navbar */
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: absolute;
+  left: 2rem; /* Adjusted for larger navbar */
+  color: #000; /* Black icon for contrast */
+  font-size: 1.2rem; /* Larger icon size for visibility */
+  transition: all 0.3s ease;
+}
+
+.menu-button:hover {
+  transform: scale(1.1);
+  color: #333; /* Darker black on hover */
 }
 
 .logo {
-    font-weight: bold;
-    font-size: 1.5rem;
-    color: #3b82f6;
-    text-decoration: none;
-    transition: all 0.3s ease;
+  font-weight: 700; /* Increased weight for professionalism */
+  font-size: 1.6rem; /* Increased size for prominence and professionalism */
+  letter-spacing: 1px; /* Slightly increased spacing for modern look */
+  text-align: center;
+  color: #000; /* Black text for contrast */
+  text-transform: uppercase; /* Uppercase for a professional, bold look */
+  font-family: "Segoe UI", sans-serif; /* Clean, professional font */
 }
 
-.logo:hover {
-    color: #2563eb;
+/* Authentication buttons styled for larger navbar */
+.auth-buttons {
+  position: absolute;
+  right: 2rem; /* Adjusted for larger navbar */
+  display: flex;
+  gap: 0.6rem; /* Increased gap for larger navbar */
 }
 
-.nav-links {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
+.login-button {
+  background: none;
+  border: 1px solid #000; /* Black border */
+  border-radius: 4px; /* Standard radius for professional look */
+  padding: 0.6rem 1rem; /* Increased padding for larger size */
+  cursor: pointer;
+  color: #000; /* Black text */
+  font-size: 1rem; /* Larger text for visibility */
+  transition: all 0.3s ease;
 }
 
-.nav-links a {
-    color: #4a5568;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all 0.3s ease;
+.login-button:hover {
+  background-color: #000;
+  color: #fff; /* White text on hover */
 }
 
-.nav-links a:hover {
-    color: #3b82f6;
+.signup-button {
+  background-color: #000; /* Black button */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 4px; /* Standard radius for professional look */
+  padding: 0.6rem 1rem; /* Increased padding for larger size */
+  cursor: pointer;
+  font-size: 1rem; /* Larger text for visibility */
+  transition: all 0.3s ease;
 }
 
-.btn {
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    border: none;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.3s ease;
+.signup-button:hover {
+  background-color: #333; /* Darker black on hover */
+  transform: translateY(-2px);
 }
 
-.btn-primary {
-    background: #3b82f6;
-    color: white;
+/* Navigation styles */
+.navigation {
+  border-bottom: 1px solid #000; /* Black border for navigation */
+  padding: 0.8rem 2rem; /* Reduced padding for smaller nav links */
+  background-color: #fff; /* White background */
 }
 
-.btn-primary:hover {
-    background: #2563eb;
+.navigation ul {
+  display: flex;
+  gap: 1.5rem; /* Reduced gap for smaller nav links */
+  justify-content: center;
+  align-items: center;
 }
 
-.btn-secondary {
-    background: #e5e7eb;
-    border: 1px solid #e5e7eb;
-    color: #4b5563;
+.nav-item {
+  padding: 0.5rem 1rem; /* Reduced padding for smaller size */
+  font-size: 1.1rem; /* Increased text size for prominence */
+  font-weight: 700; /* Bold for professional look */
+  color: #000; /* Black text for contrast */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-width: 100px; /* Reduced width for smaller nav links */
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative; /* For underline hover effect */
 }
 
-.btn-secondary:hover {
-    background: #2563eb;
-    color: white;
+.nav-item:hover {
+  color: #333; /* Darker black on hover */
 }
 
-/* Language Selector */
-.language-select {
-    position: relative;
+.nav-item:hover::after {
+  content: "";
+  position: absolute;
+  bottom: -2px; /* Position below the text */
+  left: 0;
+  width: 100%;
+  height: 2px; /* Thickness of underline */
+  background-color: #000; /* Black underline */
+  transition: all 0.3s ease; /* Smooth transition for underline */
 }
 
-.language-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 1.5rem;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.dropdown-arrow {
+  font-size: 0.7rem; /* Slightly larger arrow size */
+  margin-left: 0.3rem; /* Increased margin */
+  color: #000; /* Black text */
 }
 
-.language-btn:hover {
-    border-color: #3b82f6;
+/* Hero section styles with background video */
+.hero-section {
+  padding: 0; /* Remove padding to let video fill the space */
+  max-width: 1400px; /* Match the wider layout for fullness */
+  margin: 0 auto;
+  position: relative; /* For video and content positioning */
+  overflow: hidden; /* Ensure video stays within bounds */
+  height: 500px; /* Fixed height for video to align boxes at bottom */
 }
 
-.language-dropdown {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    padding: 0.5rem 0;
-    display: none;
-    min-width: 150px;
-    z-index: 1000;
+.hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures video covers the entire hero area */
+  z-index: 1; /* Behind content */
 }
 
-.language-select:hover .language-dropdown {
-    display: block;
+.hero-content {
+  position: relative;
+  z-index: 2; /* Above video */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Space between text and boxes */
+  height: 100%; /* Full height of hero-section */
+  color: #fff; /* White text for contrast over video */
+  padding: 2rem 0 2rem 2rem; /* Adjust padding to ensure full right alignment, remove right padding */
 }
 
-.language-option {
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.hero-title {
+  font-size: 3rem; /* Increased for prominence over video */
+  font-weight: 700;
+  text-align: right; /* Align text to the right */
+  width: 90%; /* Use full width to ensure right alignment */
+  margin-right: 0; /* Remove margin to ensure flush right alignment */
+  line-height: 1.2; /* Adjusted for multi-line readability */
+  color: #ede8e8; /* White text for contrast over video */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Shadow for readability over video */
+  background: none; /* Remove background for video */
+  padding: 1rem 0; /* Remove horizontal padding to ensure flush right */
+  border-radius: 0; /* Remove rounded corners for video */
+  opacity: 0; /* Start with fade-out for transition */
+  animation: fadeIn 1.5s ease-in-out forwards; /* Fade-in animation */
 }
 
-.language-option:hover {
-    background: #f8f9fe;
-    color: #3b82f6;
+/* Fade-in animation for hero title */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-/* Mobile Menu Button */
-.mobile-menu-btn {
-    display: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
+.feature-boxes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Maintain 3 columns but allow wider boxes */
+  gap: 2rem; /* Increased gap for wider spacing */
+  width: 100%;
+  max-width: 1400px; /* Increased max-width for wider boxes */
+  padding: 0 2rem; /* Add padding for layout */
+  margin-top: auto; /* Push boxes to the bottom of hero-section */
+  z-index: 3; /* Ensure boxes are above video */
 }
 
-.nav-links.active {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: 64px;
-    left: 0;
-    right: 0;
-    background: white;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.feature-box {
+  width: 300px; /* Fixed width to match reference */
+  height: 150px; /* Adjusted height to match reference */
+  background-color: #fff; /* Pure white background as requested */
+  border-radius: 12px; /* Larger radius for professional, modern look */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem; /* Reduced padding for reference */
+  transition: all 0.3s ease;
+  border: 2px solid #000; /* Black border for professional contrast */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for professionalism */
 }
 
-/* Inspections Section */
-.inspections-section {
-    padding: 4rem 2rem;
-    text-align: center;
-    background: #ffffff;
+.feature-box:hover {
+  transform: translateY(-4px); /* Slightly larger transform for emphasis */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
+  background-color: #f5f5f5; /* Light gray on hover for subtle contrast */
 }
 
-.inspections-section h1 {
-    font-size: 2.5rem;
-    color: #374151;
-    margin-bottom: 2rem;
-    line-height: 1.2;
+.feature-box-icon {
+  font-size: 2.5rem; /* Reduced size to match reference icons */
+  margin-bottom: 0.5rem; /* Reduced spacing below icon */
+  width: 48px; /* Adjusted width for reference icon size */
+  height: 48px; /* Adjusted height for reference icon size */
+  object-fit: contain; /* Ensures the image scales proportionally within the box */
+  color: #000; /* Black icon placeholder text (for fallback) */
 }
 
-.card-grid {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    flex-wrap: wrap;
+.feature-box-icon img {
+  width: 100%; /* Ensure the image fills the container */
+  height: 100%; /* Ensure the image fills the container */
+  object-fit: contain; /* Maintain aspect ratio and fit within the container */
+  filter: grayscale(100%) brightness(0%); /* Ensure black icons for professional look */
 }
 
-.card {
-    width: 300px;
-    height: 200px;
-    background: #f3f4f6;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.feature-box-text {
+  font-size: 1rem; /* Reduced for reference text size */
+  font-weight: 700; /* Bolder for professional emphasis */
+  color: #000; /* Black text */
+  line-height: 1.4; /* Improved readability */
 }
 
-/* Reports Section (Middle Content) */
+/* Reports section styles */
 .reports-section {
-    padding: 4rem 2rem;
-    background: #f3f4f6;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  background-color: #f8f9fa; /* Light gray background */
+  padding: 4rem 2rem; /* Reduced padding for professionalism */
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #000; /* Black text */
 }
 
-.report-content {
-    display: flex;
-    gap: 3rem;
-    max-width: 1200px;
-    align-items: center;
+.reports-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem; /* Reduced gap for professionalism */
+  align-items: center;
 }
 
-.report-image {
-    width: 300px; /* Exact width as estimated from the second image */
-    height: 200px; /* Exact height as estimated from the second image */
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.reports-images {
+  display: flex;
+  position: relative;
 }
 
-.report-text {
-    flex: 1;
+.mobile-report-image {
+  width: 150px; /* Increased for better visibility */
+  height: 300px; /* Increased for better visibility */
+  background-color: #fff; /* White background for mockup */
+  border-radius: 18px; /* Slightly reduced radius */
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Reduced shadow for professionalism */
+  transition: all 0.3s ease;
 }
 
-.report-text h2 {
-    font-size: 2rem;
-    color: #374151;
-    margin-bottom: 1rem;
+.mobile-report-image:hover {
+  transform: translateY(-3px); /* Reduced transform for subtlety */
 }
 
-.report-text p {
-    font-size: 1rem;
-    color: #6b7280;
-    margin-bottom: 1.5rem;
-    line-height: 1.5;
+.report-mockup {
+  padding: 0.8rem; /* Reduced padding for professionalism */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.report-btn {
-    padding: 0.75rem 1.5rem;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.report-header {
+  padding: 0.8rem 0; /* Reduced padding */
 }
 
-.report-btn:hover {
-    background: #2563eb;
+.report-title {
+  font-weight: 600; /* Slightly reduced weight for professionalism */
+  font-size: 1.2rem; /* Increased for readability */
+  line-height: 1.3; /* Increased for readability */
+  color: #000; /* Black text */
 }
 
-/* QR Code Section (App Content) - Positioned as in the third image */
-.qr-section {
-    padding: 4rem 2rem;
-    background: #e5e7eb;
-    text-align: center;
+.purple-button {
+  background-color: #000; /* Black button for professional look */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 4px; /* Standard radius for professional look */
+  padding: 0.5rem 1rem; /* Increased padding for readability */
+  margin-bottom: 0.8rem; /* Reduced margin */
+  width: 80%; /* Slightly increased width */
+  align-self: center;
+  cursor: pointer;
+  font-size: 1rem; /* Increased for readability */
+  transition: all 0.3s ease;
 }
 
-.qr-section h2 {
-    font-size: 2rem;
-    color: #374151;
-    margin-bottom: 2rem;
+.purple-button:hover {
+  background-color: #333; /* Darker black on hover */
+  transform: translateY(-2px);
 }
 
-.feature-list {
-    list-style: none;
-    max-width: 600px;
-    margin: 0 auto 2rem;
+.desktop-report-image {
+  width: 300px; /* Increased for better visibility */
+  height: 200px; /* Increased for better visibility */
+  background-color: #fff; /* White background */
+  border-radius: 6px; /* Smaller radius */
+  position: absolute;
+  left: 100px; /* Adjusted position for larger size */
+  top: 50px; /* Adjusted position for larger size */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Reduced shadow */
+  transition: all 0.3s ease;
 }
 
-.feature-list li {
-    padding: 0.75rem 0;
-    color: #6b7280;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.desktop-report-image:hover {
+  transform: translateY(-3px); /* Reduced transform for subtlety */
 }
 
-.feature-list li::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    background: #3b82f6;
-    border-radius: 50%;
-    margin-right: 0.75rem;
-    opacity: 0.2;
+.share-button {
+  position: absolute;
+  bottom: -12px; /* Adjusted for larger size */
+  right: 15px; /* Adjusted for larger size */
+  background-color: #fff; /* White background */
+  border-radius: 18px; /* Slightly reduced radius */
+  padding: 0.5rem 1rem; /* Increased padding for readability */
+  display: flex;
+  align-items: center;
+  gap: 0.4rem; /* Reduced gap */
+  font-size: 0.9rem; /* Increased for readability */
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1); /* Reduced shadow */
+  color: #000; /* Black text */
+  transition: all 0.3s ease;
 }
 
-.qr-container {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-    display: inline-block;
-    margin-bottom: 2rem;
-    transition: all 0.3s ease;
+.share-button:hover {
+  transform: translateY(-2px);
+  background-color: #f8f9fa;
+  color: #333; /* Darker text on hover */
 }
 
-.qr-container:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.reports-text {
+  padding: 1.5rem; /* Reduced padding for professionalism */
+}
+
+.reports-badge {
+  display: inline-block;
+  background-color: #fff; /* White background */
+  border-radius: 18px; /* Slightly reduced radius */
+  padding: 0.3rem 0.8rem; /* Increased padding for readability */
+  font-size: 0.9rem; /* Increased for readability */
+  margin-bottom: 1rem;
+  color: #000; /* Black text */
+}
+
+.reports-title {
+  font-size: 2rem; /* Increased for readability */
+  font-weight: 600; /* Slightly reduced weight */
+  margin-bottom: 1rem;
+  color: #000; /* Black text */
+}
+
+.reports-description {
+  color: #555; /* Dark gray text for contrast */
+  line-height: 1.6;
+  font-size: 1.1rem; /* Increased for readability */
+}
+
+/* App download section styles */
+.app-download-section {
+  padding: 4rem 2rem; /* Reduced padding for professionalism */
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #fff; /* White background */
+  color: #000; /* Black text */
+}
+
+.app-download-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem; /* Reduced gap for professionalism */
+}
+
+.app-download-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-download-title {
+  font-size: 2rem; /* Increased for readability */
+  font-weight: 600; /* Slightly reduced weight */
+  margin-bottom: 1.5rem; /* Reduced margin */
+  color: #000; /* Black text */
+}
+
+.app-features-list {
+  margin-bottom: 1.5rem; /* Reduced margin */
+}
+
+.app-feature {
+  margin-bottom: 0.8rem; /* Reduced margin */
+  padding-left: 1.2rem; /* Reduced padding */
+  position: relative;
+  color: #555; /* Dark gray text for contrast */
+  font-size: 1rem; /* Increased for readability */
+}
+
+.app-feature::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5rem; /* Adjusted for larger text */
+  width: 0.7rem; /* Slightly increased size */
+  height: 0.7rem; /* Slightly increased size */
+  background-color: #000; /* Black bullet */
+  border-radius: 50%;
+}
+
+.app-store-buttons {
+  display: flex;
+  gap: 0.8rem; /* Reduced gap */
+}
+
+.app-store-button,
+.google-play-button {
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.app-store-button:hover,
+.google-play-button:hover {
+  transform: translateY(-2px);
+}
+
+.app-store-button img,
+.google-play-button img {
+  width: 120px; /* Match your reference for App Store/Google Play buttons */
+  height: 40px; /* Match your reference */
+  object-fit: contain;
+}
+
+/* QR code container styles */
+.qr-code-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.company-logo-large {
+  margin-bottom: 1.5rem; /* Reduced margin */
+  position: relative;
+  text-align: center;
+}
+
+.fc-logo {
+  font-size: 4rem; /* Increased for prominence and professionalism */
+  font-weight: 800; /* Increased weight for bold, professional look */
+  line-height: 1;
+  color: #000; /* Black text */
+}
+
+.fc-dot {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 1.8rem; /* Increased size for balance */
+  color: #000; /* Black dot */
+}
+
+.fc-text {
+  font-size: 0.9rem; /* Increased for readability */
+  letter-spacing: 1.5px; /* Increased spacing for modern look */
+  color: #000; /* Black text */
+  font-weight: 600; /* Increased weight for professionalism */
+  text-transform: uppercase; /* Uppercase for a professional, bold look */
 }
 
 .qr-code {
-    width: 300px;
-    height: 300px;
+  width: 400px; /* Doubled size from 200px to 400px for larger visibility */
+  height: 400px; /* Doubled size from 200px to 400px */
+  transition: none; /* No hover transition as requested */
 }
 
-.qr-logo {
-    font-weight: bold;
-    font-size: 1.5rem;
-    color: #000;
-    text-align: center;
-    margin-top: 1rem;
+.qr-code img {
+  width: 100%; /* Ensure the image fills the container */
+  height: 100%; /* Ensure the image fills the container */
+  object-fit: contain; /* Maintain aspect ratio and fit within the container */
+  background-color: #fff; /* White background to ensure QR code patterns are visible */
 }
 
-.store-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
+/* Ensure QR code is black on white for readability */
+.qr-code img {
+  filter: none; /* Removed filter to prevent over-processing, assuming qr1.png is a proper QR code */
 }
 
-.store-buttons img {
-    height: 40px;
-    transition: all 0.3s ease;
-}
-
-.store-buttons img:hover {
-    transform: translateY(-2px);
-}
-
-/* Call to Action Section */
+/* CTA section styles */
 .cta-section {
-    padding: 4rem 2rem;
-    background: #f3f4f6;
-    text-align: center;
+  padding: 4rem 2rem; /* Reduced padding for professionalism */
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  background-color: #fff; /* White background */
+  color: #000; /* Black text */
 }
 
-.cta-section h1 {
-    font-size: 2.5rem;
-    color: #374151;
-    margin-bottom: 2rem;
-    line-height: 1.2;
+.cta-title {
+  font-size: 2rem; /* Increased for readability */
+  font-weight: 600; /* Slightly reduced weight */
+  margin-bottom: 1.5rem; /* Reduced margin */
+  line-height: 1.3;
+  color: #000; /* Black text */
 }
 
-.cta-btn {
-    display: inline-block;
-    padding: 1rem 2rem;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
+.cta-button {
+  background-color: #000; /* Black button for professional look */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 20px; /* Slightly reduced radius */
+  padding: 0.7rem 1.8rem; /* Increased padding for readability */
+  font-weight: 600; /* Slightly reduced weight */
+  cursor: pointer;
+  font-size: 1rem; /* Increased for readability */
+  transition: all 0.3s ease;
 }
 
-.cta-btn:hover {
-    background: #2563eb;
-    transform: translateY(-2px);
+.cta-button:hover {
+  background-color: #333; /* Darker black on hover */
+  transform: scale(1.05);
 }
 
-/* Footer */
+/* Footer styles */
 .footer {
-    background: white;
-    padding: 4rem 2rem;
-    margin-top: auto;
+  padding: 4rem 0 2rem; /* Remove left/right padding to eliminate gap, keep top/bottom for fullness */
+  background-color: #fff; /* White background for professional look */
+  border: 1px solid #000; /* Full black border for complete look */
+  color: #000; /* Black text */
+  width: 100%; /* Ensure full width to cover any gaps */
+  margin: 0 auto; /* Center the footer */
+  max-width: 1400px; /* Match the wider layout for fullness */
 }
 
-.footer-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2rem;
+.footer-cta {
+  text-align: center;
+  margin-bottom: 2rem; /* Space between CTA and columns */
 }
 
-.footer-section h3 {
-    color: #3b82f6;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
+.footer-cta-button {
+  background-color: #000; /* Black button for professional look */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 25px; /* Rounded for modern look */
+  padding: 0.8rem 2rem; /* Increased padding for prominence */
+  font-weight: 700; /* Bolder for emphasis */
+  cursor: pointer;
+  font-size: 1.1rem; /* Larger text for visibility */
+  transition: all 0.3s ease;
 }
 
-.footer-section ul {
-    list-style: none;
+.footer-cta-button:hover {
+  background-color: #333; /* Darker black on hover */
+  transform: scale(1.05); /* Slight scale effect */
 }
 
-.footer-section ul li {
-    margin-bottom: 0.5rem;
+.footer-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Wider columns for fuller look */
+  gap: 2rem; /* Increased gap for spacing */
+  max-width: 1400px; /* Increased max-width for fuller layout */
+  margin: 0 auto; /* Center the columns */
+  padding: 0 2rem; /* Add minimal padding to avoid extreme gaps but maintain fullness */
 }
 
-.footer-section ul li a {
-    color: #6b7280;
-    text-decoration: none;
-    transition: all 0.3s ease;
+.footer-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center-align columns for links */
 }
 
-.footer-section ul li a:hover {
-    color: #3b82f6;
+.footer-heading {
+  font-size: 1.2rem; /* Increased for prominence */
+  color: #000; /* Black text */
+  margin-bottom: 1.5rem; /* Increased margin for spacing */
+  font-weight: 700; /* Bolder for emphasis */
+  text-transform: uppercase; /* Uppercase for professional look */
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  text-align: center; /* Center-align links within lists */
+}
+
+.footer-links li {
+  margin-bottom: 1rem; /* Increased margin for fuller spacing */
+}
+
+.footer-links a {
+  color: #000; /* Black text */
+  font-size: 1rem; /* Increased for readability */
+  padding: 0.5rem 0; /* Increased padding for spacing */
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #333; /* Darker black on hover */
+  padding-left: 0.5rem; /* Slight indent on hover */
 }
 
 .footer-bottom {
-    max-width: 1200px;
-    margin: 2rem auto 0;
-    padding-top: 2rem;
-    border-top: 1px solid #e5e7eb;
-    text-align: center;
-    color: #6b7280;
-    font-size: 0.875rem;
+  display: flex;
+  justify-content: space-between;
+  max-width: 1400px; /* Increased max-width for fuller layout */
+  margin: 0 auto;
+  padding: 2rem 2rem 0; /* Increased top padding, minimal side padding */
+  border-top: 1px solid #000; /* Black border */
+  flex-wrap: wrap;
+  gap: 1rem; /* Increased gap for responsiveness */
 }
 
-.social-links {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 1rem;
+.footer-legal {
+  color: #333; /* Dark gray text */
+  font-size: 0.9rem; /* Slightly increased for readability */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem; /* Spacing between links */
+  justify-content: center; /* Center-align legal links */
 }
 
-.social-links a img {
-    width: 24px;
-    height: 24px;
-    transition: all 0.3s ease;
+.footer-legal a {
+  color: #333; /* Dark gray text */
+  transition: all 0.3s ease;
 }
 
-.social-links a img:hover {
-    transform: translateY(-2px);
+.footer-legal a:hover {
+  color: #000; /* Black on hover */
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-    .navbar {
-        padding: 0 1.5rem;
-    }
+.footer-social {
+  display: flex;
+  gap: 1.5rem; /* Increased gap for prominence */
+  align-items: center;
+  justify-content: center; /* Center-align social icons */
+}
 
-    .inspections-section h1,
-    .cta-section h1 {
-        font-size: 2rem;
-    }
+.social-icon {
+  width: 20px; /* Reduced size */
+  height: 20px; /* Reduced size */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
 
-    .card {
-        width: 250px;
-        height: 150px;
-    }
+.social-icon img {
+  width: 100%; /* Ensure the image fills the container */
+  height: 100%; /* Ensure the image fills the container */
+  object-fit: contain; /* Maintain aspect ratio and fit within the container */
+}
 
-    .report-image {
-        width: 250px;
-        height: 167px; /* Adjusted proportionally from 300x200 */
-    }
+.social-icon:hover {
+  transform: translateY(-2px);
+  filter: brightness(80%); /* Slight brightness decrease for hover effect on black icons */
+}
 
-    .report-text h2 {
-        font-size: 1.75rem;
-    }
+/* Responsive styles */
+@media (max-width: 992px) {
+  .reports-content,
+  .app-download-content {
+    grid-template-columns: 1fr;
+  }
 
-    .report-text p {
-        font-size: 0.875rem;
-    }
+  .feature-boxes {
+    grid-template-columns: 1fr;
+  }
 
-    .qr-section h2 {
-        font-size: 1.75rem;
-    }
+  .hero-section {
+    height: 400px; /* Reduced height for medium screens */
+  }
 
-    .feature-list li {
-        font-size: 0.875rem;
-    }
+  .hero-content {
+    padding: 1rem 0 1rem 1rem; /* Adjust padding for medium screens */
+  }
 
-    .qr-code {
-        width: 250px;
-        height: 250px;
-    }
+  .hero-title {
+    font-size: 2.5rem; /* Slightly reduced for medium screens */
+    margin-right: 0; /* Ensure flush right */
+  }
 
-    .footer-content {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .feature-box {
+    width: 250px; /* Reduced width for medium screens */
+  }
+
+  .footer-columns {
+    grid-template-columns: 1fr 1fr; /* Two columns on medium screens */
+    padding: 0 1rem; /* Reduce side padding on medium screens */
+  }
 }
 
 @media (max-width: 768px) {
-    .navbar {
-        padding: 0 1rem;
-    }
+  .navigation ul {
+    gap: 1.5rem; /* Reduced gap for mobile */
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
-    .mobile-menu-btn {
-        display: block;
-    }
+  .menu-button {
+    left: 1rem;
+  }
 
-    .nav-links {
-        display: none;
-    }
+  .auth-buttons {
+    right: 1rem;
+  }
 
-    .inspections-section h1,
-    .cta-section h1 {
-        font-size: 1.75rem;
-    }
+  .hero-section {
+    height: 300px; /* Reduced height for small screens */
+  }
 
-    .card-grid {
-        flex-direction: column;
-        align-items: center;
-    }
+  .hero-content {
+    padding: 0.5rem 0 0.5rem 0.5rem; /* Adjust padding for small screens */
+  }
 
-    .card {
-        width: 200px;
-        height: 120px;
-        margin-bottom: 1rem;
-    }
+  .hero-title {
+    font-size: 2rem; /* Reduced for small screens */
+    margin-right: 0; /* Ensure flush right */
+  }
 
-    .reports-section {
-        flex-direction: column;
-        text-align: center;
-    }
+  .feature-boxes {
+    padding: 0 1rem; /* Reduce padding on mobile */
+  }
 
-    .report-content {
-        flex-direction: column;
-        gap: 2rem;
-    }
+  .feature-box {
+    width: 200px; /* Reduced width for small screens */
+  }
 
-    .report-image {
-        width: 250px;
-        height: 167px; /* Adjusted proportionally */
-    }
+  .footer-columns {
+    grid-template-columns: 1fr; /* Single column on small screens */
+    padding: 0 1rem; /* Reduce side padding on small screens */
+  }
 
-    .report-text h2 {
-        font-size: 1.5rem;
-    }
+  .footer-bottom {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 
-    .report-text p {
-        font-size: 0.875rem;
-    }
+  .footer-social {
+    margin-top: 1rem; /* Space after legal links on mobile */
+  }
 
-    .qr-section h2 {
-        font-size: 1.5rem;
-    }
-
-    .feature-list li {
-        font-size: 0.875rem;
-    }
-
-    .qr-code {
-        width: 200px;
-        height: 200px;
-    }
-
-    .footer-content {
-        grid-template-columns: 1fr;
-    }
+  .footer-legal {
+    justify-content: center; /* Ensure legal links stay centered on mobile */
+  }
 }
 
-@media (max-width: 480px) {
-    .navbar {
-        padding: 0 0.5rem;
-    }
+@media (max-width: 576px) {
+  .header {
+    padding: 0.8rem 1rem; /* Adjusted padding for mobile */
+    height: 60px; /* Reduced height for mobile but still readable */
+  }
 
-    .logo {
-        font-size: 1.25rem;
-    }
+  .auth-buttons {
+    display: none;
+  }
 
-    .inspections-section h1,
-    .cta-section h1 {
-        font-size: 1.5rem;
-    }
+  .hero-section {
+    height: 250px; /* Reduced height for mobile */
+  }
 
-    .card {
-        width: 150px;
-        height: 100px;
-    }
+  .hero-content {
+    padding: 0.5rem 0 0.5rem 0.5rem; /* Minimal padding for mobile */
+  }
 
-    .report-image {
-        width: 200px;
-        height: 133px; /* Adjusted proportionally from 300x200 */
-    }
+  .hero-title {
+    font-size: 1.5rem; /* Reduced for mobile but readable */
+    margin-right: 0; /* Ensure flush right */
+    text-align: center; /* Center text on mobile for readability */
+    padding: 0.5rem 0; /* Adjust padding for mobile */
+  }
 
-    .report-text h2 {
-        font-size: 1.25rem;
-    }
+  .feature-boxes {
+    grid-template-columns: 1fr; /* Stack boxes on mobile */
+    gap: 1rem; /* Reduced gap */
+    padding: 0 0.5rem; /* Minimal padding on mobile */
+  }
 
-    .report-text p {
-        font-size: 0.75rem;
-    }
+  .feature-box {
+    width: 100%; /* Full width on mobile */
+    height: 120px; /* Reduced height for mobile */
+  }
 
-    .qr-section h2 {
-        font-size: 1.25rem;
-    }
+  .reports-title,
+  .app-download-title,
+  .cta-title {
+    font-size: 1.5rem; /* Reduced for mobile but readable */
+  }
 
-    .feature-list li {
-        font-size: 0.75rem;
-    }
+  .nav-item {
+    min-width: 90px; /* Reduced width for mobile but still readable */
+    padding: 0.5rem 0.8rem; /* Reduced padding for mobile */
+    font-size: 0.9rem; /* Smaller text for mobile but still bold */
+    font-weight: 700; /* Keep bold for mobile */
+  }
 
-    .qr-code {
-        width: 150px;
-        height: 150px;
-    }
+  .mobile-report-image {
+    width: 120px; /* Increased for better visibility on mobile */
+    height: 240px; /* Increased for better visibility on mobile */
+  }
+
+  .desktop-report-image {
+    width: 220px; /* Increased for better visibility on mobile */
+    height: 160px; /* Increased for better visibility on mobile */
+    left: 80px; /* Adjusted position */
+  }
+
+  .qr-code {
+    width: 200px; /* Smaller size on mobile */
+    height: 200px;
+  }
 }
