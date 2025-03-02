@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home2 from './pages/Home2';
+import Create_template from './pages/Create_template';
 
 // import './App.css';
 
@@ -14,6 +15,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/home2" element={<Home2 />} />
+                <Route path="/ct" element={<Create_template />} />
             </Routes>
         </Router>
     );
