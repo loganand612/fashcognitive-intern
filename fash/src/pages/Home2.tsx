@@ -8,6 +8,8 @@ import conductIcon from "./assets/conduct.png";
 import analyzeIcon from "./assets/analyze.png"; // Ensure this is a PNG with transparency
 import qr from "./assets/qr1.png";
 import headerVideo from "./assets/head1.mp4";
+import appStoreBadge from "./assets/app-store-badge.svg";
+import googlePlayBadge from "./assets/google-play-badge.svg";
 
 const Home2: React.FC = () => {
   return (
@@ -18,8 +20,8 @@ const Home2: React.FC = () => {
         </button>
         <div className="logo">FASHCOGNITIVE</div>
         <div className="auth-buttons">
-          <button className="login-button">Log in</button>
-          <button className="signup-button">Sign up for free</button>
+          <a href="\login" className="login-button">Log in</a>
+          <a href="\register" className="signup-button">Sign up for free</a>
         </div>
       </header>
 
@@ -81,10 +83,45 @@ const Home2: React.FC = () => {
                     REPORT
                   </div>
                 </div>
+                <div className="dashboard-chart">
+                  <div className="chart-placeholder">
+                    <div className="chart-bar chart-bar-1"></div>
+                    <div className="chart-bar chart-bar-2"></div>
+                    <div className="chart-bar chart-bar-3"></div>
+                    <div className="chart-bar chart-bar-4"></div>
+                  </div>
+                </div>
                 <button className="purple-button">Button</button>
               </div>
             </div>
             <div className="desktop-report-image">
+              <div className="desktop-dashboard">
+                <div className="chart-header">
+                  <div className="chart-title">Inspection Results</div>
+                  <div className="chart-legend">
+                    <span className="legend-item passing">Passing</span>
+                    <span className="legend-item failing">Failing</span>
+                  </div>
+                </div>
+                <div className="chart-content">
+                  <div className="chart-area">
+                    <div className="pie-chart">
+                      <div className="pie-segment segment-1"></div>
+                      <div className="pie-segment segment-2"></div>
+                    </div>
+                    <div className="data-metrics">
+                      <div className="metric">
+                        <div className="metric-value">87%</div>
+                        <div className="metric-label">Compliance</div>
+                      </div>
+                      <div className="metric">
+                        <div className="metric-value">24</div>
+                        <div className="metric-label">Issues</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="share-button">
                 <span>Share</span>
               </div>
@@ -119,10 +156,24 @@ const Home2: React.FC = () => {
             </ul>
             <div className="app-store-buttons">
               <a href="#" className="app-store-button">
-                <img src="/placeholder.svg?height=40&width=120" alt="App Store" />
+                <div className="store-badge">
+                  <div className="apple-icon"></div>
+                  <span className="store-icon">
+                    <span className="store-prefix">Download on the</span>
+                    <span className="store-name">App Store</span>
+                  </span>
+                </div>
               </a>
               <a href="#" className="google-play-button">
-                <img src="/placeholder.svg?height=40&width=120" alt="Google Play" />
+                <div className="store-badge">
+                  <div className="play-icon">
+                    <div className="play-triangle"></div>
+                  </div>
+                  <span className="store-icon">
+                    <span className="store-prefix">GET IT ON</span>
+                    <span className="store-name">Google Play</span>
+                  </span>
+                </div>
               </a>
             </div>
           </div>
@@ -232,20 +283,29 @@ const Home2: React.FC = () => {
         </div>
         <div className="footer-bottom">
           <div className="footer-legal">
-            <a href="#">Status</a> | <a href="#">Legal</a> | <a href="#">Terms and Conditions</a> |{" "}
-            <a href="#">Privacy Portal</a> | <a href="#">Security</a> | © 2025
+            <a href="#">Status</a>
+            <span>•</span>
+            <a href="#">Legal</a>
+            <span>•</span>
+            <a href="#">Terms and Conditions</a>
+            <span>•</span>
+            <a href="#">Privacy Portal</a>
+            <span>•</span>
+            <a href="#">Security</a>
+            <span>•</span>
+            <span>© 2025 Fashcognitive, Inc. All rights reserved.</span>
           </div>
           <div className="footer-social">
-            <a href="#" className="social-icon">
+            <a href="#" className="social-icon" aria-label="Twitter">
               <img src="/placeholder.svg?height=20&width=20" alt="Twitter" />
             </a>
-            <a href="#" className="social-icon">
+            <a href="#" className="social-icon" aria-label="LinkedIn">
               <img src="/placeholder.svg?height=20&width=20" alt="LinkedIn" />
             </a>
-            <a href="#" className="social-icon">
+            <a href="#" className="social-icon" aria-label="Facebook">
               <img src="/placeholder.svg?height=20&width=20" alt="Facebook" />
             </a>
-            <a href="#" className="social-icon">
+            <a href="#" className="social-icon" aria-label="Instagram">
               <img src="/placeholder.svg?height=20&width=20" alt="Instagram" />
             </a>
           </div>

@@ -5,16 +5,16 @@ import Register from './pages/Register';
 import Home2 from './pages/Home2';
 import Create_template from './pages/Create_template';
 
-// import './App.css';
+// import './App.css';zzz
 
 function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Home2 />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/home2" element={<Home2 />} />
+                <Route path="/homee" element={<Home />} />
                 <Route path="/ct" element={<Create_template />} />
             </Routes>
         </Router>

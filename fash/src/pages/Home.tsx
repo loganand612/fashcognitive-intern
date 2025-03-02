@@ -31,8 +31,8 @@ const App = () => {
           </div>
           <a href="#" className="btn btn-secondary notification-badge">Notifications</a>
           <a href="#" className="btn btn-secondary">Profile</a>
-          <a href="/login" className="btn btn-secondary">Log in</a>
-          <a href="/register" className="btn btn-primary">Sign up for free</a>
+          <a href="#" className="btn btn-secondary">Log in</a>
+          <a href="#" className="btn btn-primary">Sign up for free</a>
         </div>
       </nav>
 
