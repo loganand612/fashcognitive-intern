@@ -1,6 +1,6 @@
 :root {
     --primary-color: #ffffff;
-    --secondary-color: #28a745;
+    --secondary-color: #181b19;
     --text-color: #333;
     --background-color: #fff;
     --border-color: #e9ecef;
@@ -154,7 +154,7 @@ input:focus {
 .login-button {
     width: 100%;
     padding: 1.25rem; /* Larger padding for button */
-    background-color: #37AFE1;
+    background-color: #1a1c1c;
     color: rgb(255, 255, 255);
     border: none;
     border-radius: 0.5rem;
@@ -187,7 +187,7 @@ input:focus {
 }
 
 .signup-button:hover {
-    background: #218838;
+    background: #242524;
     transform: translateY(-2px);
 }
 .font{
