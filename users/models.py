@@ -19,3 +19,12 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = "Custom User"
         verbose_name_plural = "Custom Users"
+        
+class Template(models.Model):
+    name = models.CharField(max_length=255)  # Template name
+    description = models.TextField(blank=True, null=True)  # Optional description
+    created_at = models.DateTimeField(auto_now_add=True)  # Timestamp when created
+    updated_at = models.DateTimeField(auto_now=True)  # Timestamp when modified
+
+    def __str__(self):
+        return self.name

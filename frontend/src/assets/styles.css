@@ -76,7 +76,7 @@ ul {
   gap: 0.6rem; /* Increased gap for larger navbar */
 }
 
-.login-button {
+.login-button1 {
   background: none;
   border: 1px solid #000; /* Black border */
   border-radius: 4px; /* Standard radius for professional look */
@@ -87,12 +87,12 @@ ul {
   transition: all 0.3s ease;
 }
 
-.login-button:hover {
+.login-button1:hover {
   background-color: #000;
   color: #fff; /* White text on hover */
 }
 
-.signup-button {
+.signup-button1 {
   background-color: #000; /* Black button */
   color: #fff; /* White text */
   border: none;
@@ -103,7 +103,7 @@ ul {
   transition: all 0.3s ease;
 }
 
-.signup-button:hover {
+.signup-button1:hover {
   background-color: #333; /* Darker black on hover */
   transform: translateY(-2px);
 }
@@ -252,7 +252,6 @@ ul {
   text-align: center;
   padding: 1.5rem; /* Increased padding for better content spacing */
   transition: all 0.3s ease;
-  border: 2px solid #000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 

@@ -1,5 +1,7 @@
 from rest_framework import serializers # type: ignore
 from django.contrib.auth import get_user_model
+from .models import Template  
+
 
 CustomUser = get_user_model()
 
@@ -16,3 +18,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+    
+class TemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Template
+        fields = "__all__"

@@ -20,8 +20,8 @@ const Home2: React.FC = () => {
         </button>
         <div className="logo">FASHCOGNITIVE</div>
         <div className="auth-buttons">
-          <a href="\login" className="login-button">Log in</a>
-          <a href="\register" className="signup-button">Sign up for free</a>
+          <a href="\login" className="login-button1">Log in</a>
+          <a href="\register" className="signup-button1">Sign up for free</a>
         </div>
       </header>
 
