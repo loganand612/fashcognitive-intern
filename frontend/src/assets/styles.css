@@ -1,411 +1,1264 @@
-/* Reset & Base Styles */
+/* Base styles */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
+}
+
+body {
+  color: #000; /* Black text for contrast */
+  line-height: 1.6; /* Slightly increased line-height for readability */
+  background-color: #fff; /* White background for body */
+  font-size: 1rem; /* Base font size increased for readability */
+}
+
+.home-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+}
+
+/* Header styles */
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 2rem; /* Increased padding for larger navbar */
+  background-color: #fff; /* White background for navbar */
+  position: relative;
+  height: 80px; /* Standard navbar height for a normal website */
+  border-top: 5px solid #1e90ff; /* Teal top border as in reference image */
+  border-bottom: 1px solid #000; /* Black border for navbar */
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: absolute;
+  left: 2rem; /* Adjusted for larger navbar */
+  color: #000; /* Black icon for contrast */
+  font-size: 1.2rem; /* Larger icon size for visibility */
+  transition: all 0.3s ease;
+}
+
+.menu-button:hover {
+  transform: scale(1.1);
+  color: #333; /* Darker black on hover */
+}
+
+.logo {
+  font-weight: 700; /* Increased weight for professionalism */
+  font-size: 1.6rem; /* Increased size for prominence and professionalism */
+  letter-spacing: 1px; /* Slightly increased spacing for modern look */
+  text-align: center;
+  color: #000; /* Black text for contrast */
+  text-transform: uppercase; /* Uppercase for a professional, bold look */
+  font-family: "Segoe UI", sans-serif; /* Clean, professional font */
+}
+
+/* Authentication buttons styled for larger navbar */
+.auth-buttons {
+  position: absolute;
+  right: 2rem; /* Adjusted for larger navbar */
+  display: flex;
+  gap: 0.6rem; /* Increased gap for larger navbar */
+}
+
+.login-button {
+  background: none;
+  border: 1px solid #000; /* Black border */
+  border-radius: 4px; /* Standard radius for professional look */
+  padding: 0.6rem 1rem; /* Increased padding for larger size */
+  cursor: pointer;
+  color: #000; /* Black text */
+  font-size: 1rem; /* Larger text for visibility */
+  transition: all 0.3s ease;
+}
+
+.login-button:hover {
+  background-color: #000;
+  color: #fff; /* White text on hover */
+}
+
+.signup-button {
+  background-color: #000; /* Black button */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 4px; /* Standard radius for professional look */
+  padding: 0.6rem 1rem; /* Increased padding for larger size */
+  cursor: pointer;
+  font-size: 1rem; /* Larger text for visibility */
+  transition: all 0.3s ease;
+}
+
+.signup-button:hover {
+  background-color: #333; /* Darker black on hover */
+  transform: translateY(-2px);
+}
+
+/* Navigation styles */
+.navigation {
+  border-bottom: 1px solid #000; /* Black border for navigation */
+  padding: 0.8rem 2rem; /* Reduced padding for smaller nav links */
+  background-color: #fff; /* White background */
+}
+
+.navigation ul {
+  display: flex;
+  gap: 1.5rem; /* Reduced gap for smaller nav links */
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-item {
+  padding: 0.5rem 1rem; /* Reduced padding for smaller size */
+  font-size: 1.1rem; /* Increased text size for prominence */
+  font-weight: 700; /* Bold for professional look */
+  color: #000; /* Black text for contrast */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-width: 100px; /* Reduced width for smaller nav links */
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative; /* For underline hover effect */
+}
+
+.nav-item:hover {
+  color: #333; /* Darker black on hover */
+}
+
+.nav-item:hover::after {
+  content: "";
+  position: absolute;
+  bottom: -2px; /* Position below the text */
+  left: 0;
+  width: 100%;
+  height: 2px; /* Thickness of underline */
+  background-color: #000; /* Black underline */
+  transition: all 0.3s ease; /* Smooth transition for underline */
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem; /* Slightly larger arrow size */
+  margin-left: 0.3rem; /* Increased margin */
+  color: #000; /* Black text */
+}
+
+/* Hero section styles with background video */
+.hero-section {
+  padding: 0;
+  max-width: 1400px;
+  margin: 0 auto 200px; /* Increased bottom margin for better spacing */
+  position: relative;
+  overflow: visible;
+  height: 550px; /* Increased height for more impact */
+}
+
+.hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures video covers the entire hero area */
+  z-index: 1; /* Behind content */
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2; /* Above video */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Space between text and boxes */
+  height: 100%; /* Full height of hero-section */
+  color: #fff; /* White text for contrast over video */
+  padding: 2rem 0 0 2rem; /* Remove bottom padding to allow precise box positioning */
+}
+
+.hero-title {
+  font-size: 3.5rem; /* Increased for more impact */
+  font-weight: 700;
+  text-align: right; /* Align text to the right */
+  width: 90%; /* Use full width to ensure right alignment */
+  margin-right: 2rem; /* Add right margin for better spacing */
+  line-height: 1.2; /* Adjusted for multi-line readability */
+  color: #ffffff; /* Pure white for better contrast */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); /* Enhanced shadow for better readability over video */
+  background: none; /* Remove background for video */
+  padding: 1rem 0; /* Remove horizontal padding to ensure flush right */
+  border-radius: 0; /* Remove rounded corners for video */
+  opacity: 0; /* Start with fade-out for transition */
+  animation: fadeIn 1.5s ease-in-out forwards, slideIn 1s ease-out forwards; /* Added slide animation */
+  letter-spacing: 1px; /* Slight letter spacing for professional look */
+}
+
+/* Enhanced animations for hero title */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
   }
-  
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f8f9fe;
-    color: #1f2937;
-    line-height: 1.5;
+  to {
+    opacity: 1;
   }
-  
-  /* Layout */
-  .page-wrapper {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
   }
-  
-  .content-wrapper {
-    display: flex;
-    flex: 1;
-    position: relative;
+  to {
+    transform: translateY(0);
   }
-  
-  /* Navigation */
-  .navbar {
-    background: white;
-    height: 64px;
-    padding: 0 2rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-  }
-  
-  .logo {
-    font-weight: bold;
-    font-size: 1.5rem;
-    color: #302d2d;
-    text-decoration: none;
-    transition: all 0.3s ease;
-  }
-  
-  .logo:hover {
-    color: #2563eb;
-  }
-  
-  .nav-links {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
-  
-  /* Buttons */
-  .btn {
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    border: none;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.3s ease;
-  }
-  
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-  
-  .btn-primary:hover {
-    background: #c0ceec;
-  }
-  
-  .btn-secondary {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    color: #4b5563;
-  }
-  
-  .btn-secondary:hover {
-    background: #d2d5da;
-  }
-  
-  /* Language Selector */
-  .language-select {
-    position: relative;
-  }
-  
-  .language-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 1.5rem;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .language-btn:hover {
-    border-color: #3b82f6;
-  }
-  
-  .language-dropdown {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    padding: 0.5rem 0;
-    display: none;
-    min-width: 150px;
-    z-index: 1000;
-  }
-  
-  .language-select:hover .language-dropdown {
-    display: block;
-  }
-  
-  .language-option {
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .language-option:hover {
-    background: #f8f9fe;
-    color: #3b82f6;
-  }
-  
-  /* Notification Badge */
-  .notification-badge {
-    position: relative;
-  }
-  
-  .notification-badge::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 8px;
-    height: 8px;
-    background-color: #ef4444;
-    border-radius: 50%;
-    border: 2px solid white;
-  }
-  
-  /* Sidebar */
-  .sidebar {
-    width: 250px;
-    background: white;
-    height: calc(100vh - 64px);
-    position: fixed;
-    top: 64px;
-    left: 0;
-    padding: 1.5rem 1rem;
-    border-right: 1px solid #e5e7eb;
-    overflow-y: auto;
-    z-index: 100;
-  }
-  
-  .sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    color: #4b5563;
-    text-decoration: none;
-    border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
-    transition: all 0.3s ease;
-  }
-  
-  .sidebar-link:hover {
-    background: #f8f9fe;
-    color: #3b82f6;
-  }
-  
-  .sidebar-link.active {
-    background: #3b82f6;
-    color: white;
-  }
-  
-  /* Main Content */
-  .main-content {
-    margin-left: 250px;
-    margin-top: 64px;
-    padding: 5rem;
-    width: calc(100% - 250px);
-    min-height: calc(100vh - 64px);
-  }
-  
-  .landing-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 4rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .content-left {
-    flex: 1;
-  }
-  
-  .content-left h1 {
-    font-size: 2.5rem;
-    color: #1f2937;
-    margin-bottom: 2rem;
-    line-height: 1.2;
-  }
-  
-  .feature-list {
-    list-style: none;
-  }
-  
-  .feature-list li {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    color: #4b5563;
-  }
-  
-  .feature-list li::before {
-    content: "";
-    width: 20px;
-    height: 20px;
-    background: #3b82f6;
-    border-radius: 50%;
-    opacity: 0.2;
-  }
-  
-  .qr-container {
-    background: white;
-    padding: 1rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-  }
-  
-  .qr-container:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  }
-  
-  .qr-code {
-    width: 100%;
-    max-width: 300px;
-  }
-  
-  /* Footer */
-  .footer {
-    background: white;
-    padding: 5rem 7rem;
-    margin-top: auto;
-    margin-left: 250px;
-  }
-  
-  .footer-content {
-    max-width: 1500px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Feature boxes with improved spacing */
+.feature-boxes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.5rem; /* Increased gap for better separation */
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: absolute;
+  bottom: -100px; /* Adjusted for better positioning */
+  left: 0;
+  right: 0;
+  z-index: 3;
+  padding: 0 2rem;
+}
+
+.feature-box {
+  width: 300px;
+  height: 160px; /* Increased height for better proportion */
+  background-color: #fff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem; /* Increased padding for better content spacing */
+  transition: all 0.3s ease;
+  border: 2px solid #000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.feature-box:hover {
+  transform: translateY(-4px); /* Slightly larger transform for emphasis */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
+  background-color: #f5f5f5; /* Light gray on hover for subtle contrast */
+}
+
+.feature-box-icon {
+  margin-bottom: 1rem; /* Increased spacing below icon */
+  width: 56px; /* Larger size for better visibility */
+  height: 56px; /* Larger size for better visibility */
+  object-fit: contain; /* Ensures the image scales proportionally within the box */
+  color: #000; /* Black icon placeholder text (for fallback) */
+}
+
+.feature-box-icon img {
+  width: 100%; /* Ensure the image fills the container */
+  height: 100%; /* Ensure the image fills the container */
+  object-fit: contain; /* Maintain aspect ratio and fit within the container */
+  filter: grayscale(100%) brightness(0%); /* Ensure black icons for professional look */
+}
+
+.feature-box-text {
+  font-size: 1.1rem; /* Slightly larger for better readability */
+  font-weight: 600; /* Semi-bold for professional look */
+  color: #000; /* Black text */
+  line-height: 1.4; /* Improved readability */
+  letter-spacing: 0.5px; /* Slight letter spacing for professional look */
+}
+
+/* Reports section with better spacing */
+.reports-section {
+  background-color: #f8f9fa;
+  padding: 8rem 2rem 6rem; /* Increased padding for better section spacing */
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #000;
+  position: relative;
+  z-index: 2;
+}
+
+.reports-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem; /* Reduced gap for professionalism */
+  align-items: center;
+}
+
+.reports-images {
+  display: flex;
+  position: relative;
+}
+
+.mobile-report-image {
+  width: 150px; /* Increased for better visibility */
+  height: 300px; /* Increased for better visibility */
+  background-color: #fff; /* White background for mockup */
+  border-radius: 18px; /* Slightly reduced radius */
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Reduced shadow for professionalism */
+  transition: all 0.3s ease;
+}
+
+.mobile-report-image:hover {
+  transform: translateY(-3px); /* Reduced transform for subtlety */
+}
+
+.report-mockup {
+  padding: 0.8rem; /* Reduced padding for professionalism */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Dashboard chart styling for mobile report */
+.dashboard-chart {
+  flex: 1;
+  width: 90%;
+  margin: 0 auto;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.chart-placeholder {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 110px;
+  padding-bottom: 4px;
+}
+
+.chart-bar {
+  width: 18%;
+  background: #000;
+  border-radius: 3px 3px 0 0;
+}
+
+.chart-bar-1 {
+  height: 60%;
+  background: #4a86e8;
+}
+
+.chart-bar-2 {
+  height: 85%;
+  background: #6aa84f;
+}
+
+.chart-bar-3 {
+  height: 45%;
+  background: #e06666;
+}
+
+.chart-bar-4 {
+  height: 70%;
+  background: #f1c232;
+}
+
+/* Desktop dashboard styling */
+.desktop-dashboard {
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  background-color: #fff;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.chart-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+}
+
+.legend-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-item.passing::before {
+  background-color: #6aa84f;
+}
+
+.legend-item.failing::before {
+  background-color: #e06666;
+}
+
+.chart-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-area {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.pie-chart {
+  width: 70px;
+  height: 70px;
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.pie-segment {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.segment-1 {
+  background-color: #6aa84f;
+  clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%, 50% 0%);
+  transform-origin: left center;
+}
+
+.segment-2 {
+  background-color: #e06666;
+  width: 50%;
+  left: 0;
+}
+
+.data-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metric {
+  text-align: center;
+}
+
+.metric-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: #333;
+}
+
+.metric-label {
+  font-size: 10px;
+  color: #777;
+}
+
+.report-header {
+  padding: 0.8rem 0; /* Reduced padding */
+}
+
+.report-title {
+  font-weight: 600; /* Slightly reduced weight for professionalism */
+  font-size: 1.2rem; /* Increased for readability */
+  line-height: 1.3; /* Increased for readability */
+  color: #000; /* Black text */
+}
+
+.purple-button {
+  background-color: #000; /* Black button for professional look */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 4px; /* Standard radius for professional look */
+  padding: 0.5rem 1rem; /* Increased padding for readability */
+  margin-bottom: 0.8rem; /* Reduced margin */
+  width: 80%; /* Slightly increased width */
+  align-self: center;
+  cursor: pointer;
+  font-size: 1rem; /* Increased for readability */
+  transition: all 0.3s ease;
+}
+
+.purple-button:hover {
+  background-color: #333; /* Darker black on hover */
+  transform: translateY(-2px);
+}
+
+.desktop-report-image {
+  width: 300px; /* Increased for better visibility */
+  height: 200px; /* Increased for better visibility */
+  background-color: #fff; /* White background */
+  border-radius: 6px; /* Smaller radius */
+  position: absolute;
+  left: 100px; /* Adjusted position for larger size */
+  top: 50px; /* Adjusted position for larger size */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Reduced shadow */
+  transition: all 0.3s ease;
+}
+
+.desktop-report-image:hover {
+  transform: translateY(-3px); /* Reduced transform for subtlety */
+}
+
+.share-button {
+  position: absolute;
+  bottom: -12px; /* Adjusted for larger size */
+  right: 15px; /* Adjusted for larger size */
+  background-color: #fff; /* White background */
+  border-radius: 18px; /* Slightly reduced radius */
+  padding: 0.5rem 1rem; /* Increased padding for readability */
+  display: flex;
+  align-items: center;
+  gap: 0.4rem; /* Reduced gap */
+  font-size: 0.9rem; /* Increased for readability */
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1); /* Reduced shadow */
+  color: #000; /* Black text */
+  transition: all 0.3s ease;
+}
+
+.share-button:hover {
+  transform: translateY(-2px);
+  background-color: #f8f9fa;
+  color: #333; /* Darker text on hover */
+}
+
+.reports-text {
+  padding: 1.5rem; /* Reduced padding for professionalism */
+}
+
+.reports-badge {
+  display: inline-block;
+  background-color: #fff; /* White background */
+  border-radius: 18px; /* Slightly reduced radius */
+  padding: 0.3rem 0.8rem; /* Increased padding for readability */
+  font-size: 0.9rem; /* Increased for readability */
+  margin-bottom: 1rem;
+  color: #000; /* Black text */
+}
+
+.reports-title {
+  font-size: 2rem; /* Increased for readability */
+  font-weight: 600; /* Slightly reduced weight */
+  margin-bottom: 1rem;
+  color: #000; /* Black text */
+}
+
+.reports-description {
+  color: #555; /* Dark gray text for contrast */
+  line-height: 1.6;
+  font-size: 1.1rem; /* Increased for readability */
+}
+
+/* App download section with better spacing */
+.app-download-section {
+  padding: 4rem 2rem; /* Reduced padding */
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #fff;
+  color: #000;
+}
+
+.app-download-content {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr; /* Adjusted column ratio for better space usage */
+  gap: 2rem; /* Reduced gap */
+  align-items: center; /* Center align items vertically */
+}
+
+.app-download-text {
+  display: flex;
+  flex-direction: column;
+  padding-right: 1rem; /* Add some padding to the right */
+}
+
+.app-download-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #000;
+}
+
+.app-features-list {
+  margin-bottom: 2rem; /* Increase space between list and buttons */
+}
+
+.app-feature {
+  margin-bottom: 0.8rem;
+  padding-left: 1.2rem;
+  position: relative;
+  color: #555;
+  font-size: 1rem;
+}
+
+.app-feature::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  background-color: #000;
+  border-radius: 50%;
+}
+
+.app-store-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* Improved store badge styling to look more like real app store buttons */
+.store-badge {
+  width: 160px; /* Increased width */
+  height: 50px;
+  background-color: #000000;
+  color: #ffffff;
+  border-radius: 8px; /* Slightly more rounded */
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.store-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Apple store specific styling */
+.app-store-button .store-badge {
+  background: linear-gradient(to bottom, #1a1a1a, #000000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.store-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0;
+}
+
+.store-prefix {
+  font-size: 10px;
+  font-weight: 300;
+  margin-bottom: 2px;
+  text-transform: none;
+  letter-spacing: 0.2px;
+}
+
+.store-name {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* QR code container with better alignment */
+.qr-code-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  max-width: 400px; /* Set max-width to constrain size */
+  margin: 0 auto; /* Center the container */
+}
+
+.qr-code {
+  width: 380px; /* Reduced size */
+  height: 380px; /* Reduced size */
+  background-color: white;
+  border-radius: 16px; /* Added rounded corners */
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Added subtle shadow */
+  margin: 0 auto; /* Center the QR code */
+}
+
+.qr-code img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background-color: #fff;
+  border-radius: 8px; /* Slightly rounded */
+}
+
+/* Apple icon styling for app store button */
+.apple-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  background: transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apple-icon::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 22px;
+  background: #fff;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z'/%3E%3C/svg%3E") no-repeat center center;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z'/%3E%3C/svg%3E") no-repeat center center;
+  mask-size: contain;
+  -webkit-mask-size: contain;
+}
+
+/* Google Play icon styling */
+.play-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-triangle {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 0 8px 14px;
+  border-color: transparent transparent transparent #ffffff;
+  position: relative;
+  left: 2px;
+}
+
+/* Google Play store specific styling */
+.google-play-button .store-badge {
+  background: linear-gradient(to bottom, #1f1f1f, #000000);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 10px;
+}
+
+/* Remove company logo since we don't need it */
+.company-logo-large {
+  display: none;
+}
+
+/* CTA section with better spacing */
+.cta-section {
+  padding: 6rem 2rem; /* Increased padding for better section separation */
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  background-color: #fff;
+  color: #000;
+}
+
+.cta-title {
+  font-size: 2.2rem; /* Slightly larger for more impact */
+  font-weight: 600;
+  margin-bottom: 2.5rem; /* Increased margin for better button spacing */
+  line-height: 1.3;
+  color: #000;
+}
+
+.cta-button {
+  background-color: #000; /* Black button for professional look */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 20px; /* Slightly reduced radius */
+  padding: 0.7rem 1.8rem; /* Increased padding for readability */
+  font-weight: 600; /* Slightly reduced weight */
+  cursor: pointer;
+  font-size: 1rem; /* Increased for readability */
+  transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+  background-color: #333; /* Darker black on hover */
+  transform: scale(1.05);
+}
+
+/* Footer styles */
+.footer {
+  padding: 5rem 2rem 3rem; /* Increased padding for better section spacing */
+  background-color: #fff;
+  border-top: 1px solid #000;
+  color: #000;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.footer-columns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3rem; /* Increased gap for better column separation */
+  margin-bottom: 3rem; /* Increased margin */
+  max-width: 1200px; /* Added max-width for consistency */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.footer-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.footer-heading {
+  font-size: 1.1rem;
+  color: #000;
+  margin-bottom: 2rem; /* Increased spacing */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative; /* For underline effect */
+}
+
+.footer-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -10px;
+  width: 40px;
+  height: 2px;
+  background-color: #000;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.footer-links li {
+  margin-bottom: 1.2rem; /* Increased spacing between links */
+}
+
+.footer-links a {
+  color: #555;
+  font-size: 1rem; /* Slightly increased size */
+  transition: all 0.3s ease;
+  text-decoration: none;
+  padding-bottom: 2px; /* For hover underline */
+  border-bottom: 1px solid transparent; /* For hover underline */
+}
+
+.footer-links a:hover {
+  color: #000;
+  border-bottom: 1px solid #000; /* Underline effect on hover */
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 2rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.footer-legal {
+  color: #777;
+  font-size: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.3rem;
+}
+
+.footer-legal a {
+  color: #555;
+  margin: 0 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.footer-legal a:hover {
+  color: #000;
+}
+
+.footer-social {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.social-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  background-color: #f5f5f5;
+  border-radius: 50%;
+  padding: 6px;
+}
+
+.social-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.social-icon:hover {
+  transform: translateY(-2px);
+  background-color: #e0e0e0;
+}
+
+/* Responsive styles for footer */
+@media (max-width: 992px) {
+  .footer-columns {
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
   }
-  
-  .footer-section h3 {
-    color: #3b82f6;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-  }
-  
-  .footer-section ul {
-    list-style: none;
-  }
-  
-  .footer-section ul li {
-    margin-bottom: 0.5rem;
-  }
-  
-  .footer-section ul li a {
-    color: #4b5563;
-    text-decoration: none;
-    transition: all 0.3s ease;
-  }
-  
-  .footer-section ul li a:hover {
-    color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 3rem 1.5rem 1.5rem;
   }
   
   .footer-bottom {
-    max-width: 1200px;
-    margin: 2rem auto 0;
-    padding-top: 6rem;
-    border-top: 1px solid #e5e7eb;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .footer-legal {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .footer-columns {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .footer {
+    padding: 3rem 1.5rem 1.5rem;
+  }
+  
+  .footer-bottom {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+  
+  .footer-social {
+    align-self: center;
+  }
+
+  .qr-code {
+    width: 300px; /* Increased from 200px for mobile view */
+    height: 300px; /* Increased from 200px for mobile view */
+  }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 992px) {
+  .reports-content,
+  .app-download-content {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-boxes {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .hero-section {
+    height: 480px;
+    margin-bottom: 260px; /* Adjusted for mobile stacking */
+  }
+
+  .hero-title {
+    font-size: 2.8rem;
+    margin-right: 1.5rem;
+  }
+
+  .feature-box {
+    width: 100%;
+    height: 140px;
+  }
+
+  .footer-columns {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .navigation ul {
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .menu-button {
+    left: 1rem;
+  }
+
+  .auth-buttons {
+    right: 1rem;
+  }
+
+  .hero-section {
+    height: 420px;
+    margin-bottom: 400px; /* Adjusted for mobile stacking */
+  }
+
+  .feature-boxes {
+    grid-template-columns: repeat(1, 1fr);
+    bottom: -370px;
+    max-width: 350px;
+    gap: 1.5rem; /* Less gap for mobile */
+  }
+
+  .feature-box {
+    height: 120px;
+  }
+
+  .reports-section {
+    padding-top: 6rem;  /* Adjusted for mobile spacing */
+  }
+
+  .footer-columns {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: center;
     text-align: center;
   }
-  
-  .store-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
+
+  .footer-social {
     margin-top: 1rem;
   }
-  
-  .store-buttons img {
-    height: 40px;
-    transition: all 0.3s ease;
+
+  .footer-legal {
+    justify-content: center;
   }
-  
-  .store-buttons img:hover {
-    transform: translateY(-2px);
+
+  .qr-code {
+    width: 350px; /* Better size for tablet devices */
+    height: 350px;
   }
-  
-  /* Mobile Menu Button */
-  .mobile-menu-btn {
+}
+
+@media (max-width: 576px) {
+  .header {
+    padding: 0.8rem 1rem;
+    height: 60px;
+  }
+
+  .auth-buttons {
     display: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    background: none;
-    border: none;
   }
   
-  /* Responsive Design */
-  @media (max-width: 1024px) {
-    .sidebar {
-        width: 200px;
-    }
-  
-    .main-content {
-        margin-left: 200px;
-        width: calc(100% - 200px);
-    }
-  
-    .footer {
-        margin-left: 200px;
-    }
+  .hero-section {
+    height: 350px;
+    margin-bottom: 380px; /* Added for consistent spacing on small screens */
+  }
+
+  .hero-title {
+    font-size: 2rem;
+    text-align: center;
+    margin-right: 0;
+    width: 100%;
+    padding: 1rem 1rem;
+  }
+
+  .feature-boxes {
+    bottom: -350px;
+    padding: 0 1rem;
+  }
+
+  .reports-title,
+  .app-download-title,
+  .cta-title {
+    font-size: 1.5rem;
+  }
+
+  .nav-item {
+    min-width: 90px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .mobile-report-image {
+    width: 120px;
+    height: 240px;
+  }
+
+  .desktop-report-image {
+    width: 220px;
+    height: 160px;
+    left: 80px;
+  }
+
+  .qr-code {
+    width: 300px; /* Increased from 200px for mobile view */
+    height: 300px; /* Increased from 200px for mobile view */
+  }
+}
+
+/* Force QR code to be contained in its area without excess margin */
+@media (max-width: 992px) {
+  .app-download-content {
+    grid-template-columns: 1fr; /* Stack on mobile */
   }
   
-  @media (max-width: 768px) {
-    .navbar {
-        padding: 0 1rem;
-    }
-  
-    .mobile-menu-btn {
-        display: block;
-    }
-  
-    .nav-links {
-        display: none;
-    }
-  
-    .nav-links.active {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 64px;
-        left: 0;
-        right: 0;
-        background: white;
-        padding: 1rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-  
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-    }
-  
-    .sidebar.active {
-        transform: translateX(0);
-    }
-  
-    .main-content,
-    .footer {
-        margin-left: 0;
-        width: 100%;
-    }
-  
-    .landing-content {
-        flex-direction: column;
-        text-align: center;
-        padding: 1rem;
-    }
-  
-    .content-left h1 {
-        font-size: 2rem;
-    }
-  
-    .footer-content {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .qr-code-container {
+    margin-top: 2rem;
   }
   
-  @media (max-width: 480px) {
-    .footer-content {
-        grid-template-columns: 1fr;
-    }
+  .qr-code {
+    width: 320px;
+    height: 320px;
+    margin: 0 auto;
   }
+}
+
+@media (max-width: 768px) {
+  .qr-code {
+    width: 300px;
+    height: 300px;
+  }
+}
+
+/* Mobile responsive adjustments for reports section */
+@media (max-width: 992px) {
+  .mobile-report-image {
+    width: 160px; /* Slightly increased for better report visualization */
+    height: 320px;
+  }
+  
+  .desktop-report-image {
+    width: 300px; /* Slightly increased for dashboard visibility */
+    height: 180px;
+    left: 120px;
+    top: 60px;
+  }
+  
+  .chart-placeholder {
+    height: 100px;
+  }
+  
+  .pie-chart {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .metric-value {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-report-image {
+    width: 150px;
+    height: 300px;
+    margin: 0 auto; /* Center for tablet view */
+  }
+  
+  .desktop-report-image {
+    width: 260px;
+    height: 160px;
+    left: 100px;
+    position: relative; /* Make positioning more reliable on tablets */
+    margin: 20px auto 0; /* Better spacing on tablet */
+    display: block;
+  }
+}
+
+@media (max-width: 576px) {
+  .mobile-report-image {
+    width: 140px;
+    height: 280px;
+  }
+  
+  .desktop-report-image {
+    width: 220px;
+    height: 140px;
+    left: 0;
+    margin: 20px auto 0;
+  }
+  
+  .chart-placeholder {
+    height: 80px;
+  }
+  
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .pie-chart {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .data-metrics {
+    gap: 5px;
+  }
+  
+  .metric-value {
+    font-size: 12px;
+  }
+  
+  .metric-label {
+    font-size: 8px;
+  }
+}
