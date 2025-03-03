@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
 import {
   ChevronDown,
   ChevronUp,
