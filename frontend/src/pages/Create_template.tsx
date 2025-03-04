@@ -1,4 +1,5 @@
 "use client"
+import axios from "axios"; 
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
@@ -65,6 +66,7 @@ type Template = {
 
 // Helper functions
 const generateId = () => Math.random().toString(36).substring(2, 9)
+
 
 const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
   id: generateId(),
@@ -156,6 +158,23 @@ const Create_template = () => {
   // Refs
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+
+  const [templateData, setTemplateData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+      axios.get("http://127.0.0.1:8000/api/create_templates/")
+          .then((response) => {
+              setTemplateData(response.data);
+              setLoading(false);
+          })
+          .catch((err) => {
+              console.error("Error fetching templates:", err);
+              setError("Failed to load template data.");
+              setLoading(false);
+          });
+  }, []);
 
   // Save template to localStorage
   useEffect(() => {
@@ -1280,58 +1299,68 @@ const Create_template = () => {
   return (
     <div className="template-builder">
       <div className="builder-content">
-        <div className="template-content max-w-4xl mx-auto">
-          <div className="template-header">
-            <div className="template-logo">
-              {template.logo ? (
-                <img
-                  src={template.logo || "/placeholder.svg"}
-                  alt="Template logo"
-                  className="logo-image"
-                  onClick={() => document.getElementById("logo-upload")?.click()}
+        
+        {/* ✅ Show loading spinner while fetching data */}
+        {loading && <p>Loading templates...</p>}
+
+        {/* ✅ Show error message if API call fails */}
+        {error && <p style={{ color: "red" }}>{error}</p>}
+
+        {/* ✅ Show template data once loaded */}
+        {!loading && !error && template && (
+          <div className="template-content max-w-4xl mx-auto">
+            <div className="template-header">
+              <div className="template-logo">
+                {template.logo ? (
+                  <img
+                    src={template.logo || "/placeholder.svg"}
+                    alt="Template logo"
+                    className="logo-image"
+                    onClick={() => document.getElementById("logo-upload")?.click()}
+                  />
+                ) : (
+                  <div className="logo-placeholder" onClick={() => document.getElementById("logo-upload")?.click()}>
+                    <Plus size={24} />
+                  </div>
+                )}
+                <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
+              </div>
+              <div className="template-info">
+                <input
+                  type="text"
+                  className="template-title"
+                  value={template.title}
+                  onChange={(e) => updateTemplateTitle(e.target.value)}
+                  placeholder="Untitled template"
                 />
-              ) : (
-                <div className="logo-placeholder" onClick={() => document.getElementById("logo-upload")?.click()}>
-                  <Plus size={24} />
-                </div>
-              )}
-              <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
+                <input
+                  type="text"
+                  className="template-description"
+                  value={template.description}
+                  onChange={(e) => updateTemplateDescription(e.target.value)}
+                  placeholder="Add a description"
+                />
+              </div>
             </div>
-            <div className="template-info">
-              <input
-                type="text"
-                className="template-title"
-                value={template.title}
-                onChange={(e) => updateTemplateTitle(e.target.value)}
-                placeholder="Untitled template"
-              />
-              <input
-                type="text"
-                className="template-description"
-                value={template.description}
-                onChange={(e) => updateTemplateDescription(e.target.value)}
-                placeholder="Add a description"
-              />
+            
+            <div className="sections-container">
+              {template.sections.map((section, idx) => renderSection(section, idx))}
             </div>
+
+            <div className="add-section-container">
+              <button className="add-section-button" onClick={addSection}>
+                <Plus size={16} /> Add Section
+              </button>
+            </div>
+
+            <div className="template-footer"></div>
           </div>
-          <div className="sections-container">
-            {template.sections.map((section, idx) => renderSection(section, idx))}
-          </div>
-          
-          <div className="add-section-container">
-            <button className="add-section-button" onClick={addSection}>
-              <Plus size={16} /> Add Section
-            </button>
-          </div>
-          
-          <div className="template-footer"></div>
-        </div>
+        )}
 
         {renderMobilePreview()}
       </div>
     </div>
   );
 }
-
 export default Create_template;
 

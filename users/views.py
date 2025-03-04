@@ -8,6 +8,8 @@ from django.http import JsonResponse
 from .serializers import UserRegistrationSerializer, TemplateSerializer
 from .models import Template
 import json
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
 class RegisterUserView(APIView):
     permission_classes = [AllowAny]  # Allow anyone to register
@@ -51,3 +53,25 @@ def templates_api(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+@method_decorator(login_required, name='dispatch')  # Requires login
+class DashboardAPI(APIView):
+    def get(self, request):
+        data = {
+            "templates_created": 24,
+            "inspections_completed": "18/25",
+            "open_issues": 3,
+            "recent_activity": [
+                {"id": 1, "title": "Safety Inspection", "type": "Template", "date": "2024-03-01", "status": "Completed"},
+                {"id": 2, "title": "Monthly Equipment Check", "type": "Inspection", "date": "2024-02-28", "status": "In Progress"}
+            ]
+        }
+        return Response(data)
+    
+class TemplateAPI(APIView):
+    def get(self, request):
+        templates = Template.objects.all()
+        serializer = TemplateSerializer(templates, many=True)
+        return Response(serializer.data)
