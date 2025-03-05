@@ -75,3 +75,5 @@ class TemplateAPI(APIView):
         templates = Template.objects.all()
         serializer = TemplateSerializer(templates, many=True)
         return Response(serializer.data)
+    
+

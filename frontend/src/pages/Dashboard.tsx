@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const [userCount, setUserCount] = useState(2); 
 
   useEffect(() => {
-      axios.get("http://127.0.0.1:8000/api/dashboard/", { withCredentials: true })
+      axios.get("http://127.0.0.1:8000/api/users/dashboard/", { withCredentials: true })
 
       .then((response) => {
         setDashboardData(response.data);
