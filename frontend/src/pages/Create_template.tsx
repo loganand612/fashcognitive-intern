@@ -164,16 +164,19 @@ const Create_template = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-      axios.get("http://127.0.0.1:8000/api/users/create_templates/")
-          .then((response) => {
-              setTemplateData(response.data);
-              setLoading(false);
-          })
-          .catch((err) => {
-              console.error("Error fetching templates:", err);
-              setError("Failed to load template data.");
-              setLoading(false);
-          });
+    const fetchTemplates = async () => {
+      try {
+        const response = await axios.get("http://127.0.0.1:8000/api/users/create_templates/");
+        setTemplateData(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching templates:", err);
+        setError(err instanceof Error ? err.message : "Failed to load template data");
+        setLoading(false);
+      }
+    };
+  
+    fetchTemplates();
   }, []);
 
   // Save template to localStorage

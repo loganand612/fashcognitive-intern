@@ -175,4 +175,14 @@ LOGOUT_REDIRECT_URL = "/login/"  # Redirects users to login after logout
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Your React app URL
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
 ]
