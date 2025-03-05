@@ -32,7 +32,7 @@ const TemplatePage: React.FC = () => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { icon: Home, label: "Home", href: "/" },
+    { icon: Home, label: "Home", href: "/dashboard" },
     { icon: Search, label: "Search", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: FileText, label: "Templates", href: "/templates", active: true },
@@ -62,7 +62,7 @@ const TemplatePage: React.FC = () => {
     const fetchTemplates = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://127.0.0.1:8000/api/templates/");
+        const response = await fetch("http://127.0.0.1:8000/api/users/templates/");
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }

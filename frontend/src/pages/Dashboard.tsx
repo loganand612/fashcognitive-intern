@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const [userCount, setUserCount] = useState(2); 
 
   useEffect(() => {
-      axios.get("http://127.0.0.1:8000/api/dashboard/", { withCredentials: true })
+      axios.get("http://127.0.0.1:8000/api/users/dashboard/", { withCredentials: true })
 
       .then((response) => {
         setDashboardData(response.data);
@@ -27,7 +27,7 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const menuItems = [
-    { icon: Home, label: "Home", href: "/" },
+    { icon: Home, label: "Home", href: "/dashboard" },
     { icon: Search, label: "Search", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: FileText, label: "Templates", href: "/templates" },

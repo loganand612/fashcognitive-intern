@@ -164,7 +164,7 @@ const Create_template = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-      axios.get("http://127.0.0.1:8000/api/create_templates")
+      axios.get("http://127.0.0.1:8000/api/users/create_templates/")
           .then((response) => {
               setTemplateData(response.data);
               setLoading(false);
