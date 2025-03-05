@@ -26,7 +26,7 @@ const Login: React.FC = () => {
                 const data = await response.json();
                 console.log("Login successful:", data);
                 setError("");
-                navigate("/create_templates");
+                navigate("/dashboard");
             } else {
                 const errorData = await response.json();
                 setError(errorData.error || "Invalid credentials");
