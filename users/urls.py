@@ -7,5 +7,5 @@ urlpatterns = [
     path('register/', RegisterUserView.as_view(), name='register'),
     path("api/dashboard/", DashboardAPI.as_view(), name="dashboard_api"),
     path("api/create_templates/", templates_api, name="create_templates"),
-    path("api/templates/", TemplateAPI.as_view(), name="template_api"),
+    path("api/templates/", TemplateAPI.as_view(), name="templates_api"),
 ]

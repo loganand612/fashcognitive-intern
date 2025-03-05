@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import React from 'react';
 import '../assets/Template.css';
 import { 
@@ -20,7 +20,17 @@ import {
   Settings
 } from 'lucide-react';
 
+interface Template {
+  id: number;
+  title: string;
+  lastModified: string;
+  access: string;
+}
+
 const TemplatePage: React.FC = () => {
+
+  const navigate = useNavigate();
+
   const menuItems = [
     { icon: Home, label: "Home", href: "/" },
     { icon: Search, label: "Search", href: "/search" },
@@ -34,27 +44,39 @@ const TemplatePage: React.FC = () => {
     { icon: AlertCircle, label: "Issues", href: "/issues" },
   ];
 
-  const template = [
+  const [templates, setTemplates] = useState<Template[]>([
     { id: 1, title: 'Safety Inspection Form', lastModified: '2 days ago', access: 'All users' },
     { id: 2, title: 'Equipment Checklist', lastModified: '3 days ago', access: 'Team only' },
     { id: 3, title: 'Incident Report Template', lastModified: '1 week ago', access: 'All users' },
-  ];
-
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  ]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const handleCreateTemplate = () => {
+    // Navigate to the create templates page
+    navigate('/create_templates');
+  };
+
+
   useEffect(() => {
-      axios.get("http://127.0.0.1:8000/api/templates/")
-          .then(response => {
-              setTemplates(response.data);
-              setLoading(false);
-          })
-          .catch(error => {
-              console.error("Error fetching templates:", error);
-              setError("Failed to load templates.");
-              setLoading(false);
-          });
+    const fetchTemplates = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://127.0.0.1:8000/api/templates/");
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setTemplates(data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching templates:", error);
+        setError("Failed to load templates.");
+        setLoading(false);
+      }
+    };
+
+    fetchTemplates();
   }, []);
 
   return (
@@ -136,72 +158,79 @@ const TemplatePage: React.FC = () => {
                   (1 - {templates.length} of {templates.length})
                 </span>
               </h2>
-              <button className="create-button">
+              <button className="create-button"
+              onClick={handleCreateTemplate}
+              >
                 <Plus size={16} />
                 Create
               </button>
             </div>
 
-            {/* ✅ Show loading, error, or templates dynamically */}
-            {loading ? (
-              <p>Loading templates...</p>
-            ) : error ? (
-              <p style={{ color: "red" }}>{error}</p>
-            ) : templates.length > 0 ? (
-              <div className="templates-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th className="checkbox-column">
-                        <input type="checkbox" />
-                      </th>
-                      <th>Template</th>
-                      <th>Last modified</th>
-                      <th>Access</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {templates.map((template: any) => (
-                      <tr key={template.id}>
-                        <td className="checkbox-column">
-                          <input type="checkbox" />
-                        </td>
-                        <td>
-                          <div className="template-cell">
-                            <div className="template-icon">
-                              <FileText size={20} />
-                            </div>
-                            <span>{template.title}</span>
-                          </div>
-                        </td>
-                        <td>{template.last_modified || "N/A"}</td>
-                        <td>
-                          <div className="access-badge">
-                            <User size={16} />
-                            <span>{template.access || "All users"}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <button className="start-inspection">Start inspection</button>
-                            <button className="more-options">
-                              <MoreHorizontal size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="search-controls">
+              <div className="search-field">
+                <Search className="search-icon" size={20} />
+                <input type="text" placeholder="Search all templates" />
               </div>
-            ) : (
-              <p>No templates found.</p>
-            )}
+              <button className="filter-button">
+                <Plus size={16} />
+                Add filter
+              </button>
+            </div>
+
+            <div className="templates-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="checkbox-column">
+                      <input type="checkbox" />
+                    </th>
+                    <th>Template</th>
+                    <th>Last modified</th>
+                    <th>Access</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {templates.map(template => (
+                    <tr key={template.id}>
+                      <td className="checkbox-column">
+                        <input type="checkbox" />
+                      </td>
+                      <td>
+                        <div className="template-cell">
+                          <div className="template-icon">
+                            <FileText size={20} />
+                          </div>
+                          <span>{template.title}</span>
+                        </div>
+                      </td>
+                      <td>{template.lastModified}</td>
+                      <td>
+                        <div className="access-badge">
+                          <User size={16} />
+                          <span>{template.access}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          <button className="start-inspection">
+                            Start inspection
+                          </button>
+                          <button className="more-options">
+                            <MoreHorizontal size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
       </div>
     </div>
   );
 };
+
 export default TemplatePage;

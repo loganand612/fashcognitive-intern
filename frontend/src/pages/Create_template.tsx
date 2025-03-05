@@ -3,7 +3,7 @@ import axios from "axios";
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
+import "../assets/Create_template.css"
 import {
   ChevronDown,
   ChevronUp,
@@ -164,7 +164,7 @@ const Create_template = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-      axios.get("http://127.0.0.1:8000/api/create_templates/")
+      axios.get("http://127.0.0.1:8000/api/create_templates")
           .then((response) => {
               setTemplateData(response.data);
               setLoading(false);
