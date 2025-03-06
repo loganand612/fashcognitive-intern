@@ -89,7 +89,7 @@ const TemplatePage: React.FC = () => {
             </div>
             
             <div className="creation-options">
-              <div className="option-card">
+              <div className="option-card" >
                 <div className="option-icon">
                   <Plus size={24} />
                 </div>
@@ -116,10 +116,10 @@ const TemplatePage: React.FC = () => {
           <section className="templates-section">
             <div className="templates-header">
               <h2>Templates <span className="count">(1 - {templates.length} of {templates.length})</span></h2>
-              <button className="create-button">
-                <Plus size={16} />
-                Create
-              </button>
+              <a href="/ct" className="create-button">
+              <Plus size={16} />
+              Create
+            </a>
             </div>
 
             <div className="search-controls">

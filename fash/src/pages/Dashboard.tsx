@@ -20,10 +20,10 @@ const Dashboard: React.FC = () => {
   const [userCount, setUserCount] = useState(7); // Initial count of 7 (2 visible + 5 more)
 
   const menuItems = [
-    { icon: Home, label: "Home", href: "/" },
+    { icon: Home, label: "Home", href: "/dashboard" },
     { icon: Search, label: "Search", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
-    { icon: FileText, label: "Templates", href: "/templates" },
+    { icon: FileText, label: "Templates", href: "/template" },
     { icon: ClipboardCheck, label: "Inspections", href: "/inspections" },
     { icon: Calendar, label: "Schedule", href: "/schedule" },
     { icon: Play, label: "Actions", href: "/actions" },

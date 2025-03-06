@@ -156,7 +156,8 @@
 }
 
 .submit-btn {
-    width: 100%;
+    width: 100%; /* Make it take full width of its container */
+    max-width: 400px; /* Set a maximum width */
     padding: 1rem;
     background: #1a1a1a;
     color: white;
@@ -166,8 +167,11 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-bottom: 1.5rem;
+    margin: 1.5rem auto 0; /* Center the button */
+    display: block; /* Ensure it takes up full width */
+    text-align: center;
 }
+
 
 .submit-btn:hover {
     background: #333;

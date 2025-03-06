@@ -64,11 +64,7 @@ const Login: React.FC = () => {
                                 Forgot Password?
                             </Link>
                         </div>
-
-                        <button type="submit" className="submit-btn">
-                            Sign In
-                        </button>
-
+                        <a href="/dashboard" className="submit-btn">Sign In</a>
                         <p className="signup-link">
                             Don't have an account? <Link to="/register">Sign up</Link>
                         </p>

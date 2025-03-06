@@ -18,6 +18,8 @@ import {
   Move,
   ExternalLink,
   Clock,
+  ArrowLeft,
+  Save,
 } from "lucide-react"
 
 // Types
@@ -60,7 +62,7 @@ type Template = {
   sections: Section[]
   lastSaved?: Date
   lastPublished?: Date
-  logo?: string // Add this line
+  logo?: string
 }
 
 // Helper functions
@@ -94,39 +96,30 @@ const getInitialTemplate = (): Template => {
         text: "Site conducted",
         responseType: "Site",
         required: true,
-        value: "amazon",
+        value: null,
       },
       {
         id: generateId(),
         text: "Conducted on",
         responseType: "Inspection date",
-        required: false,
+        required: true,
         value: null,
       },
       {
         id: generateId(),
         text: "Prepared by",
         responseType: "Person",
-        required: false,
+        required: true,
         value: null,
       },
       {
         id: generateId(),
         text: "Location",
         responseType: "Inspection location",
-        required: false,
+        required: true,
         value: null,
       },
     ],
-    isCollapsed: false,
-  }
-
-  const untitledSection: Section = {
-    id: generateId(),
-    title: "Untitled Page",
-    description:
-      'This is where you add your inspection questions and how you want them answered. E.g. "Is the floor clean?"',
-    questions: [],
     isCollapsed: false,
   }
 
@@ -134,7 +127,7 @@ const getInitialTemplate = (): Template => {
     id: generateId(),
     title: "Untitled template",
     description: "Add a description",
-    sections: [titlePageSection, untitledSection],
+    sections: [titlePageSection],
     lastSaved: new Date(),
     lastPublished: new Date(),
     logo: undefined,
@@ -150,43 +143,20 @@ const Create_template = () => {
   const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
-  const [allChangesSaved, setAllChangesSaved] = useState<boolean>(true)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
 
   // Refs
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  // Save template to localStorage
+  // Remove localStorage save effect
   useEffect(() => {
-    const saveTimer = setTimeout(() => {
-      localStorage.setItem("safetyTemplate", JSON.stringify(template))
-      setAllChangesSaved(true)
-      setTemplate((prev) => ({
-        ...prev,
-        lastSaved: new Date(),
-      }))
-    }, 1000)
-
-    return () => clearTimeout(saveTimer)
+    // No longer save to localStorage
   }, [template])
 
-  // Load template from localStorage
+  // Remove localStorage load effect
   useEffect(() => {
-    const savedTemplate = localStorage.getItem("safetyTemplate")
-    if (savedTemplate) {
-      try {
-        const parsed = JSON.parse(savedTemplate)
-        setTemplate(parsed)
-      } catch (e) {
-        console.error("Failed to parse saved template", e)
-      }
-    }
-  }, [])
-
-  // Mark changes as unsaved when template is modified
-  useEffect(() => {
-    setAllChangesSaved(false)
+    // No longer load from localStorage
   }, [])
 
   // Template manipulation functions
@@ -196,6 +166,23 @@ const Create_template = () => {
 
   const updateTemplateDescription = (description: string) => {
     setTemplate((prev) => ({ ...prev, description }))
+  }
+
+  // Update handleSave to not use localStorage
+  const handleSave = () => {
+    setTemplate((prev) => ({
+      ...prev,
+      lastSaved: new Date(),
+    }))
+  }
+
+  // Handle back button
+  const handleBack = () => {
+    if (window.confirm("Do you want to save before leaving?")) {
+      handleSave()
+    }
+    // Navigate back logic would go here
+    console.log("Navigating back...")
   }
 
   // Fix for the logo upload event.target error
@@ -1026,96 +1013,16 @@ const Create_template = () => {
     )
   }
 
-  // Enhance mobile preview rendering
-  const renderMobilePreview = () => {
-    if (!showMobilePreview) {
-      return (
-        <div className="mobile-preview-collapsed">
-          <button className="show-mobile-preview-button" onClick={() => setShowMobilePreview(true)}>
-            <div className="mobile-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
-                <line x1="5" y1="18" x2="19" y2="18" stroke="currentColor" strokeWidth="2" />
-                <line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span>Show Preview</span>
-          </button>
-        </div>
-      )
-    }
-
-    const activeSection = template.sections.find((s: Section) => s.id === activeSectionId) || template.sections[0]
-
-    return (
-      <div className="mobile-preview">
-        <div className="mobile-preview-header">
-          <button className="mobile-preview-close" onClick={() => setShowMobilePreview(false)}>
-            <X size={16} />
-            <span>Hide Preview</span>
-          </button>
-        </div>
-        <div className="mobile-device-container">
-          <div className="mobile-device">
-            <div className="mobile-device-notch"></div>
-            <div className="mobile-status-bar">
-              <div className="mobile-time">
-                {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </div>
-              <div className="mobile-status-icons">
-                <div className="mobile-signal"></div>
-                <div className="mobile-wifi"></div>
-                <div className="mobile-battery"></div>
-              </div>
-            </div>
-            <div className="mobile-content">
-              {template.logo && (
-                <div className="mobile-logo">
-                  <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="mobile-logo-image" />
-                </div>
-              )}
-              <div className="mobile-page-indicator">
-                Page {template.sections.indexOf(activeSection) + 1} of {template.sections.length}
-              </div>
-              <div className="mobile-page-title">{activeSection.title}</div>
-              <div className="mobile-questions">
-                {activeSection.questions.map((question: Question, idx: number) => (
-                  <div key={question.id} className="mobile-question">
-                    <div className="mobile-question-text">
-                      {question.required && <span className="mobile-required">*</span>} {question.text}
-                    </div>
-                    <div className="mobile-question-response">
-                      {renderMobileQuestionResponse(question, activeSection.id)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="mobile-nav-buttons">
-              {template.sections.map((section: Section, index: number) => (
-                <div
-                  key={section.id}
-                  className={`mobile-nav-dot ${section.id === activeSection.id ? "active" : ""}`}
-                  onClick={() => setActiveSectionId(section.id)}
-                ></div>
-              ))}
-            </div>
-            <div className="mobile-home-indicator"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-  
-  // Add new handler for mobile media upload
+  // Handle mobile media upload
   const handleMobileMediaUpload = (e: React.ChangeEvent<HTMLInputElement>, sectionId: string, questionId: string) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
         alert("File is too large. Please choose an image under 5MB.")
         return
       }
-      
+
       const reader = new FileReader()
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -1130,7 +1037,7 @@ const Create_template = () => {
     }
   }
 
-  // Add the missing renderMobileQuestionResponse function
+  // Render mobile question response
   const renderMobileQuestionResponse = (question: Question, sectionId: string) => {
     switch (question.responseType) {
       case "Text":
@@ -1277,8 +1184,128 @@ const Create_template = () => {
     }
   }
 
+  // Enhance mobile preview rendering
+  const renderMobilePreview = () => {
+    if (!showMobilePreview) {
+      return (
+        <div className="mobile-preview-collapsed">
+          <button className="show-mobile-preview-button" onClick={() => setShowMobilePreview(true)}>
+            <div className="mobile-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
+                <line x1="5" y1="18" x2="19" y2="18" stroke="currentColor" strokeWidth="2" />
+                <line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span>Show Preview</span>
+          </button>
+        </div>
+      )
+    }
+
+    const activeSection = template.sections.find((s: Section) => s.id === activeSectionId) || template.sections[0]
+
+    return (
+      <div className="mobile-preview">
+        <div className="mobile-preview-header">
+          <button className="mobile-preview-close" onClick={() => setShowMobilePreview(false)}>
+            <X size={16} />
+            <span>Hide Preview</span>
+          </button>
+        </div>
+        <div className="mobile-device-container">
+          <div className="mobile-device">
+            <div className="mobile-device-notch"></div>
+            <div className="mobile-status-bar">
+              <div className="mobile-time">
+                {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </div>
+              <div className="mobile-status-icons">
+                <div className="mobile-signal"></div>
+                <div className="mobile-wifi"></div>
+                <div className="mobile-battery"></div>
+              </div>
+            </div>
+            <div className="mobile-content">
+              {template.logo && (
+                <div className="mobile-header-content">
+                  <div className="mobile-logo">
+                    <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="mobile-logo-image" />
+                  </div>
+                  <div className="mobile-template-title">{template.title}</div>
+                </div>
+              )}
+              <div className="mobile-page-indicator">
+                Page {template.sections.indexOf(activeSection) + 1} of {template.sections.length}
+              </div>
+              <input
+                type="text"
+                className="mobile-page-title"
+                value={activeSection.title}
+                onChange={(e) => updateSection(activeSection.id, { title: e.target.value })}
+                placeholder="Enter page title"
+              />
+              <div className="mobile-questions">
+                {activeSection.questions.map((question: Question, idx: number) => (
+                  <div key={question.id} className="mobile-question">
+                    <div className="mobile-question-text">
+                      {question.required && <span className="mobile-required">*</span>} {question.text}
+                    </div>
+                    <div className="mobile-question-response">
+                      {renderMobileQuestionResponse(question, activeSection.id)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mobile-nav-buttons">
+              {template.sections.map((section: Section, index: number) => (
+                <div
+                  key={section.id}
+                  className={`mobile-nav-dot ${section.id === activeSection.id ? "active" : ""}`}
+                  onClick={() => setActiveSectionId(section.id)}
+                ></div>
+              ))}
+            </div>
+            <div className="mobile-home-indicator"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="template-builder">
+      {/* Top navigation bar */}
+      <div className="top-navigation">
+        <div className="nav-left">
+          <div className="company-name">FASHCOGNITIVE</div>
+          <button className="back-button" onClick={handleBack}>
+            <ArrowLeft size={16} />
+            <span>back</span>
+          </button>
+        </div>
+        <div className="nav-center">
+          <div className="nav-tabs">
+            <button className={`nav-tab ${activeTab === 1 ? "active" : ""}`} onClick={() => setActiveTab(1)}>
+              1. Build
+            </button>
+            <button className={`nav-tab ${activeTab === 2 ? "active" : ""}`} onClick={() => setActiveTab(2)}>
+              2. Report
+            </button>
+            <button className={`nav-tab ${activeTab === 3 ? "active" : ""}`} onClick={() => setActiveTab(3)}>
+              3. Access
+            </button>
+          </div>
+        </div>
+        <div className="nav-right">
+          <button className="save-button" onClick={handleSave}>
+            <Save size={16} />
+            <span>Save</span>
+          </button>
+        </div>
+      </div>
+
       <div className="builder-content">
         <div className="template-content max-w-4xl mx-auto">
           <div className="template-header">
@@ -1317,21 +1344,21 @@ const Create_template = () => {
           <div className="sections-container">
             {template.sections.map((section, idx) => renderSection(section, idx))}
           </div>
-          
+
           <div className="add-section-container">
             <button className="add-section-button" onClick={addSection}>
               <Plus size={16} /> Add Section
             </button>
           </div>
-          
+
           <div className="template-footer"></div>
         </div>
 
         {renderMobilePreview()}
       </div>
     </div>
-  );
+  )
 }
 
-export default Create_template;
+export default Create_template
 
