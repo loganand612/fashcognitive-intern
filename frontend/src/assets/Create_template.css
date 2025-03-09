@@ -13,10 +13,179 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
+/* Top navigation bar */
+.top-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.company-name {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: #f5f5f5;
+  border-color: var(--color-text);
+}
+
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-tab {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+
+.nav-tab.active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.nav-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-primary);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1001;
+}
+
+.save-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
+  border: 1px solid var(--color-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+  justify-content: center;
+  text-decoration: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  user-select: none;
+  position: relative;
+  z-index: 1002;
+  pointer-events: auto;
+}
+
+.save-button:hover:not(:disabled) {
+  background-color: var(--color-secondary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+}
+
+.save-button:active:not(:disabled) {
+  transform: translateY(0);
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
+}
+
+.save-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.save-button:disabled {
+  background-color: #cccccc;
+  border-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.save-button.saving {
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
+  pointer-events: none;
+}
+
+.save-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Main template builder styles */
 .template-builder {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
     "Helvetica Neue", sans-serif;
 }
@@ -26,11 +195,12 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  padding-top: 64px; /* Add padding to account for fixed header */
 }
 
 .template-content {
   flex: 1;
-  padding: 32px;
+  padding: 24px;
   padding-right: 432px;
   overflow-y: auto;
   max-width: 1200px;
@@ -39,10 +209,15 @@
 
 .template-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 24px; /* Add margin to prevent hiding under nav */
   margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 24px;
+  background-color: var(--color-background);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .template-logo {
@@ -797,6 +972,9 @@
 }
 
 .mobile-preview-close {
+  position: fixed;
+  bottom: 20px;
+  right: 420px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -808,6 +986,8 @@
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+  z-index: 101;
 }
 
 .mobile-preview-close:hover {
@@ -885,17 +1065,39 @@
 }
 
 .mobile-logo {
-  text-align: center;
+  text-align: left;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.mobile-logo-image {
+  max-width: 60px;
+  max-height: 40px;
+  object-fit: contain;
+}
+
+.mobile-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
   padding: 10px;
   background-color: #f9f9f9;
   border-radius: 8px;
 }
 
-.mobile-logo-image {
-  max-width: 120px;
-  max-height: 60px;
-  object-fit: contain;
+.mobile-template-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-left: 12px;
+  flex: 1;
+  text-align: right;
 }
 
 .mobile-page-indicator {
@@ -910,12 +1112,23 @@
 }
 
 .mobile-page-title {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #000;
+  color: var(--color-text);
+  margin: 16px 0;
+  padding: 8px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  text-align: center;
+}
+
+.mobile-page-title:hover,
+.mobile-page-title:focus {
+  border-color: var(--color-border);
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 .mobile-questions {
@@ -1280,3 +1493,37 @@ svg {
   border-width: 0;
 }
 
+/* Site field specific styles */
+.site-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.required-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #ff0000;
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.manage-sites-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.manage-sites-button:hover {
+  text-decoration: underline;
+}

@@ -3,23 +3,8 @@ import axios from "axios";
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import "../assets/Create_template.css"
-import {
-  ChevronDown,
-  ChevronUp,
-  Edit,
-  Plus,
-  Calendar,
-  User,
-  MapPin,
-  X,
-  Check,
-  Image,
-  Trash2,
-  Move,
-  ExternalLink,
-  Clock,
-} from "lucide-react"
+import '../assets/Create_template.css';
+import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, Image, Trash2, Move, ExternalLink, Clock, ArrowLeft, Save } from 'lucide-react'
 
 // Types
 type ResponseType =
@@ -61,12 +46,11 @@ type Template = {
   sections: Section[]
   lastSaved?: Date
   lastPublished?: Date
-  logo?: string // Add this line
+  logo?: string
 }
 
 // Helper functions
 const generateId = () => Math.random().toString(36).substring(2, 9)
-
 
 const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
   id: generateId(),
@@ -96,39 +80,30 @@ const getInitialTemplate = (): Template => {
         text: "Site conducted",
         responseType: "Site",
         required: true,
-        value: "amazon",
+        value: null,
       },
       {
         id: generateId(),
         text: "Conducted on",
         responseType: "Inspection date",
-        required: false,
+        required: true,
         value: null,
       },
       {
         id: generateId(),
         text: "Prepared by",
         responseType: "Person",
-        required: false,
+        required: true,
         value: null,
       },
       {
         id: generateId(),
         text: "Location",
         responseType: "Inspection location",
-        required: false,
+        required: true,
         value: null,
       },
     ],
-    isCollapsed: false,
-  }
-
-  const untitledSection: Section = {
-    id: generateId(),
-    title: "Untitled Page",
-    description:
-      'This is where you add your inspection questions and how you want them answered. E.g. "Is the floor clean?"',
-    questions: [],
     isCollapsed: false,
   }
 
@@ -136,7 +111,7 @@ const getInitialTemplate = (): Template => {
     id: generateId(),
     title: "Untitled template",
     description: "Add a description",
-    sections: [titlePageSection, untitledSection],
+    sections: [titlePageSection],
     lastSaved: new Date(),
     lastPublished: new Date(),
     logo: undefined,
@@ -152,16 +127,15 @@ const Create_template = () => {
   const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
-  const [allChangesSaved, setAllChangesSaved] = useState<boolean>(true)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
+  const [allChangesSaved, setAllChangesSaved] = useState<boolean>(true)
+  const [templateData, setTemplateData] = useState<any[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Refs
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
-
-  const [templateData, setTemplateData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -175,11 +149,9 @@ const Create_template = () => {
         setLoading(false);
       }
     };
-  
     fetchTemplates();
   }, []);
 
-  // Save template to localStorage
   useEffect(() => {
     const saveTimer = setTimeout(() => {
       localStorage.setItem("safetyTemplate", JSON.stringify(template))
@@ -209,7 +181,7 @@ const Create_template = () => {
   // Mark changes as unsaved when template is modified
   useEffect(() => {
     setAllChangesSaved(false)
-  }, [])
+  }, [template])
 
   // Template manipulation functions
   const updateTemplateTitle = (title: string) => {
@@ -220,31 +192,126 @@ const Create_template = () => {
     setTemplate((prev) => ({ ...prev, description }))
   }
 
-  // Fix for the logo upload event.target error
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File is too large. Please choose an image under 5MB.")
-        return
-      }
-      const reader = new FileReader()
-      reader.onload = (event: ProgressEvent<FileReader>) => {
-        const target = event.target
-        if (target && target.result) {
-          setTemplate((prev) => ({
-            ...prev,
-            logo: String(target.result),
-          }))
-        }
-      }
-      reader.onerror = (error) => {
-        console.error("Error reading file:", error)
-        alert("There was an error uploading your image. Please try again.")
-      }
-      reader.readAsDataURL(file)
-    }
+  interface Question {
+    id: string;
+    text: string;
+    responseType: string;
+    required: boolean;
+    order?: number;
+    section?: string;
+    options?: string[];  // ✅ Fix: Add `options`
+    value?: string | number | boolean | null;  // ✅ Fix: Add `value`
   }
+  
+  interface Section {
+    id: string;
+    title: string;
+    description?: string;
+    order?: number;
+    template?: string;
+    isCollapsed?: boolean;  // ✅ Fix: Add `isCollapsed`
+    questions: Question[];
+  }
+  
+  interface Template {
+    id: string;
+    title: string;
+    description?: string;
+    logo?: string;  // ✅ Fix: Add `logo`
+    sections: Section[];
+  }
+  
+  const prepareTemplateForSaving = (template: Template): Template => {
+    return {
+      ...template,
+      sections: template.sections.map((section: Section, secIndex: number) => ({
+        ...section,
+        order: secIndex + 1,
+        template: template.id,
+        questions: section.questions.map((question: Question, qIndex: number) => ({
+          ...question,
+          order: qIndex + 1,
+          section: section.id,
+        })),
+      })),
+    };
+  };
+  
+  // Fix implicit `any` in `.map()`
+  const updateQuestionOptions = (sectionId: string, questionId: string, optionIndex: number, value: string) => {
+    setTemplate((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section: Section) => ({
+        ...section,
+        questions: section.questions.map((question: Question) =>
+          question.id === questionId
+            ? {
+                ...question,
+                options: question.options?.map((option: string, idx: number) => (idx === optionIndex ? value : option)),
+              }
+            : question
+        ),
+      })),
+    }));
+  };
+  
+
+  
+
+  const handleSave = async () => {
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", template, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      console.log("✅ Template saved successfully:", response.data);
+      alert("Template saved successfully!");
+      setAllChangesSaved(true);
+      setTemplate((prev) => ({
+        ...prev,
+        lastSaved: new Date(),
+      }));
+    } catch (error: unknown) {  // ✅ Type `error` properly
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Axios Error saving template:", error.response?.data || error.message);
+      } else {
+        console.error("❌ Unknown error:", error);
+      }
+      alert("Failed to save template. Check console for details.");
+    }
+  };
+
+  
+  
+  // Handle back button
+  const handleBack = () => {
+    if (window.confirm("Do you want to save before leaving?")) {
+      handleSave()
+    }
+    // Navigate back logic would go here
+    console.log("Navigating back...")
+  }
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append("logo", file);  // ✅ Send as a file
+  
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/api/upload_logo/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+  
+      setTemplate((prev) => ({ ...prev, logo: response.data.logo_url }));
+    } catch (error) {
+      console.error("❌ Error uploading logo:", error);
+      alert("Failed to upload logo.");
+    }
+  };
+  
+  
 
   const addSection = () => {
     const newSection = getDefaultSection()
@@ -1048,96 +1115,16 @@ const Create_template = () => {
     )
   }
 
-  // Enhance mobile preview rendering
-  const renderMobilePreview = () => {
-    if (!showMobilePreview) {
-      return (
-        <div className="mobile-preview-collapsed">
-          <button className="show-mobile-preview-button" onClick={() => setShowMobilePreview(true)}>
-            <div className="mobile-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
-                <line x1="5" y1="18" x2="19" y2="18" stroke="currentColor" strokeWidth="2" />
-                <line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span>Show Preview</span>
-          </button>
-        </div>
-      )
-    }
-
-    const activeSection = template.sections.find((s: Section) => s.id === activeSectionId) || template.sections[0]
-
-    return (
-      <div className="mobile-preview">
-        <div className="mobile-preview-header">
-          <button className="mobile-preview-close" onClick={() => setShowMobilePreview(false)}>
-            <X size={16} />
-            <span>Hide Preview</span>
-          </button>
-        </div>
-        <div className="mobile-device-container">
-          <div className="mobile-device">
-            <div className="mobile-device-notch"></div>
-            <div className="mobile-status-bar">
-              <div className="mobile-time">
-                {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </div>
-              <div className="mobile-status-icons">
-                <div className="mobile-signal"></div>
-                <div className="mobile-wifi"></div>
-                <div className="mobile-battery"></div>
-              </div>
-            </div>
-            <div className="mobile-content">
-              {template.logo && (
-                <div className="mobile-logo">
-                  <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="mobile-logo-image" />
-                </div>
-              )}
-              <div className="mobile-page-indicator">
-                Page {template.sections.indexOf(activeSection) + 1} of {template.sections.length}
-              </div>
-              <div className="mobile-page-title">{activeSection.title}</div>
-              <div className="mobile-questions">
-                {activeSection.questions.map((question: Question, idx: number) => (
-                  <div key={question.id} className="mobile-question">
-                    <div className="mobile-question-text">
-                      {question.required && <span className="mobile-required">*</span>} {question.text}
-                    </div>
-                    <div className="mobile-question-response">
-                      {renderMobileQuestionResponse(question, activeSection.id)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="mobile-nav-buttons">
-              {template.sections.map((section: Section, index: number) => (
-                <div
-                  key={section.id}
-                  className={`mobile-nav-dot ${section.id === activeSection.id ? "active" : ""}`}
-                  onClick={() => setActiveSectionId(section.id)}
-                ></div>
-              ))}
-            </div>
-            <div className="mobile-home-indicator"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-  
-  // Add new handler for mobile media upload
+  // Handle mobile media upload
   const handleMobileMediaUpload = (e: React.ChangeEvent<HTMLInputElement>, sectionId: string, questionId: string) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
         alert("File is too large. Please choose an image under 5MB.")
         return
       }
-      
+
       const reader = new FileReader()
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -1152,7 +1139,7 @@ const Create_template = () => {
     }
   }
 
-  // Add the missing renderMobileQuestionResponse function
+  // Render mobile question response
   const renderMobileQuestionResponse = (question: Question, sectionId: string) => {
     switch (question.responseType) {
       case "Text":
@@ -1299,71 +1286,180 @@ const Create_template = () => {
     }
   }
 
+  // Enhance mobile preview rendering
+  const renderMobilePreview = () => {
+    if (!showMobilePreview) {
+      return (
+        <div className="mobile-preview-collapsed">
+          <button className="show-mobile-preview-button" onClick={() => setShowMobilePreview(true)}>
+            <div className="mobile-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
+                <line x1="5" y1="18" x2="19" y2="18" stroke="currentColor" strokeWidth="2" />
+                <line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span>Show Preview</span>
+          </button>
+        </div>
+      )
+    }
+
+    const activeSection = template.sections.find((s: Section) => s.id === activeSectionId) || template.sections[0]
+
+    return (
+      <div className="mobile-preview">
+        <div className="mobile-preview-header">
+          <button className="mobile-preview-close" onClick={() => setShowMobilePreview(false)}>
+            <X size={16} />
+            <span>Hide Preview</span>
+          </button>
+        </div>
+        <div className="mobile-device-container">
+          <div className="mobile-device">
+            <div className="mobile-device-notch"></div>
+            <div className="mobile-status-bar">
+              <div className="mobile-time">
+                {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </div>
+              <div className="mobile-status-icons">
+                <div className="mobile-signal"></div>
+                <div className="mobile-wifi"></div>
+                <div className="mobile-battery"></div>
+              </div>
+            </div>
+            <div className="mobile-content">
+              {template.logo && (
+                <div className="mobile-header-content">
+                  <div className="mobile-logo">
+                    <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="mobile-logo-image" />
+                  </div>
+                  <div className="mobile-template-title">{template.title}</div>
+                </div>
+              )}
+              <div className="mobile-page-indicator">
+                Page {template.sections.indexOf(activeSection) + 1} of {template.sections.length}
+              </div>
+              <input
+                type="text"
+                className="mobile-page-title"
+                value={activeSection.title}
+                onChange={(e) => updateSection(activeSection.id, { title: e.target.value })}
+                placeholder="Enter page title"
+              />
+              <div className="mobile-questions">
+                {activeSection.questions.map((question: Question, idx: number) => (
+                  <div key={question.id} className="mobile-question">
+                    <div className="mobile-question-text">
+                      {question.required && <span className="mobile-required">*</span>} {question.text}
+                    </div>
+                    <div className="mobile-question-response">
+                      {renderMobileQuestionResponse(question, activeSection.id)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mobile-nav-buttons">
+              {template.sections.map((section: Section, index: number) => (
+                <div
+                  key={section.id}
+                  className={`mobile-nav-dot ${section.id === activeSection.id ? "active" : ""}`}
+                  onClick={() => setActiveSectionId(section.id)}
+                ></div>
+              ))}
+            </div>
+            <div className="mobile-home-indicator"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="template-builder">
-      <div className="builder-content">
-        
-        {/* ✅ Show loading spinner while fetching data */}
-        {loading && <p>Loading templates...</p>}
-
-        {/* ✅ Show error message if API call fails */}
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        {/* ✅ Show template data once loaded */}
-        {!loading && !error && template && (
-          <div className="template-content max-w-4xl mx-auto">
-            <div className="template-header">
-              <div className="template-logo">
-                {template.logo ? (
-                  <img
-                    src={template.logo || "/placeholder.svg"}
-                    alt="Template logo"
-                    className="logo-image"
-                    onClick={() => document.getElementById("logo-upload")?.click()}
-                  />
-                ) : (
-                  <div className="logo-placeholder" onClick={() => document.getElementById("logo-upload")?.click()}>
-                    <Plus size={24} />
-                  </div>
-                )}
-                <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
-              </div>
-              <div className="template-info">
-                <input
-                  type="text"
-                  className="template-title"
-                  value={template.title}
-                  onChange={(e) => updateTemplateTitle(e.target.value)}
-                  placeholder="Untitled template"
-                />
-                <input
-                  type="text"
-                  className="template-description"
-                  value={template.description}
-                  onChange={(e) => updateTemplateDescription(e.target.value)}
-                  placeholder="Add a description"
-                />
-              </div>
-            </div>
-            
-            <div className="sections-container">
-              {template.sections.map((section, idx) => renderSection(section, idx))}
-            </div>
-
-            <div className="add-section-container">
-              <button className="add-section-button" onClick={addSection}>
-                <Plus size={16} /> Add Section
-              </button>
-            </div>
-
-            <div className="template-footer"></div>
+      {/* Top navigation bar */}
+      <div className="top-navigation">
+        <div className="nav-left">
+          <div className="company-name">FASHCOGNITIVE</div>
+          <button className="back-button" onClick={handleBack}>
+            <ArrowLeft size={16} />
+            <span>back</span>
+          </button>
+        </div>
+        <div className="nav-center">
+          <div className="nav-tabs">
+            <button className={`nav-tab ${activeTab === 1 ? "active" : ""}`} onClick={() => setActiveTab(1)}>
+              1. Build
+            </button>
+            <button className={`nav-tab ${activeTab === 2 ? "active" : ""}`} onClick={() => setActiveTab(2)}>
+              2. Report
+            </button>
+            <button className={`nav-tab ${activeTab === 3 ? "active" : ""}`} onClick={() => setActiveTab(3)}>
+              3. Access
+            </button>
           </div>
-        )}
+        </div>
+        <div className="nav-right">
+          <button className="save-button" onClick={handleSave}>
+            <Save size={16} />
+            <span>Save</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="builder-content">
+        <div className="template-content max-w-4xl mx-auto">
+          <div className="template-header">
+            <div className="template-logo">
+              {template.logo ? (
+                <img
+                  src={template.logo || "/placeholder.svg"}
+                  alt="Template logo"
+                  className="logo-image"
+                  onClick={() => document.getElementById("logo-upload")?.click()}
+                />
+              ) : (
+                <div className="logo-placeholder" onClick={() => document.getElementById("logo-upload")?.click()}>
+                  <Plus size={24} />
+                </div>
+              )}
+              <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
+            </div>
+            <div className="template-info">
+              <input
+                type="text"
+                className="template-title"
+                value={template.title}
+                onChange={(e) => updateTemplateTitle(e.target.value)}
+                placeholder="Untitled template"
+              />
+              <input
+                type="text"
+                className="template-description"
+                value={template.description}
+                onChange={(e) => updateTemplateDescription(e.target.value)}
+                placeholder="Add a description"
+              />
+            </div>
+          </div>
+          <div className="sections-container">
+            {template.sections.map((section, idx) => renderSection(section, idx))}
+          </div>
+
+          <div className="add-section-container">
+            <button className="add-section-button" onClick={addSection}>
+              <Plus size={16} /> Add Section
+            </button>
+          </div>
+
+          <div className="template-footer"></div>
+        </div>
 
         {renderMobilePreview()}
       </div>
     </div>
-  );
+  )
 }
-export default Create_template;
 
+export default Create_template
