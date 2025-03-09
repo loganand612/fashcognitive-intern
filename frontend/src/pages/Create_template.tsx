@@ -321,9 +321,11 @@ const Create_template = () => {
     }))
     setActiveSectionId(newSection.id)
     setTimeout(() => {
-      const newSectionElement = sectionRefs.current[newSection.id]
-      if (newSectionElement) {
-        newSectionElement.scrollIntoView({ behavior: "smooth", block: "start" })
+      const newSectionElement =   const toggleSectionCollapse = (sectionId: string) => {
+    setTemplate((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section) =>
+havior: "smooth", block: "start" })
       }
     }, 100)
   }
