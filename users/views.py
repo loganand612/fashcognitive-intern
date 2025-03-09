@@ -49,6 +49,7 @@ from rest_framework import status
 from .models import Template
 from .serializers import TemplateSerializer
 
+
 @api_view(["GET", "POST"])
 def templates_api(request):
     if request.method == "GET":
@@ -57,12 +58,35 @@ def templates_api(request):
         return Response(serializer.data)
 
     if request.method == "POST":
-        serializer = TemplateSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print("Serializer Errors:", serializer.errors)  # Log errors
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        title = data.get("title")
+        description = data.get("description")
+        sections_data = data.get("sections", [])
+
+        # Create Template
+        template = Template.objects.create(title=title, description=description)
+
+        # Loop through Sections and save them
+        for section_data in sections_data:
+            section = Section.objects.create(
+                template=template,
+                title=section_data.get("title"),
+                description=section_data.get("description", ""),
+                order=section_data.get("order", 0),
+                is_collapsed=section_data.get("isCollapsed", False),
+            )
+
+            # Save Questions inside each section
+            for question_data in section_data.get("questions", []):
+                Question.objects.create(
+                    section=section,
+                    text=question_data.get("text"),
+                    response_type=question_data.get("responseType"),
+                    required=question_data.get("required", False),
+                    order=question_data.get("order", 0),
+                )
+
+        return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
 
 
 @method_decorator(login_required, name='dispatch')  # Requires login

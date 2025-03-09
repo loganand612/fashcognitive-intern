@@ -1,9 +1,8 @@
 "use client"
-import axios from "axios"; 
-
+import axios from "axios";
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
+import "./Create_template.css"
 import {
   ChevronDown,
   ChevronUp,
@@ -19,6 +18,8 @@ import {
   Move,
   ExternalLink,
   Clock,
+  ArrowLeft,
+  Save,
 } from "lucide-react"
 
 // Types
@@ -61,7 +62,7 @@ type Template = {
   sections: Section[]
   lastSaved?: Date
   lastPublished?: Date
-  logo?: string
+  logo?: string | File;
 }
 
 // Helper functions
@@ -143,60 +144,32 @@ const Create_template = () => {
   const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
-  const [allChangesSaved, setAllChangesSaved] = useState<boolean>(true)
-  const [templateData, setTemplateData] = useState<any[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   // Refs
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
+  // Remove localStorage save effect
   useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const response = await axios.get("http://127.0.0.1:8000/api/users/create_templates/");
-        setTemplateData(response.data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching templates:", err);
-        setError(err instanceof Error ? err.message : "Failed to load template data");
-        setLoading(false);
+    // No longer save to localStorage
+  }, [template])
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+  
+    if (template.logo instanceof File) {
+      objectUrl = URL.createObjectURL(template.logo);
+      setLogoPreview(objectUrl);
+    } else if (typeof template.logo === "string") {
+      setLogoPreview(template.logo);  // ✅ Use existing URL if it's a string
+    }
+  
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);  // ✅ Clean up object URL
       }
     };
-    fetchTemplates();
-  }, []);
-
-  useEffect(() => {
-    const saveTimer = setTimeout(() => {
-      localStorage.setItem("safetyTemplate", JSON.stringify(template))
-      setAllChangesSaved(true)
-      setTemplate((prev) => ({
-        ...prev,
-        lastSaved: new Date(),
-      }))
-    }, 1000)
-
-    return () => clearTimeout(saveTimer)
-  }, [template])
-
-  // Load template from localStorage
-  useEffect(() => {
-    const savedTemplate = localStorage.getItem("safetyTemplate")
-    if (savedTemplate) {
-      try {
-        const parsed = JSON.parse(savedTemplate)
-        setTemplate(parsed)
-      } catch (e) {
-        console.error("Failed to parse saved template", e)
-      }
-    }
-  }, [])
-
-  // Mark changes as unsaved when template is modified
-  useEffect(() => {
-    setAllChangesSaved(false)
-  }, [template])
+  }, [template.logo]);
 
   // Template manipulation functions
   const updateTemplateTitle = (title: string) => {
@@ -207,97 +180,23 @@ const Create_template = () => {
     setTemplate((prev) => ({ ...prev, description }))
   }
 
-  interface Question {
-    id: string;
-    text: string;
-    responseType: string;
-    required: boolean;
-    order?: number;
-    section?: string;
-    options?: string[];  // ✅ Fix: Add `options`
-    value?: string | number | boolean | null;  // ✅ Fix: Add `value`
-  }
-  
-  interface Section {
-    id: string;
-    title: string;
-    description?: string;
-    order?: number;
-    template?: string;
-    isCollapsed?: boolean;  // ✅ Fix: Add `isCollapsed`
-    questions: Question[];
-  }
-  
-  interface Template {
-    id: string;
-    title: string;
-    description?: string;
-    logo?: string;  // ✅ Fix: Add `logo`
-    sections: Section[];
-  }
-  
-  const prepareTemplateForSaving = (template: Template): Template => {
-    return {
-      ...template,
-      sections: template.sections.map((section: Section, secIndex: number) => ({
-        ...section,
-        order: secIndex + 1,
-        template: template.id,
-        questions: section.questions.map((question: Question, qIndex: number) => ({
-          ...question,
-          order: qIndex + 1,
-          section: section.id,
-        })),
-      })),
-    };
-  };
-  
-  // Fix implicit `any` in `.map()`
-  const updateQuestionOptions = (sectionId: string, questionId: string, optionIndex: number, value: string) => {
-    setTemplate((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section: Section) => ({
-        ...section,
-        questions: section.questions.map((question: Question) =>
-          question.id === questionId
-            ? {
-                ...question,
-                options: question.options?.map((option: string, idx: number) => (idx === optionIndex ? value : option)),
-              }
-            : question
-        ),
-      })),
-    }));
-  };
-  
-
-  
-
+  // Update handleSave to not use localStorage
   const handleSave = async () => {
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", template, {
-        headers: { "Content-Type": "application/json" },
-      });
-
-      console.log("✅ Template saved successfully:", response.data);
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/users/create_templates/", // ✅ API endpoint
+        template,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      console.log("Template saved successfully:", response.data);
       alert("Template saved successfully!");
-      setAllChangesSaved(true);
-      setTemplate((prev) => ({
-        ...prev,
-        lastSaved: new Date(),
-      }));
-    } catch (error: unknown) {  // ✅ Type `error` properly
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Axios Error saving template:", error.response?.data || error.message);
-      } else {
-        console.error("❌ Unknown error:", error);
-      }
-      alert("Failed to save template. Check console for details.");
+    } catch (error) {
+      console.error("Error saving template:", error);
+      alert("Failed to save template!");
     }
   };
+  
 
-  
-  
   // Handle back button
   const handleBack = () => {
     if (window.confirm("Do you want to save before leaving?")) {
@@ -307,26 +206,36 @@ const Create_template = () => {
     console.log("Navigating back...")
   }
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fix for the logo upload event.target error
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-  
-    const formData = new FormData();
-    formData.append("logo", file);  // ✅ Send as a file
-  
-    try {
-      const response = await axios.post("http://127.0.0.1:8000/api/upload_logo/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-  
-      setTemplate((prev) => ({ ...prev, logo: response.data.logo_url }));
-    } catch (error) {
-      console.error("❌ Error uploading logo:", error);
-      alert("Failed to upload logo.");
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert("File is too large. Please choose an image under 5MB.");
+            return;
+        }
+        
+        // Store File object for upload
+        setTemplate((prev) => ({
+            ...prev,
+            logo: file,  // ✅ Store file for backend upload
+        }));
+
+        // Read & display preview (optional)
+        const reader = new FileReader();
+        reader.onload = (event: ProgressEvent<FileReader>) => {
+            const target = event.target;
+            if (target && target.result) {
+                setTemplate((prev) => ({
+                    ...prev,
+                    logoPreview: String(target.result), // ✅ Store preview URL
+                }));
+            }
+        };
+        reader.readAsDataURL(file);
     }
   };
-  
-  
+
 
   const addSection = () => {
     const newSection = getDefaultSection()
@@ -336,11 +245,9 @@ const Create_template = () => {
     }))
     setActiveSectionId(newSection.id)
     setTimeout(() => {
-      const newSectionElement =   const toggleSectionCollapse = (sectionId: string) => {
-    setTemplate((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section) =>
-havior: "smooth", block: "start" })
+      const newSectionElement = sectionRefs.current[newSection.id]
+      if (newSectionElement) {
+        newSectionElement.scrollIntoView({ behavior: "smooth", block: "start" })
       }
     }, 100)
   }
@@ -1349,7 +1256,17 @@ havior: "smooth", block: "start" })
               {template.logo && (
                 <div className="mobile-header-content">
                   <div className="mobile-logo">
-                    <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="mobile-logo-image" />
+                  <img
+                    src={
+                      typeof template.logo === "string"
+                        ? template.logo  // ✅ If it's a URL, use it
+                        : template.logo instanceof File
+                        ? URL.createObjectURL(template.logo)  // ✅ Convert File to URL
+                        : "/placeholder.svg"  // ✅ Default placeholder
+                    }
+                    alt="Template logo"
+                    className="mobile-logo-image"
+                  />
                   </div>
                   <div className="mobile-template-title">{template.title}</div>
                 </div>
@@ -1431,10 +1348,10 @@ havior: "smooth", block: "start" })
             <div className="template-logo">
               {template.logo ? (
                 <img
-                  src={template.logo || "/placeholder.svg"}
-                  alt="Template logo"
-                  className="logo-image"
-                  onClick={() => document.getElementById("logo-upload")?.click()}
+                src={ logoPreview || "/placeholder.svg"}
+                alt="Template logo"
+                className="mobile-logo-image"
+                onClick={() => document.getElementById("logo-upload")?.click()}
                 />
               ) : (
                 <div className="logo-placeholder" onClick={() => document.getElementById("logo-upload")?.click()}>
