@@ -1,4 +1,3 @@
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
@@ -10,6 +9,10 @@ from .models import Template
 import json
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from .models import Template, Section, Question
+
 
 class RegisterUserView(APIView):
     permission_classes = [AllowAny]  # Allow anyone to register
@@ -40,6 +43,12 @@ def login_user(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Template
+from .serializers import TemplateSerializer
+
 @api_view(["GET", "POST"])
 def templates_api(request):
     if request.method == "GET":
@@ -52,8 +61,8 @@ def templates_api(request):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print("Serializer Errors:", serializer.errors)  # Log errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 
 @method_decorator(login_required, name='dispatch')  # Requires login
