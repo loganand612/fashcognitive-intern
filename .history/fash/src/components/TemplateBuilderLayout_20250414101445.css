@@ -1,0 +1,116 @@
+/* Template builder layout styles */
+
+/* Report page styles */
+.report-page-container, .access-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+}
+
+.report-footer, .access-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 24px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 24px;
+  width: 100%;
+  max-width: 1200px;
+}
+.template-builder-container {
+  display: flex;
+  gap: 24px;
+  height: 100%;
+  width: 100%;
+}
+
+.template-content {
+  flex: 1;
+  max-width: 800px;
+  overflow-y: auto;
+  padding-right: 24px;
+}
+
+.mobile-preview-container {
+  width: 375px;
+  height: 100%;
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  /* Removed transition to prevent visual glitches */
+}
+
+/* Removed hover effect to prevent visual glitches */
+
+.add-section-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.next-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.publish-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background-color: #111827;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(17, 24, 39, 0.2);
+}
+
+.next-button:hover {
+  background-color: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.publish-button:hover {
+  background-color: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(17, 24, 39, 0.3);
+}
+
+/* Responsive styles */
+@media (max-width: 1200px) {
+  .template-builder-container {
+    flex-direction: column;
+  }
+
+  .template-content {
+    max-width: 100%;
+    padding-right: 0;
+  }
+
+  .mobile-preview-container {
+    width: 100%;
+    max-width: 375px;
+    margin: 0 auto;
+  }
+}

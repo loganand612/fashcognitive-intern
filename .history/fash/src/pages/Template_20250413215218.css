@@ -93,7 +93,7 @@
 }
 
 /* Main Content */
-.tp-template-container {
+.template-container {
   margin-left: 250px;
   margin-top: 64px;
   min-height: calc(100vh - 64px);
@@ -103,7 +103,7 @@
   flex-direction: column;
 }
 
-.tp-template-header {
+.template-header {
   position: sticky;
   top: 64px;
   background-color: white;
@@ -113,7 +113,7 @@
   width: 100%;
 }
 
-.tp-template-tabs {
+.template-tabs {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
@@ -123,7 +123,7 @@
   align-items: center;
 }
 
-.tp-tab {
+.tab {
   padding: 0 0 14px 0;
   font-size: 14px;
   font-weight: 500;
@@ -138,16 +138,16 @@
   align-items: center;
 }
 
-.tp-tab:hover {
+.tab:hover {
   color: #111827;
 }
 
-.tp-tab.active {
+.tab.active {
   color: #111827;
   border-bottom-color: #111827;
 }
 
-.tp-template-content {
+.template-content {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
@@ -159,7 +159,7 @@
 }
 
 /* Creation Section */
-.tp-creation-section {
+.creation-section {
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
@@ -169,7 +169,7 @@
   width: 100%;
 }
 
-.tp-section-header {
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -177,14 +177,14 @@
   width: 100%;
 }
 
-.tp-section-header h2 {
+.section-header h2 {
   font-size: 16px;
   font-weight: 500;
   color: #111827;
   margin: 0;
 }
 
-.tp-close-button {
+.close-button {
   padding: 8px;
   background: none;
   border: none;
@@ -197,19 +197,19 @@
   justify-content: center;
 }
 
-.tp-close-button:hover {
+.close-button:hover {
   background-color: #f3f4f6;
   color: #111827;
 }
 
-.tp-creation-options {
+.creation-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
   width: 100%;
 }
 
-.tp-option-card {
+.option-card {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -221,11 +221,11 @@
   flex-direction: column;
 }
 
-.tp-option-card:hover {
+.option-card:hover {
   border-color: #9ca3af;
 }
 
-.tp-option-icon {
+.option-icon {
   width: 48px;
   height: 48px;
   background: #f3f4f6;
@@ -237,7 +237,7 @@
   flex-shrink: 0;
 }
 
-.tp-option-card h3 {
+.option-card h3 {
   font-size: 16px;
   font-weight: 500;
   color: #111827;
@@ -245,14 +245,14 @@
   margin-top: 0;
 }
 
-.tp-option-card p {
+.option-card p {
   font-size: 14px;
   color: #6b7280;
   line-height: 1.5;
 }
 
 /* Templates Section */
-.tp-templates-section {
+.templates-section {
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
@@ -261,7 +261,7 @@
   margin-top: 0;
 }
 
-.tp-templates-header {
+.templates-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -270,7 +270,7 @@
   width: 100%;
 }
 
-.tp-templates-header h2 {
+.templates-header h2 {
   font-size: 18px;
   font-weight: 600;
   color: #111827;
@@ -280,13 +280,13 @@
   margin: 0;
 }
 
-.tp-count {
+.count {
   font-size: 14px;
   font-weight: normal;
   color: #6b7280;
 }
 
-.tp-create-button {
+.create-button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -303,11 +303,11 @@
   height: 36px;
 }
 
-.tp-create-button:hover {
+.create-button:hover {
   background-color: #1f2937;
 }
 
-.tp-search-controls {
+.search-controls {
   display: flex;
   gap: 16px;
   padding: 16px 24px;
@@ -315,7 +315,7 @@
   width: 100%;
 }
 
-.tp-search-field {
+.search-field {
   flex: 1;
   display: flex;
   align-items: center;
@@ -327,11 +327,11 @@
   height: 40px;
 }
 
-.tp-search-icon {
+.search-icon {
   color: #6b7280;
 }
 
-.tp-search-field input {
+.search-field input {
   flex: 1;
   border: none;
   background: none;
@@ -340,11 +340,11 @@
   outline: none;
 }
 
-.tp-search-field input::placeholder {
+.search-field input::placeholder {
   color: #9ca3af;
 }
 
-.tp-filter-button {
+.filter-button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -361,13 +361,13 @@
   white-space: nowrap;
 }
 
-.tp-filter-button:hover {
+.filter-button:hover {
   background: #f9fafb;
   border-color: #9ca3af;
 }
 
 /* Table Styles */
-.tp-templates-table {
+.templates-table {
   width: 100%;
   overflow-x: auto;
 }
@@ -394,18 +394,18 @@ td {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.tp-checkbox-column {
+.checkbox-column {
   width: 48px;
   padding-right: 0;
 }
 
-.tp-template-cell {
+.template-cell {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.tp-template-icon {
+.template-icon {
   width: 40px;
   height: 40px;
   background: #f3f4f6;
@@ -416,7 +416,7 @@ td {
   color: #374151;
 }
 
-.tp-access-badge {
+.access-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -427,7 +427,7 @@ td {
   color: #374151;
 }
 
-.tp-action-buttons {
+.action-buttons {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -435,7 +435,7 @@ td {
   white-space: nowrap;
 }
 
-.tp-start-inspection {
+.start-inspection {
   padding: 6px 12px;
   background: #f3f4f6;
   border: none;
@@ -446,11 +446,11 @@ td {
   transition: all 0.2s;
 }
 
-.tp-start-inspection:hover {
+.start-inspection:hover {
   background: #e5e7eb;
 }
 
-.tp-more-options {
+.more-options {
   padding: 6px;
   background: none;
   border: none;
@@ -463,55 +463,55 @@ td {
   justify-content: center;
 }
 
-.tp-more-options:hover {
+.more-options:hover {
   background: #f3f4f6;
   color: #374151;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .tp-creation-options {
+  .creation-options {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .tp-search-controls {
+  .search-controls {
     flex-wrap: wrap;
   }
 
-  .tp-search-field {
+  .search-field {
     min-width: 200px;
   }
 }
 
 @media (max-width: 768px) {
-  .tp-creation-options {
+  .creation-options {
     grid-template-columns: 1fr;
   }
 
-  .tp-template-tabs {
+  .template-tabs {
     gap: 16px;
     padding: 0 16px;
   }
 
-  .tp-template-content {
+  .template-content {
     padding: 16px;
   }
 
-  .tp-templates-header {
+  .templates-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
-  .tp-create-button {
+  .create-button {
     align-self: flex-start;
   }
 
-  .tp-search-controls {
+  .search-controls {
     flex-direction: column;
   }
 
-  .tp-filter-button {
+  .filter-button {
     align-self: flex-start;
   }
 }

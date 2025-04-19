@@ -88,15 +88,6 @@
   position: relative;
 }
 
-.nav-tab:hover:not(:disabled) {
-  color: var(--color-primary);
-}
-
-.nav-tab:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .nav-tab.active {
   color: var(--color-primary);
   font-weight: 600;
@@ -968,21 +959,18 @@
   gap: 8px;
   padding: 12px 24px;
   border: 1px dashed var(--color-border);
-  border-radius: 8px;
+  border-radius: 6px;
   background-color: var(--color-background);
   color: var(--color-primary);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .add-section-button:hover {
   background-color: #f5f5f5;
   border-color: var(--color-primary);
-  transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 .question-actions {
@@ -2735,5 +2723,4 @@
   justify-content: center;
   align-items: flex-start;
   width: 100%;
-  max-width: 1200px;
 }

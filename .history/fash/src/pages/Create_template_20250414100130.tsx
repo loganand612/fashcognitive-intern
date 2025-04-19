@@ -6,7 +6,6 @@ import "./Create_template.css"
 import AccessManager from '../components/AccessManager'
 
 import "../components/TemplateBuilderLayout.css"
-import "../components/FixTransitions.css"
 import {
   ChevronDown,
   ChevronUp,
@@ -22,6 +21,7 @@ import {
   Move,
   Clock,
   ArrowLeft,
+  Save,
   Bell,
   FileText,
   CheckCircle,
@@ -2702,7 +2702,10 @@ const CreateTemplate: React.FC = () => {
           </div>
         </div>
         <div className="nav-right">
-          {/* Save button removed */}
+          <button className="save-button" onClick={handleSave}>
+            <Save size={16} />
+            <span>Save</span>
+          </button>
         </div>
       </div>
 

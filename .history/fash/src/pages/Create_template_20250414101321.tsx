@@ -6,7 +6,6 @@ import "./Create_template.css"
 import AccessManager from '../components/AccessManager'
 
 import "../components/TemplateBuilderLayout.css"
-import "../components/FixTransitions.css"
 import {
   ChevronDown,
   ChevronUp,

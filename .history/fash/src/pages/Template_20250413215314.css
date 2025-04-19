@@ -361,13 +361,13 @@
   white-space: nowrap;
 }
 
-.tp-filter-button:hover {
+.filter-button:hover {
   background: #f9fafb;
   border-color: #9ca3af;
 }
 
 /* Table Styles */
-.tp-templates-table {
+.templates-table {
   width: 100%;
   overflow-x: auto;
 }
@@ -394,18 +394,18 @@ td {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.tp-checkbox-column {
+.checkbox-column {
   width: 48px;
   padding-right: 0;
 }
 
-.tp-template-cell {
+.template-cell {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.tp-template-icon {
+.template-icon {
   width: 40px;
   height: 40px;
   background: #f3f4f6;
@@ -416,7 +416,7 @@ td {
   color: #374151;
 }
 
-.tp-access-badge {
+.access-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -427,7 +427,7 @@ td {
   color: #374151;
 }
 
-.tp-action-buttons {
+.action-buttons {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -435,7 +435,7 @@ td {
   white-space: nowrap;
 }
 
-.tp-start-inspection {
+.start-inspection {
   padding: 6px 12px;
   background: #f3f4f6;
   border: none;
@@ -446,11 +446,11 @@ td {
   transition: all 0.2s;
 }
 
-.tp-start-inspection:hover {
+.start-inspection:hover {
   background: #e5e7eb;
 }
 
-.tp-more-options {
+.more-options {
   padding: 6px;
   background: none;
   border: none;
@@ -463,55 +463,55 @@ td {
   justify-content: center;
 }
 
-.tp-more-options:hover {
+.more-options:hover {
   background: #f3f4f6;
   color: #374151;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .tp-creation-options {
+  .creation-options {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .tp-search-controls {
+  .search-controls {
     flex-wrap: wrap;
   }
 
-  .tp-search-field {
+  .search-field {
     min-width: 200px;
   }
 }
 
 @media (max-width: 768px) {
-  .tp-creation-options {
+  .creation-options {
     grid-template-columns: 1fr;
   }
 
-  .tp-template-tabs {
+  .template-tabs {
     gap: 16px;
     padding: 0 16px;
   }
 
-  .tp-template-content {
+  .template-content {
     padding: 16px;
   }
 
-  .tp-templates-header {
+  .templates-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
-  .tp-create-button {
+  .create-button {
     align-self: flex-start;
   }
 
-  .tp-search-controls {
+  .search-controls {
     flex-direction: column;
   }
 
-  .tp-filter-button {
+  .filter-button {
     align-self: flex-start;
   }
 }

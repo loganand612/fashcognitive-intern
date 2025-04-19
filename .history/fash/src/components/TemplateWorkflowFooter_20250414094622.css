@@ -1,0 +1,90 @@
+.template-workflow-footer {
+  position: fixed;
+  bottom: 0;
+  left: 250px;
+  right: 0;
+  background-color: white;
+  border-top: 1px solid #e5e7eb;
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-message {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.next-button, .publish-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.next-button {
+  background-color: #6366f1;
+  color: white;
+  border: none;
+}
+
+.next-button:hover {
+  background-color: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.publish-button {
+  background-color: #111827;
+  color: white;
+  border: none;
+}
+
+.publish-button:hover:not(:disabled) {
+  background-color: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.publish-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .template-workflow-footer {
+    left: 64px;
+  }
+  
+  .footer-content {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .footer-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

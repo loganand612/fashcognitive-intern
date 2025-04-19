@@ -6,7 +6,6 @@ import "./Create_template.css"
 import AccessManager from '../components/AccessManager'
 
 import "../components/TemplateBuilderLayout.css"
-import "../components/FixTransitions.css"
 import {
   ChevronDown,
   ChevronUp,
@@ -22,9 +21,9 @@ import {
   Move,
   Clock,
   ArrowLeft,
+  Save,
   Bell,
   FileText,
-  CheckCircle,
   MessageSquare,
   CornerDownRight,
   ArrowRight,
@@ -2702,7 +2701,10 @@ const CreateTemplate: React.FC = () => {
           </div>
         </div>
         <div className="nav-right">
-          {/* Save button removed */}
+          <button className="save-button" onClick={handleSave}>
+            <Save size={16} />
+            <span>Save</span>
+          </button>
         </div>
       </div>
 
@@ -2765,9 +2767,7 @@ const CreateTemplate: React.FC = () => {
         )}
         {activeTab === 2 && (
           <div className="report-page-container">
-            <div style={{ width: '100%', maxWidth: '1200px' }}>
-              <Report template={template} />
-            </div>
+            <Report template={template} />
             <div className="report-footer">
               <button className="next-button" onClick={() => setActiveTab(3)}>
                 Next: Access
@@ -2777,31 +2777,17 @@ const CreateTemplate: React.FC = () => {
           </div>
         )}
         {activeTab === 3 && (
-          <div className="access-page-container">
-            <div className="access-tab">
-              <AccessManager
-                templateId={template.id}
-                templateTitle={template.title || "Untitled Template"}
-                initialUsers={[]}
-                onUpdatePermissions={(users) => {
-                  console.log("Updated permissions:", users);
-                  // Here you would update the template with the new permissions
-                  // setTemplate({ ...template, permissions: users });
-                }}
-              />
-            </div>
-            <div className="access-footer">
-              <button
-                className="publish-button"
-                onClick={() => {
-                  alert('Template published successfully!');
-                  window.location.href = '/dashboard';
-                }}
-              >
-                Publish Template
-                <CheckCircle size={16} />
-              </button>
-            </div>
+          <div className="access-tab">
+            <AccessManager
+              templateId={template.id}
+              templateTitle={template.title || "Untitled Template"}
+              initialUsers={[]}
+              onUpdatePermissions={(users) => {
+                console.log("Updated permissions:", users);
+                // Here you would update the template with the new permissions
+                // setTemplate({ ...template, permissions: users });
+              }}
+            />
           </div>
         )}
       </div>

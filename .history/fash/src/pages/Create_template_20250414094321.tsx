@@ -4,9 +4,7 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import "./Create_template.css"
 import AccessManager from '../components/AccessManager'
-
-import "../components/TemplateBuilderLayout.css"
-import "../components/FixTransitions.css"
+import TemplateFooter, { TemplateStatus } from '../components/TemplateFooter'
 import {
   ChevronDown,
   ChevronUp,
@@ -22,9 +20,9 @@ import {
   Move,
   Clock,
   ArrowLeft,
+  Save,
   Bell,
   FileText,
-  CheckCircle,
   MessageSquare,
   CornerDownRight,
   ArrowRight,
@@ -1665,8 +1663,11 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
 // Main Component
 const CreateTemplate: React.FC = () => {
   const [template, setTemplate] = useState<Template>(getInitialTemplate())
-  const [activeTab, setActiveTab] = useState<number>(0)
-
+  const [activeTab, setActiveTab] = useState<number>(1)
+  const [templateStatus, setTemplateStatus] = useState<TemplateStatus>('draft')
+  const [isSaving, setIsSaving] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
   const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
@@ -2679,37 +2680,28 @@ const CreateTemplate: React.FC = () => {
         </div>
         <div className="nav-center">
           <div className="nav-tabs">
-            <button
-              className={`nav-tab ${activeTab === 0 ? "active" : ""}`}
-              onClick={() => setActiveTab(0)}
-            >
+            <button className={`nav-tab ${activeTab === 1 ? "active" : ""}`} onClick={() => setActiveTab(1)}>
               1. Build
             </button>
-            <button
-              className={`nav-tab ${activeTab === 2 ? "active" : ""}`}
-              onClick={() => setActiveTab(2)}
-              disabled={activeTab < 2}
-            >
+            <button className={`nav-tab ${activeTab === 2 ? "active" : ""}`} onClick={() => setActiveTab(2)}>
               2. Report
             </button>
-            <button
-              className={`nav-tab ${activeTab === 3 ? "active" : ""}`}
-              onClick={() => setActiveTab(3)}
-              disabled={activeTab < 3}
-            >
+            <button className={`nav-tab ${activeTab === 3 ? "active" : ""}`} onClick={() => setActiveTab(3)}>
               3. Access
             </button>
           </div>
         </div>
         <div className="nav-right">
-          {/* Save button removed */}
+          <button className="save-button" onClick={handleSave}>
+            <Save size={16} />
+            <span>Save</span>
+          </button>
         </div>
       </div>
 
       <div className="builder-content">
-        {activeTab === 0 && (
-          <div className="template-builder-container">
-            <div className="template-content">
+        {activeTab === 1 && (
+          <div className="template-content max-w-4xl mx-auto">
             <div className="template-header">
               <div className="template-logo">
                 {template.logo ? (
@@ -2747,66 +2739,65 @@ const CreateTemplate: React.FC = () => {
               {template.sections.map((section, idx) => renderSection(section, idx))}
             </div>
             <div className="add-section-container">
-              <div className="add-section-actions">
-                <button className="add-section-button" onClick={addSection}>
-                  <Plus size={16} /> Add Section
-                </button>
-                <button className="next-button" onClick={() => setActiveTab(2)}>
-                  Next: Report
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            </div>
-            </div>
-            <div className="mobile-preview-container">
-              {renderMobilePreview()}
-            </div>
-          </div>
-        )}
-        {activeTab === 2 && (
-          <div className="report-page-container">
-            <div style={{ width: '100%', maxWidth: '1200px' }}>
-              <Report template={template} />
-            </div>
-            <div className="report-footer">
-              <button className="next-button" onClick={() => setActiveTab(3)}>
-                Next: Access
-                <ArrowRight size={16} />
+              <button className="add-section-button" onClick={addSection}>
+                <Plus size={16} /> Add Section
               </button>
             </div>
           </div>
         )}
+        {activeTab === 2 && <Report template={template} />}
         {activeTab === 3 && (
-          <div className="access-page-container">
-            <div className="access-tab">
-              <AccessManager
-                templateId={template.id}
-                templateTitle={template.title || "Untitled Template"}
-                initialUsers={[]}
-                onUpdatePermissions={(users) => {
-                  console.log("Updated permissions:", users);
-                  // Here you would update the template with the new permissions
-                  // setTemplate({ ...template, permissions: users });
-                }}
-              />
-            </div>
-            <div className="access-footer">
-              <button
-                className="publish-button"
-                onClick={() => {
-                  alert('Template published successfully!');
-                  window.location.href = '/dashboard';
-                }}
-              >
-                Publish Template
-                <CheckCircle size={16} />
-              </button>
-            </div>
+          <div className="access-tab">
+            <AccessManager
+              templateId={template.id}
+              templateTitle={template.title || "Untitled Template"}
+              initialUsers={[]}
+              onUpdatePermissions={(users) => {
+                console.log("Updated permissions:", users);
+                // Here you would update the template with the new permissions
+                // setTemplate({ ...template, permissions: users });
+              }}
+            />
           </div>
         )}
+        {activeTab === 1 && renderMobilePreview()}
       </div>
 
+      <TemplateFooter
+        activeTab={activeTab}
+        templateStatus={templateStatus}
+        isSaving={isSaving}
+        hasUnsavedChanges={hasUnsavedChanges}
+        isValid={validationErrors.length === 0}
+        validationErrors={validationErrors}
+        onSave={() => {
+          setIsSaving(true);
+          // Simulate saving
+          setTimeout(() => {
+            setIsSaving(false);
+            setHasUnsavedChanges(false);
+            alert('Template saved successfully!');
+          }, 1000);
+        }}
+        onPublish={() => {
+          if (validationErrors.length > 0) {
+            alert('Please fix validation errors before publishing');
+            return;
+          }
 
+          // Simulate publishing
+          setIsSaving(true);
+          setTimeout(() => {
+            setIsSaving(false);
+            setHasUnsavedChanges(false);
+            setTemplateStatus('published');
+            alert('Template published successfully!');
+          }, 1500);
+        }}
+        onPreview={() => {
+          setActiveTab(1); // Switch to mobile preview tab
+        }}
+      />
     </div>
   )
 }

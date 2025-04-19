@@ -171,12 +171,15 @@ const Dashboard: React.FC = () => {
         <div className="header-section">
           <h1 className="page-title">Dashboard Overview</h1>
           <div className="user-tags">
-            <ConnectionsPanel
-              connections={connections}
-              onAddConnection={handleAddConnection}
-              onRemoveConnection={handleRemoveConnection}
-              maxDisplayed={3}
-            />
+            <span className="user-tag">GM</span>
+            <span className="user-tag">JM</span>
+            <span className="user-count">+{userCount - 2}</span>
+            <button
+              className="add-user-button"
+              onClick={() => setUserCount(prev => prev + 1)}
+            >
+              Add +
+            </button>
           </div>
         </div>
 

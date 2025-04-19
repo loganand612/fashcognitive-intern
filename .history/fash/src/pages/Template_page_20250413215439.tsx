@@ -115,29 +115,29 @@ const TemplatePage: React.FC = () => {
 
           <section className="tp-templates-section">
             <div className="tp-templates-header">
-              <h2>Templates <span className="tp-count">(1 - {templates.length} of {templates.length})</span></h2>
-              <a href="/ct" className="tp-create-button">
+              <h2>Templates <span className="count">(1 - {templates.length} of {templates.length})</span></h2>
+              <a href="/ct" className="create-button">
                 <Plus size={16} />
                 Create
               </a>
             </div>
 
-            <div className="tp-search-controls">
-              <div className="tp-search-field">
-                <Search className="tp-search-icon" size={20} />
+            <div className="search-controls">
+              <div className="search-field">
+                <Search className="search-icon" size={20} />
                 <input type="text" placeholder="Search all templates" />
               </div>
-              <button className="tp-filter-button">
+              <button className="filter-button">
                 <Plus size={16} />
                 Add filter
               </button>
             </div>
 
-            <div className="tp-templates-table">
+            <div className="templates-table">
               <table>
                 <thead>
                   <tr>
-                    <th className="tp-checkbox-column">
+                    <th className="checkbox-column">
                       <input type="checkbox" />
                     </th>
                     <th>Template</th>
@@ -149,12 +149,12 @@ const TemplatePage: React.FC = () => {
                 <tbody>
                   {templates.map(template => (
                     <tr key={template.id}>
-                      <td className="tp-checkbox-column">
+                      <td className="checkbox-column">
                         <input type="checkbox" />
                       </td>
                       <td>
-                        <div className="tp-template-cell">
-                          <div className="tp-template-icon">
+                        <div className="template-cell">
+                          <div className="template-icon">
                             <FileText size={20} />
                           </div>
                           <span>{template.title}</span>
@@ -162,17 +162,17 @@ const TemplatePage: React.FC = () => {
                       </td>
                       <td>{template.lastModified}</td>
                       <td>
-                        <div className="tp-access-badge">
+                        <div className="access-badge">
                           <User size={16} />
                           <span>{template.access}</span>
                         </div>
                       </td>
                       <td>
-                        <div className="tp-action-buttons">
-                          <button className="tp-start-inspection">
+                        <div className="action-buttons">
+                          <button className="start-inspection">
                             Start inspection
                           </button>
-                          <button className="tp-more-options">
+                          <button className="more-options">
                             <MoreHorizontal size={16} />
                           </button>
                         </div>

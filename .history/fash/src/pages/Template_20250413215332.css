@@ -463,55 +463,55 @@ td {
   justify-content: center;
 }
 
-.tp-more-options:hover {
+.more-options:hover {
   background: #f3f4f6;
   color: #374151;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .tp-creation-options {
+  .creation-options {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .tp-search-controls {
+  .search-controls {
     flex-wrap: wrap;
   }
 
-  .tp-search-field {
+  .search-field {
     min-width: 200px;
   }
 }
 
 @media (max-width: 768px) {
-  .tp-creation-options {
+  .creation-options {
     grid-template-columns: 1fr;
   }
 
-  .tp-template-tabs {
+  .template-tabs {
     gap: 16px;
     padding: 0 16px;
   }
 
-  .tp-template-content {
+  .template-content {
     padding: 16px;
   }
 
-  .tp-templates-header {
+  .templates-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
-  .tp-create-button {
+  .create-button {
     align-self: flex-start;
   }
 
-  .tp-search-controls {
+  .search-controls {
     flex-direction: column;
   }
 
-  .tp-filter-button {
+  .filter-button {
     align-self: flex-start;
   }
 }
