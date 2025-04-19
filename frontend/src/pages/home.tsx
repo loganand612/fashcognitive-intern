@@ -1,15 +1,15 @@
 import type React from "react";
-import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/styles.css";
+import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/styles.css";
 import { Menu } from "lucide-react";
 
 // Import the icon images and video from the assets folder
-import createIcon from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/create.png";
-import conductIcon from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/conduct.png";
-import analyzeIcon from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/analyze.png"; // Ensure this is a PNG with transparency
-import qr from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/qr.png";
-import headerVideo from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/head1.mp4";
-import appStoreBadge from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/app-store-badge.svg";
-import googlePlayBadge from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/google-play-badge.svg";
+import createIcon from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/create.png";
+import conductIcon from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/conduct.png";
+import analyzeIcon from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/analyze.png"; // Ensure this is a PNG with transparency
+import qr from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/qr.png";
+import headerVideo from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/head1.mp4";
+import appStoreBadge from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/app-store-badge.svg";
+import googlePlayBadge from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/google-play-badge.svg";
 
 const Home2: React.FC = () => {
   return (
