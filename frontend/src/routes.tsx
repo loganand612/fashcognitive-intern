@@ -6,7 +6,8 @@ import Register from "./pages/register";
 import CreateTemplate from "./pages/Create_template";  
 import Dashboard from "./pages/Dashboard"; 
 import Template from "./pages/Template";
-
+import TemplatePage from "./pages/Create_template";
+import TemplateView from "./pages/TemplateView"; 
 
 const AppRoutes: React.FC = () => {
   return (
@@ -17,6 +18,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/create_templates" element={<CreateTemplate />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/templates" element={<Template />} />
+      <Route path="/templates" element={<TemplatePage />} />
+      <Route path="/template/:id" element={<TemplateView />} />
     </Routes>
   );
 };

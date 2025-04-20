@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import React from 'react';
-import '../assets/Template.css';
-import { 
-  Plus, 
-  Search, 
-  FileText, 
-  User, 
-  MoreHorizontal, 
+"use client"
+
+import type React from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import "../assets/Template.css"
+import {
+  Plus,
+  Search,
+  FileText,
+  User,
   X,
   Home,
   Bell,
@@ -17,19 +18,33 @@ import {
   BookOpen,
   Package,
   AlertCircle,
-  Settings
-} from 'lucide-react';
+  Settings,
+} from "lucide-react"
 
 interface Template {
-  id: number;
-  title: string;
-  lastModified: string;
-  access: string;
+  id: number
+  title: string
+  lastModified?: string
+  access?: string
+}
+
+// Define interface for endpoint result data
+interface EndpointResult {
+  status?: number
+  ok?: boolean
+  parseError?: string
+  error?: string
+}
+
+// Define interface for debug info
+interface DebugInfo {
+  endpoints: { [endpoint: string]: EndpointResult }
+  successEndpoint?: string
+  responseData?: any
 }
 
 const TemplatePage: React.FC = () => {
-
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/dashboard" },
@@ -42,42 +57,95 @@ const TemplatePage: React.FC = () => {
     { icon: BookOpen, label: "Training", href: "/training" },
     { icon: Package, label: "Assets", href: "/assets" },
     { icon: AlertCircle, label: "Issues", href: "/issues" },
-  ];
+  ]
 
-  const [templates, setTemplates] = useState<Template[]>([
-    { id: 1, title: 'Safety Inspection Form', lastModified: '2 days ago', access: 'All users' },
-    { id: 2, title: 'Equipment Checklist', lastModified: '3 days ago', access: 'Team only' },
-    { id: 3, title: 'Incident Report Template', lastModified: '1 week ago', access: 'All users' },
-  ]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
+
+  // List of potential endpoints to try
+  const endpointsToTry = [
+    "/api/templates/",
+    "/templates_api/",
+    "/templates/",
+    "/api/v1/templates/",
+    "/api/user/templates/",
+    "/dashboard/templates/",
+    "/api/users/templates/",
+  ]
 
   const handleCreateTemplate = () => {
-    // Navigate to the create templates page
-    navigate('/create_templates');
-  };
+    navigate("/create_templates")
+  }
 
-
+  // Function to test all endpoints
   useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("http://127.0.0.1:8000/api/users/templates/");
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        setTemplates(data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching templates:", error);
-        setError("Failed to load templates.");
-        setLoading(false);
-      }
-    };
+    const testAllEndpoints = async () => {
+      setLoading(true)
+      setError("")
 
-    fetchTemplates();
-  }, []);
+      const results: { [endpoint: string]: EndpointResult } = {}
+
+      for (const endpoint of endpointsToTry) {
+        try {
+          const fullUrl = `http://127.0.0.1:8000${endpoint}`
+          console.log(`Testing endpoint: ${fullUrl}`)
+
+          const response = await fetch(fullUrl)
+          results[endpoint] = {
+            status: response.status,
+            ok: response.ok,
+          }
+
+          if (response.ok) {
+            try {
+              const data = await response.json()
+              console.log(`Success with ${fullUrl}:`, data)
+              setTemplates(data)
+              setDebugInfo({
+                endpoints: results,
+                successEndpoint: fullUrl,
+                responseData: data,
+              })
+              setLoading(false)
+              return // Stop trying other endpoints
+            } catch (e) {
+              if (results[endpoint]) {
+                results[endpoint].parseError = "Could not parse JSON"
+              }
+            }
+          }
+        } catch (err) {
+          results[endpoint] = {
+            error: err instanceof Error ? err.message : String(err),
+          }
+        }
+      }
+
+      // If we get here, none of the endpoints worked
+      console.log("All endpoints failed:", results)
+      setDebugInfo({ endpoints: results })
+      setError("Could not connect to any templates API endpoint")
+
+      // Fall back to demo data
+      setTemplates([
+        { id: 1, title: "Safety Inspection Form (Demo)", lastModified: "2 days ago", access: "All users" },
+        { id: 2, title: "Weekly Equipment Check (Demo)", lastModified: "5 days ago", access: "Team managers" },
+        { id: 3, title: "Monthly Fire Safety Audit (Demo)", lastModified: "2 weeks ago", access: "Safety officers" },
+      ])
+
+      setLoading(false)
+    }
+
+    testAllEndpoints()
+  }, [])
+
+  // Filter templates based on search term
+  const filteredTemplates = templates.filter((template) =>
+    template.title.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
   return (
     <div className="app-container">
@@ -155,21 +223,37 @@ const TemplatePage: React.FC = () => {
               <h2>
                 Templates{" "}
                 <span className="count">
-                  (1 - {templates.length} of {templates.length})
+                  (1 - {filteredTemplates.length} of {templates.length})
                 </span>
               </h2>
-              <button className="create-button"
-              onClick={handleCreateTemplate}
-              >
+              <button className="create-button" onClick={handleCreateTemplate}>
                 <Plus size={16} />
                 Create
               </button>
             </div>
 
+            {/* Show loading indicator or error message */}
+            {loading && <div className="loading">Loading templates...</div>}
+            {error && (
+              <div className="error-message">
+                {error}
+                <p>Showing demo data for display purposes.</p>
+                <details>
+                  <summary>API Debug Info (Click to expand)</summary>
+                  <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+                </details>
+              </div>
+            )}
+
             <div className="search-controls">
               <div className="search-field">
                 <Search className="search-icon" size={20} />
-                <input type="text" placeholder="Search all templates" />
+                <input
+                  type="text"
+                  placeholder="Search all templates"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
               <button className="filter-button">
                 <Plus size={16} />
@@ -191,7 +275,7 @@ const TemplatePage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {templates.map(template => (
+                  {filteredTemplates.map((template) => (
                     <tr key={template.id}>
                       <td className="checkbox-column">
                         <input type="checkbox" />
@@ -204,20 +288,18 @@ const TemplatePage: React.FC = () => {
                           <span>{template.title}</span>
                         </div>
                       </td>
-                      <td>{template.lastModified}</td>
+                      <td>{template.lastModified || "Not available"}</td>
                       <td>
                         <div className="access-badge">
                           <User size={16} />
-                          <span>{template.access}</span>
+                          <span>{template.access || "No access specified"}</span>
                         </div>
                       </td>
                       <td>
                         <div className="action-buttons">
-                          <button className="start-inspection">
-                            Start inspection
-                          </button>
-                          <button className="more-options">
-                            <MoreHorizontal size={16} />
+                          <button className="start-inspection">Start inspection</button>
+                          <button className="view-button" onClick={() => navigate(`/template/${template.id}`)}>
+                            View
                           </button>
                         </div>
                       </td>
@@ -230,7 +312,7 @@ const TemplatePage: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default TemplatePage;
+export default TemplatePage

@@ -182,11 +182,26 @@ const Create_template = () => {
 
   // Update handleSave to not use localStorage
   const handleSave = async () => {
+    const formData = new FormData();
+  
+    formData.append("title", template.title);
+    formData.append("description", template.description);
+  
+    if (template.logo instanceof File) {
+      formData.append("logo", template.logo);  // ✅ Append image file
+    }
+  
+    formData.append("sections", JSON.stringify(template.sections));  // ✅ Convert complex structure to string
+  
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/users/create_templates/", // ✅ API endpoint
-        template,
-        { headers: { "Content-Type": "application/json" } }
+        "http://127.0.0.1:8000/api/users/create_templates/",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",  // ✅ Required for file upload
+          },
+        }
       );
       console.log("Template saved successfully:", response.data);
       alert("Template saved successfully!");
