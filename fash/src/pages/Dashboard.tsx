@@ -15,7 +15,7 @@ import {
   User,
   ChevronRight
 } from 'lucide-react';
-import ConnectionsPanel, { Connection } from '../components/ConnectionsPanel';
+import ConnectionsPanel, { Connection } from './components/ConnectionsPanel';
 
 const Dashboard: React.FC = () => {
   // Sample connections data
