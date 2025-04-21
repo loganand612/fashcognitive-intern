@@ -2,6 +2,7 @@ import type React from "react";
 import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/styles.css";
 import { Menu } from "lucide-react";
 
+
 // Import the icon images and video from the assets folder
 import createIcon from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/create.png";
 import conductIcon from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/conduct.png";

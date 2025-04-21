@@ -2,6 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
+from django.db import models
+
+logo = models.BinaryField(blank=True, null=True)
 
 
 class CustomUser(AbstractUser):
@@ -12,7 +15,6 @@ class CustomUser(AbstractUser):
     job_title = models.CharField(max_length=100)
     company_size = models.IntegerField()
 
-    # Use email as the primary login field
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'phone', 'company_name', 'industry_type', 'job_title', 'company_size']
 

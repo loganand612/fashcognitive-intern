@@ -1,17 +1,22 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
 from .serializers import UserRegistrationSerializer, TemplateSerializer
-from .models import Template
-import json
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from .models import Template, Section, Question
+from rest_framework.parsers import MultiPartParser
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+import json
+from django.shortcuts import get_object_or_404
+from rest_framework.generics import RetrieveAPIView
+from django.views import View
+from .models import Template
+from django.shortcuts import render
 
 
 class RegisterUserView(APIView):
@@ -43,14 +48,11 @@ def login_user(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Template
-from .serializers import TemplateSerializer
 
 
 @api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+@parser_classes([MultiPartParser])
 def templates_api(request):
     if request.method == "GET":
         templates = Template.objects.all()
@@ -58,35 +60,50 @@ def templates_api(request):
         return Response(serializer.data)
 
     if request.method == "POST":
-        data = request.data
-        title = data.get("title")
-        description = data.get("description")
-        sections_data = data.get("sections", [])
+        try:
+            title = request.data.get("title")
+            description = request.data.get("description")
+            logo_file = request.FILES.get("logo")
+            logo_data = logo_file.read() if logo_file else None
 
-        # Create Template
-        template = Template.objects.create(title=title, description=description)
+            sections_data = request.data.get("sections")
 
-        # Loop through Sections and save them
-        for section_data in sections_data:
-            section = Section.objects.create(
-                template=template,
-                title=section_data.get("title"),
-                description=section_data.get("description", ""),
-                order=section_data.get("order", 0),
-                is_collapsed=section_data.get("isCollapsed", False),
+            if not title:
+                return Response({"error": "Title is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                sections = json.loads(sections_data)
+            except Exception as e:
+                return Response({"error": "Invalid JSON in sections"}, status=400)
+
+            template = Template.objects.create(
+                title=title,
+                description=description,
+                logo=logo_data,
             )
 
-            # Save Questions inside each section
-            for question_data in section_data.get("questions", []):
-                Question.objects.create(
-                    section=section,
-                    text=question_data.get("text"),
-                    response_type=question_data.get("responseType"),
-                    required=question_data.get("required", False),
-                    order=question_data.get("order", 0),
+            for section_data in sections:
+                section = Section.objects.create(
+                    template=template,
+                    title=section_data.get("title"),
+                    description=section_data.get("description", ""),
+                    order=section_data.get("order", 0),
+                    is_collapsed=section_data.get("isCollapsed", False),
                 )
 
-        return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
+                for question_data in section_data.get("questions", []):
+                    Question.objects.create(
+                        section=section,
+                        text=question_data.get("text"),
+                        response_type=question_data.get("responseType"),
+                        required=question_data.get("required", False),
+                        order=question_data.get("order", 0),
+                    )
+
+            return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @method_decorator(login_required, name='dispatch')  # Requires login
@@ -108,5 +125,61 @@ class TemplateAPI(APIView):
         templates = Template.objects.all()
         serializer = TemplateSerializer(templates, many=True)
         return Response(serializer.data)
-    
 
+class TemplateCreateView(APIView):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        try:
+            title = request.data.get("title")
+            description = request.data.get("description")
+            logo = request.FILES.get("logo")
+            sections_data = request.data.get("sections")
+
+            if not title:
+                return Response({"error": "Title is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                sections = json.loads(sections_data)
+            except Exception as e:
+                return Response({"error": "Invalid JSON in sections"}, status=400)
+
+            template = Template.objects.create(
+                title=title,
+                description=description,
+                logo=logo,
+            )
+
+            for section_data in sections:
+                section = Section.objects.create(
+                    template=template,
+                    title=section_data.get("title"),
+                    description=section_data.get("description", ""),
+                    order=section_data.get("order", 0),
+                    is_collapsed=section_data.get("isCollapsed", False),
+                )
+
+                for question_data in section_data.get("questions", []):
+                    Question.objects.create(
+                        section=section,
+                        text=question_data.get("text"),
+                        response_type=question_data.get("responseType"),
+                        required=question_data.get("required", False),
+                        order=question_data.get("order", 0),
+                    )
+
+            return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class TemplateDetailView(RetrieveAPIView):
+    queryset = Template.objects.all()
+    serializer_class = TemplateSerializer
+
+
+
+class DashboardTemplateView(View):
+    def get(self, request):
+        templates = Template.objects.all()
+        return render(request, 'dashboard/templates.html', {'templates': templates})

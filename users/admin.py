@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import Template
+from .models import Template, Section, Question
 
 admin.site.register(Template)
-
-# Register your models here.
+admin.site.register(Section)
+admin.site.register(Question)
