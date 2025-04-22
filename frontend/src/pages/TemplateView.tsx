@@ -9,7 +9,10 @@ const TemplateView = () => {
   useEffect(() => {
     axios
       .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
-      .then((res) => setTemplate(res.data))
+      .then((res)=>{
+        console.log("Logo URL:", res.data.logo); 
+        setTemplate(res.data);
+      })
       .catch((err) => console.error("Failed to load template", err));
   }, [id]);
 
@@ -22,7 +25,7 @@ const TemplateView = () => {
 
       {template.logo && (
         <img
-          src={`data:image/png;base64,${template.logo}`}
+          src={template.logo}
           alt="Template Logo"
           style={{ width: 150 }}
         />

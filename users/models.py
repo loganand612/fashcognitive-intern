@@ -29,7 +29,7 @@ class CustomUser(AbstractUser):
 class Template(models.Model):
     title = models.CharField(max_length=255)  # Changed from 'name' to match your React component
     description = models.TextField(blank=True, null=True)
-    logo = models.ImageField(upload_to='template_logos/', blank=True, null=True)
+    logo = models.ImageField(upload_to='logos/', null=True, blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_published = models.DateTimeField(blank=True, null=True)

@@ -126,30 +126,47 @@ class TemplateAPI(APIView):
         serializer = TemplateSerializer(templates, many=True)
         return Response(serializer.data)
 
+import base64
+from django.core.files.base import ContentFile
+
 class TemplateCreateView(APIView):
-    parser_classes = [MultiPartParser]
+    permission_classes = [AllowAny]  # or customize as needed
 
     def post(self, request):
         try:
             title = request.data.get("title")
             description = request.data.get("description")
-            logo = request.FILES.get("logo")
+            logo_base64 = request.data.get("logo")  # Now expecting base64 string
             sections_data = request.data.get("sections")
 
             if not title:
                 return Response({"error": "Title is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+            # Decode base64 logo
+            logo_file = None
+            if logo_base64:
+                format, imgstr = logo_base64.split(';base64,')
+                ext = format.split('/')[-1]
+                logo_file = ContentFile(base64.b64decode(imgstr), name=f"logo.{ext}")
+            else:
+                logo_file = None
+
+
+
+            # Parse sections JSON
             try:
-                sections = json.loads(sections_data)
+                sections = sections_data if isinstance(sections_data, list) else json.loads(sections_data)
             except Exception as e:
                 return Response({"error": "Invalid JSON in sections"}, status=400)
 
+            # Create template
             template = Template.objects.create(
                 title=title,
                 description=description,
-                logo=logo,
+                logo=logo_file,
             )
 
+            # Add sections and questions
             for section_data in sections:
                 section = Section.objects.create(
                     template=template,
@@ -171,7 +188,10 @@ class TemplateCreateView(APIView):
             return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()  # 👈 This prints the full error traceback to the terminal
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class TemplateDetailView(RetrieveAPIView):
     queryset = Template.objects.all()
