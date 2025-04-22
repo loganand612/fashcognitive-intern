@@ -1,30 +1,88 @@
-import React, { useState, useEffect } from "react"; 
-import "../assets/Dashboard.css"; 
-import axios from "axios";
-import { 
-  Home, Search, Bell, FileText, ClipboardCheck, Calendar, Play, BookOpen, Package, AlertCircle,
-  Settings, User, ChevronRight 
-} from "lucide-react";
+
+import React, { useState } from 'react';
+import '../assets/Dashboard.css';
+import {
+  Home,
+  Search,
+  Bell,
+  FileText,
+  ClipboardCheck,
+  Calendar,
+  Play,
+  BookOpen,
+  Package,
+  AlertCircle,
+  Settings,
+  User,
+  ChevronRight
+} from 'lucide-react';
+import ConnectionsPanel, { Connection } from './components/ConnectionsPanel';
 
 const Dashboard: React.FC = () => {
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [userCount, setUserCount] = useState(2); 
+  // Sample connections data
+  const [connections, setConnections] = useState<Connection[]>([
+    {
+      id: '1',
+      name: 'Grace Miller',
+      email: 'grace.miller@example.com',
+      initials: 'GM',
+      status: 'active'
+    },
+    {
+      id: '2',
+      name: 'John Martinez',
+      email: 'john.martinez@example.com',
+      initials: 'JM',
+      status: 'active'
+    },
+    {
+      id: '3',
+      name: 'Sarah Johnson',
+      email: 'sarah.johnson@example.com',
+      initials: 'SJ',
+      status: 'active'
+    },
+    {
+      id: '4',
+      name: 'Michael Brown',
+      email: 'michael.brown@example.com',
+      initials: 'MB',
+      status: 'active'
+    },
+    {
+      id: '5',
+      name: 'Emily Davis',
+      email: 'emily.davis@example.com',
+      initials: 'ED',
+      status: 'active'
+    }
+  ]);
 
-  useEffect(() => {
-      axios.get("http://127.0.0.1:8000/api/users/dashboard/", { withCredentials: true })
+  const handleAddConnection = (email: string) => {
+    // In a real app, you would send an invitation and create a pending connection
+    const name = email.split('@')[0].split('.').map(part =>
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' ');
 
-      .then((response) => {
-        setDashboardData(response.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching dashboard data:", err);
-        setError("Failed to load data.");
-        setLoading(false);
-      });
-  }, []);
+    const initials = name.split(' ')
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase();
+
+    const newConnection: Connection = {
+      id: Date.now().toString(),
+      name,
+      email,
+      initials,
+      status: 'pending'
+    };
+
+    setConnections([...connections, newConnection]);
+  };
+
+  const handleRemoveConnection = (id: string) => {
+    setConnections(connections.filter(connection => connection.id !== id));
+  };
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/dashboard" },
@@ -84,7 +142,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Top Navigation */}
+
       <nav className="navbar">
         <div className="navbar-brand">FASHCOGNITIVE</div>
         <div className="navbar-actions">
@@ -97,7 +155,7 @@ const Dashboard: React.FC = () => {
         </div>
       </nav>
 
-      {/* Sidebar */}
+
       <aside className="sidebar">
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
@@ -109,20 +167,17 @@ const Dashboard: React.FC = () => {
         </nav>
       </aside>
 
-      {/* Main Content */}
+
       <main className="main-content">
         <div className="header-section">
           <h1 className="page-title">Dashboard Overview</h1>
           <div className="user-tags">
-            <span className="user-tag">GM</span>
-            <span className="user-tag">JM</span>
-            <span className="user-count">+{userCount - 2}</span>
-            <button 
-              className="add-user-button"
-              onClick={() => setUserCount(prev => prev + 1)}
-            >
-              Add +
-            </button>
+            <ConnectionsPanel
+              connections={connections}
+              onAddConnection={handleAddConnection}
+              onRemoveConnection={handleRemoveConnection}
+              maxDisplayed={3}
+            />
           </div>
         </div>
 

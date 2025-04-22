@@ -1,0 +1,21 @@
+/* Fix for global transitions */
+* {
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Re-enable specific transitions for elements that need them */
+.next-button, .publish-button, .add-section-button {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.next-button:hover, .publish-button:hover, .add-section-button:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* Mobile preview container with fixed styling */
+.mobile-preview-container {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
