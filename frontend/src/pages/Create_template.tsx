@@ -1413,6 +1413,8 @@ const Create_template = () => {
 
 export default Create_template
 */
+
+
 "use client"
 
 import type React from "react"
@@ -4154,7 +4156,7 @@ const CreateTemplate: React.FC = () => {
           </div>
         </div>
         <div className="nav-right">
-          {/* Save button removed */}
+
         </div>
       </div>
 
