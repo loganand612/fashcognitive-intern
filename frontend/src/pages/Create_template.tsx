@@ -1,4 +1,4 @@
-/*
+
 "use client"
 import axios from "axios";
 import type React from "react"
@@ -1412,9 +1412,9 @@ const Create_template = () => {
 }
 
 export default Create_template
-*/
 
 
+/*
 "use client"
 
 import type React from "react"
@@ -4272,3 +4272,4 @@ const CreateTemplate: React.FC = () => {
 }
 
 export default CreateTemplate
+*/
