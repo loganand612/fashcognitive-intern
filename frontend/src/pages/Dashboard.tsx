@@ -140,18 +140,40 @@ const Dashboard: React.FC = () => {
     }
   ];
 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleLogout = () => {
+    // Clear authentication tokens or user data
+    localStorage.removeItem('authToken'); // Example: Remove token from localStorage
+
+    // Redirect to login page
+    window.location.href = '/login';
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
   return (
     <div className="dashboard-container">
-
       <nav className="navbar">
         <div className="navbar-brand">FASHCOGNITIVE</div>
         <div className="navbar-actions">
           <button className="nav-button">
             <User className="nav-icon" />
           </button>
-          <button className="nav-button">
-            <Settings className="nav-icon" />
-          </button>
+          <div className="dropdown-container">
+            <button className="nav-button" onClick={toggleDropdown}>
+              <Settings className="nav-icon" />
+            </button>
+            {isDropdownOpen && (
+              <div className="dropdown-menu">
+                <button className="dropdown-item" onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -224,3 +246,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
