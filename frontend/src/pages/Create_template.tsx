@@ -5,6 +5,7 @@ import axios from "axios"
 import { useState, useRef, useEffect } from "react"
 import "./Create_template.css"
 import AccessManager from "./components/AccessManager"
+import { useParams, useNavigate } from "react-router-dom"
 
 import "./components/TemplateBuilderLayout.css"
 import "./components/FixTransitions.css"
@@ -164,87 +165,6 @@ interface Template {
   lastSaved?: Date
   lastPublished?: Date
   logo?: string
-}
-
-// Utility Functions
-const generateId = () => Math.random().toString(36).substring(2, 9)
-const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
-
-const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
-  id: generateId(),
-  text: "Type question",
-  responseType,
-  required: false,
-  flagged: false,
-  multipleSelection: false,
-  options:
-    responseType === "Multiple choice" || responseType === "Yes/No" ? ["Option 1", "Option 2", "Option 3"] : undefined,
-  value: null,
-  logicRules: [],
-})
-
-const getDefaultSection = (title = "Untitled Page"): Section => ({
-  id: generateId(),
-  title,
-  questions: [],
-  isCollapsed: false,
-})
-
-const getInitialTemplate = (): Template => {
-  const titlePageSection: Section = {
-    id: generateId(),
-    title: "Title Page",
-    description: "The Title Page is the first page of your inspection report. good one it below.",
-    questions: [
-      {
-        id: generateId(),
-        text: "Site conducted",
-        responseType: "Site",
-        required: true,
-        flagged: false,
-        value: null,
-        logicRules: [],
-      },
-      {
-        id: generateId(),
-        text: "Conducted on",
-        responseType: "Inspection date",
-        required: true,
-        flagged: false,
-        value: null,
-        logicRules: [],
-      },
-      {
-        id: generateId(),
-        text: "Prepared by",
-        responseType: "Person",
-        required: true,
-        flagged: false,
-        value: null,
-        logicRules: [],
-      },
-      {
-        id: generateId(),
-        text: "Location",
-        responseType: "Inspection location",
-        required: true,
-        flagged: false,
-        value: null,
-        logicRules: [],
-      },
-    ],
-    isCollapsed: false,
-  }
-
-  return {
-    id: generateId(),
-    title: "Untitled template",
-    description: "Add a description",
-    sections: [titlePageSection],
-    lastSaved: new Date(),
-    lastPublished: new Date(),
-    logo: undefined,
-  }
 }
 
 const resizeImage = (base64: string): Promise<string> => {
@@ -866,6 +786,7 @@ const EnhancedLogicRuleBuilder: React.FC<{
   )
 }
 
+const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`;
 const EnhancedLogicRulesContainer: React.FC<{
   questionType: ResponseType
   rules: LogicRule[]
@@ -953,38 +874,6 @@ const EnhancedAddLogicButton: React.FC<{
       {hasRules && <span className="rules-badge">!</span>}
     </button>
   )
-}
-const handleSave = async (template: Template) => {
-  const formData = new FormData()
-
-  formData.append("title", template.title)
-  formData.append("description", template.description)
-
-  if (template.logo) {
-    formData.append("logo", template.logo) // ✅ Append image file
-  }
-
-  formData.append("sections", JSON.stringify(template.sections)) // ✅ Convert complex structure to string
-
-  console.log("FormData being sent:", {
-    title: template.title,
-    description: template.description,
-    logo: template.logo,
-    sections: template.sections,
-  })
-
-  try {
-    const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data", // ✅ Required for file upload
-      },
-    })
-    console.log("Template saved successfully:", response.data)
-    alert("Template saved successfully!")
-  } catch (error) {
-    console.error("Error saving template:", error)
-    alert("Failed to save template!")
-  }
 }
 
 // Enhanced Report Component
@@ -1700,7 +1589,101 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
 
 // Main Component
 const CreateTemplate: React.FC = () => {
-  const [template, setTemplate] = useState<Template>(getInitialTemplate()) // Place it here
+  const { id } = useParams() // if id exists, we're in edit mode
+  const navigate = useNavigate()
+
+  const [templateData, setTemplateData] = useState({
+    title: "",
+    description: "",
+  })
+  const generateId = () => Math.random().toString(36).substring(2, 9)
+  const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
+
+  const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
+    id: generateId(),
+    text: "Type question",
+    responseType,
+    required: false,
+    flagged: false,
+    multipleSelection: false,
+    options:
+      responseType === "Multiple choice" || responseType === "Yes/No" ? ["Option 1", "Option 2", "Option 3"] : undefined,
+    value: null,
+    logicRules: [],
+  })
+  
+  const getDefaultSection = (title = "Untitled Page"): Section => ({
+    id: generateId(),
+    title,
+    questions: [],
+    isCollapsed: false,
+  })
+  
+  const getInitialTemplate = (): Template => {
+    const titlePageSection: Section = {
+      id: generateId(),
+      title: "Title Page",
+      description: "The Title Page is the first page of your inspection report. good one it below.",
+      questions: [
+        {
+          id: generateId(),
+          text: "Site conducted",
+          responseType: "Site",
+          required: true,
+          flagged: false,
+          value: null,
+          logicRules: [],
+        },
+        {
+          id: generateId(),
+          text: "Conducted on",
+          responseType: "Inspection date",
+          required: true,
+          flagged: false,
+          value: null,
+          logicRules: [],
+        },
+        {
+          id: generateId(),
+          text: "Prepared by",
+          responseType: "Person",
+          required: true,
+          flagged: false,
+          value: null,
+          logicRules: [],
+        },
+        {
+          id: generateId(),
+          text: "Location",
+          responseType: "Inspection location",
+          required: true,
+          flagged: false,
+          value: null,
+          logicRules: [],
+        },
+      ],
+      isCollapsed: false,
+    }
+  
+    return {
+      id: generateId(),
+      title: "Untitled template",
+      description: "Add a description",
+      sections: [titlePageSection],
+      lastSaved: new Date(),
+      lastPublished: new Date(),
+      logo: undefined,
+    }
+  }
+  const [template, setTemplate] = useState<Template>({
+    id: generateId(), // Add the required id property
+    title: '',
+    description: '',
+    logo: undefined, // Changed from null to undefined
+    sections: [],
+    lastSaved: new Date(),
+    lastPublished: new Date()
+  })
   const [activeTab, setActiveTab] = useState<number>(0)
 
   const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
@@ -1710,45 +1693,84 @@ const CreateTemplate: React.FC = () => {
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
   const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true);
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  // Template Management
-  const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
-
+  
+  
+  useEffect(() => {
+    if (id) {
+      axios
+        .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
+        .then((res) => {
+          setTemplateData(res.data);
+          setTemplate(res.data);
+          setIsLoading(false); // ✅ mark as loaded
+        })
+        .catch((err) => {
+          console.error("Failed to load template", err);
+          setIsLoading(false); // ✅ even on error, stop loading
+        });
+    } else {
+      // If it's a new template (no id), initialize it
+      const newTemplate = {
+        id: generateId(),
+        title: '',
+        description: '',
+        logo: undefined,
+        sections: [],
+        lastSaved: new Date(),
+        lastPublished: new Date(),
+      };
+      setTemplate(newTemplate);
+      setIsLoading(false);
+    }
+  }, [id]);
+  
+  if (isLoading || !template) {
+    return <div>Loading template...</div>;
+  }
   const handleSave = async () => {
     const formData = new FormData()
     formData.append("title", template.title)
     formData.append("description", template.description)
-
     if (template.logo) {
-      formData.append("logo", template.logo) // ✅ Appending logo image
+      formData.append("logo", template.logo)
     }
-
-    formData.append("sections", JSON.stringify(template.sections)) // ✅ Stringified section data
-
-    console.log("Saving Template with FormData:", {
-      title: template.title,
-      description: template.description,
-      logo: template.logo,
-      sections: template.sections,
-    })
-
+    formData.append("sections", JSON.stringify(template.sections))
+  
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data", // ✅ REQUIRED for file upload
-        },
-      })
-
-      console.log("Template saved successfully:", response.data)
-      alert("Template saved successfully!")
+      if (id) {
+        // Update existing template
+        const response = await axios.put(`http://127.0.0.1:8000/api/users/templates/${id}/`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        console.log("Template updated successfully:", response.data)
+        alert("Template updated successfully!")
+        navigate(`/template/${id}`)
+      } else {
+        // Create new template
+        const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        console.log("Template created successfully:", response.data)
+        alert("Template created successfully!")
+        navigate(`/template/${response.data.id}`)
+      }
     } catch (error) {
       console.error("Error saving template:", error)
       alert("Failed to save template.")
     }
   }
+  
+  // Template Management
+  const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
 
   const handleBack = () => {
     if (window.confirm("Do you want to save before leaving?")) handleSave()
@@ -2264,7 +2286,7 @@ const CreateTemplate: React.FC = () => {
 
       console.log("Template published successfully:", response.data)
       alert("Template published and saved successfully!")
-      window.location.href = "/templates" 
+      window.location.href = "/templates"
     } catch (error) {
       console.error("Error publishing template:", error)
       alert("Failed to publish template.")
@@ -2683,6 +2705,11 @@ const CreateTemplate: React.FC = () => {
       )
     }
 
+    // Add null check for template
+    if (!template) {
+      return <div className="mobile-preview">Loading...</div>
+    }
+
     const activeSection = template.sections.find((s) => s.id === activeSectionId) || template.sections[0]
 
     return (
@@ -2861,7 +2888,7 @@ const CreateTemplate: React.FC = () => {
         {activeTab === 2 && (
           <div className="report-page-container">
             <div style={{ width: "100%", maxWidth: "1200px" }}>
-              <Report template={template} />
+            {!isLoading && template?.title && <Report template={template} />}
             </div>
             <div className="report-footer">
               <button className="next-button" onClick={() => setActiveTab(3)}>
