@@ -19,15 +19,15 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'phone', 'company_name', 'industry_type', 'job_title', 'company_size']
 
     def __str__(self):
-        return self.email  # Use email for better clarity in admin
-
+        return self.email 
     class Meta:
         verbose_name = "Custom User"
         verbose_name_plural = "Custom Users"
         
 
 class Template(models.Model):
-    title = models.CharField(max_length=255)  # Changed from 'name' to match your React component
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)  
     description = models.TextField(blank=True, null=True)
     logo = models.ImageField(upload_to='logos/', null=True, blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -72,7 +72,6 @@ class Section(models.Model):
 
 
 class Question(models.Model):
-    # Response type choices
     TEXT = 'Text'
     NUMBER = 'Number'
     CHECKBOX = 'Checkbox'
@@ -111,7 +110,6 @@ class Question(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    # For slider questions
     min_value = models.IntegerField(default=0, blank=True, null=True)
     max_value = models.IntegerField(default=100, blank=True, null=True)
     
