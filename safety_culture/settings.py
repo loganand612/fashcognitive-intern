@@ -60,6 +60,16 @@ ROOT_URLCONF = 'safety_culture.urls'
 
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -173,10 +183,7 @@ LOGIN_URL = "/login/"  # Redirects unauthorized users to login
 LOGIN_REDIRECT_URL = "/dashboard/"  # Redirects authenticated users after login
 LOGOUT_REDIRECT_URL = "/login/"  # Redirects users to login after logout
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Your React app URL
-    "http://127.0.0.1:3000",
-]
+
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -190,3 +197,8 @@ CORS_ALLOW_METHODS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+
+
+#SESSION_COOKIE_AGE = 150  
+
+#SESSION_EXPIRE_AT_BROWSER_CLOSE = True

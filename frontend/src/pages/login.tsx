@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../assets/login.css";
 import logs from "../assets/img/flag.jpg";
+import axios from 'axios';
+
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState("");
@@ -9,33 +11,27 @@ const Login: React.FC = () => {
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        try {
-            const response = await fetch("http://127.0.0.1:8000/api/users/login/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
-                credentials: "include",
-            });
 
-            if (response.ok) {
-                const data = await response.json();
-                console.log("Login successful:", data);
-                setError("");
-                navigate("/dashboard");
-            } else {
-                const errorData = await response.json();
-                setError(errorData.error || "Invalid credentials");
-            }
-        } catch (err) {
-            console.error("Login error:", err);
-            setError("An error occurred. Please try again.");
-        }
-    };
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+        const response = await axios.post('http://127.0.0.1:8000/api/users/login/', {
+            email,
+            password,
+        }, {
+            withCredentials: true,  // 🔥 SUPER IMPORTANT
+        });
+
+        console.log("Login successful:", response.data);
+        setError("");
+        navigate("/dashboard");
+    } catch (err: any) {
+        console.error("Login error:", err);
+        setError(err.response?.data?.error || "An error occurred. Please try again.");
+    }
+};
+
 
     return (
         <div className="login-container">

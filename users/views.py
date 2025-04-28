@@ -8,14 +8,18 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
-from .models import Template, Section, Question, Inspection  # Added Inspection import
+from .models import Template, Section, Question, Inspection  
 from rest_framework.parsers import MultiPartParser
 import json
 from django.shortcuts import get_object_or_404, render
 from rest_framework.generics import RetrieveAPIView
 from django.views import View
 import base64
+from rest_framework.permissions import IsAuthenticated
 from django.core.files.base import ContentFile
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import JsonResponse
+from rest_framework.authentication import SessionAuthentication
 
 
 class RegisterUserView(APIView):
@@ -79,6 +83,7 @@ def templates_api(request):
                 title=title,
                 description=description,
                 logo=logo_data,
+                user=request.user,
             )
 
             for section_data in sections:
@@ -94,7 +99,7 @@ def templates_api(request):
                     Question.objects.create(
                         section=section,
                         text=question_data.get("text"),
-                        response_type=question_data.get("responseType"),  # Note: This might need to be "response_type" for consistency
+                        response_type = question_data.get("response_type") or question_data.get("responseType"),
                         required=question_data.get("required", False),
                         order=question_data.get("order", 0),
                     )
@@ -102,11 +107,13 @@ def templates_api(request):
             return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            print(f"Internal Server Error: {e}")  # Useful for server logs
+            return Response({"error": "Something went wrong. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@method_decorator(login_required, name='dispatch')  # Requires login
+
 class DashboardAPI(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         templates_created = Template.objects.count()
         inspections_completed = Inspection.objects.filter(status="Completed").count()
@@ -131,9 +138,12 @@ class TemplateAPI(APIView):
 
 
 class TemplateCreateView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
 
     def post(self, request):
+        print(f"Request data: {request.data}")
+        print(f"User: {request.user}")
         try:
             title = request.data.get("title")
             description = request.data.get("description")
@@ -150,6 +160,7 @@ class TemplateCreateView(APIView):
                 format, imgstr = logo_base64.split(';base64,')
                 ext = format.split('/')[-1]
                 logo_file = ContentFile(base64.b64decode(imgstr), name=f"logo.{ext}")
+            
 
             # Parse sections
             try:
@@ -167,10 +178,11 @@ class TemplateCreateView(APIView):
                 template.save()
             else:
                 template = Template.objects.create(
-                    title=title,
-                    description=description,
-                    logo=logo_file,
-                )
+                        title=title,
+                        description=description,
+                        logo=logo_file,
+                        user=request.user,
+                    )
 
             # Process sections and questions
             for section_data in sections:
@@ -209,7 +221,8 @@ class TemplateCreateView(APIView):
                     # Check for response_type or responseType (handle both for compatibility)
                     response_type = question_data.get("response_type") or question_data.get("responseType")
                     if not response_type:
-                        raise ValueError(f"response_type is required for question: {question_data}")
+                        return Response({"error": f"response_type is required for question: {question_data}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
                     question_id = question_data.get("id")
                     if question_id:
@@ -234,8 +247,8 @@ class TemplateCreateView(APIView):
             return Response({"message": "Template saved successfully!"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(f"Error: {e}")
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            print(f"Internal Server Error: {e}")  
+            return Response({"error": "Something went wrong. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class TemplateDetailView(RetrieveAPIView):
@@ -248,3 +261,21 @@ class DashboardTemplateView(View):
         templates = Template.objects.all()
         return render(request, 'dashboard/templates.html', {'templates': templates})
 
+# Add this new view to check authentication status
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def auth_status(request):
+    return Response({
+        "authenticated": True,
+        "user": {
+            "id": request.user.id,
+            "username": request.user.username,
+            "email": request.user.email
+        }
+    })
+
+
+
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    return JsonResponse({"detail": "CSRF cookie set"})

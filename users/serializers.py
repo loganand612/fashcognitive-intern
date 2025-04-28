@@ -5,6 +5,11 @@ from django.core.files.base import ContentFile
 import base64
 from rest_framework.views import APIView
 import uuid
+from rest_framework.parsers import MultiPartParser, FormParser
+import json
+from rest_framework.response import Response
+from rest_framework import status
+
 
 CustomUser = get_user_model()
 
@@ -96,12 +101,29 @@ class TemplateSerializer(serializers.ModelSerializer):
     def get_access(self, obj):
         return obj.access if hasattr(obj, 'access') else "All users"
     
+        
+
+
 class TemplateCreateView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
     def post(self, request):
-        serializer = TemplateSerializer(data=request.data)
+        data = request.data.copy()
+
+        print("📥 RAW request.data:", request.data)  # Debug: show raw input
+
+        if 'sections' in data and isinstance(data['sections'], str):
+            try:
+                data['sections'] = json.loads(data['sections'])
+            except json.JSONDecodeError as e:
+                print("❌ JSON decode error for sections:", e)
+                return Response({'sections': ['Invalid JSON']}, status=400)
+
+        serializer = TemplateSerializer(data=data)
+
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
+            template = serializer.save()
+            return Response({"id": template.id, "message": "Template created successfully!"}, status=201)
         else:
-            print("❌ Validation errors:", serializer.errors)  # <-- ADD THIS
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            print("❌ serializer.errors:", serializer.errors)  # <---- this is what we need
+            return Response(serializer.errors, status=400)

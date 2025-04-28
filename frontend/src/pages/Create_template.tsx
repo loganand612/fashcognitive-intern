@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import axios from "axios"
 import { useState, useRef, useEffect } from "react"
+import axios from "axios"
 import "./Create_template.css"
 import AccessManager from "./components/AccessManager"
 import { useParams, useNavigate } from "react-router-dom"
@@ -45,6 +45,45 @@ import {
   Flag,
 } from "lucide-react"
 import jsPDF from "jspdf"
+
+// Utility functions
+function getCookie(name: string): string | null {
+  let cookieValue = null
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";")
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim()
+      if (cookie.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+        break
+      }
+    }
+  }
+  return cookieValue
+}
+
+const resizeImage = (base64: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement("img")
+    img.crossOrigin = "anonymous"
+    img.src = base64
+    img.onload = () => {
+      const canvas = document.createElement("canvas")
+      const MAX_WIDTH = 500
+      const scale = Math.min(MAX_WIDTH / img.width, 1)
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL("image/jpeg", 0.8))
+      } else {
+        reject(new Error("Failed to get canvas context"))
+      }
+    }
+    img.onerror = () => reject(new Error("Failed to load image"))
+  })
+}
 
 // Types
 type ResponseType =
@@ -165,29 +204,6 @@ interface Template {
   lastSaved?: Date
   lastPublished?: Date
   logo?: string
-}
-
-const resizeImage = (base64: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = document.createElement("img")
-    img.crossOrigin = "anonymous"
-    img.src = base64
-    img.onload = () => {
-      const canvas = document.createElement("canvas")
-      const MAX_WIDTH = 500
-      const scale = Math.min(MAX_WIDTH / img.width, 1)
-      canvas.width = img.width * scale
-      canvas.height = img.height * scale
-      const ctx = canvas.getContext("2d")
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL("image/jpeg", 0.8))
-      } else {
-        reject(new Error("Failed to get canvas context"))
-      }
-    }
-    img.onerror = () => reject(new Error("Failed to load image"))
-  })
 }
 
 // Utility type guard
@@ -695,6 +711,8 @@ const EnhancedLogicTriggerConfig: React.FC<{
   return null
 }
 
+const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
+
 const EnhancedLogicRuleBuilder: React.FC<{
   questionType: ResponseType
   rule: LogicRule
@@ -786,7 +804,6 @@ const EnhancedLogicRuleBuilder: React.FC<{
   )
 }
 
-const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`;
 const EnhancedLogicRulesContainer: React.FC<{
   questionType: ResponseType
   rules: LogicRule[]
@@ -1597,7 +1614,6 @@ const CreateTemplate: React.FC = () => {
     description: "",
   })
   const generateId = () => Math.random().toString(36).substring(2, 9)
-  const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
 
   const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
     id: generateId(),
@@ -1607,23 +1623,25 @@ const CreateTemplate: React.FC = () => {
     flagged: false,
     multipleSelection: false,
     options:
-      responseType === "Multiple choice" || responseType === "Yes/No" ? ["Option 1", "Option 2", "Option 3"] : undefined,
+      responseType === "Multiple choice" || responseType === "Yes/No"
+        ? ["Option 1", "Option 2", "Option 3"]
+        : undefined,
     value: null,
     logicRules: [],
   })
-  
+
   const getDefaultSection = (title = "Untitled Page"): Section => ({
     id: generateId(),
     title,
     questions: [],
     isCollapsed: false,
   })
-  
+
   const getInitialTemplate = (): Template => {
     const titlePageSection: Section = {
       id: generateId(),
       title: "Title Page",
-      description: "The Title Page is the first page of your inspection report. good one it below.",
+      description: "The Title Page is the first page of your inspection report. Customize it below.",
       questions: [
         {
           id: generateId(),
@@ -1664,7 +1682,7 @@ const CreateTemplate: React.FC = () => {
       ],
       isCollapsed: false,
     }
-  
+
     return {
       id: generateId(),
       title: "Untitled template",
@@ -1677,12 +1695,12 @@ const CreateTemplate: React.FC = () => {
   }
   const [template, setTemplate] = useState<Template>({
     id: generateId(), // Add the required id property
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     logo: undefined, // Changed from null to undefined
     sections: [],
     lastSaved: new Date(),
-    lastPublished: new Date()
+    lastPublished: new Date(),
   })
   const [activeTab, setActiveTab] = useState<number>(0)
 
@@ -1693,45 +1711,37 @@ const CreateTemplate: React.FC = () => {
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
   const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true)
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  
-  
   useEffect(() => {
     if (id) {
       axios
         .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
         .then((res) => {
-          setTemplateData(res.data);
-          setTemplate(res.data);
-          setIsLoading(false); // ✅ mark as loaded
+          setTemplateData(res.data)
+          setTemplate(res.data)
+          setIsLoading(false) // ✅ mark as loaded
         })
         .catch((err) => {
-          console.error("Failed to load template", err);
-          setIsLoading(false); // ✅ even on error, stop loading
-        });
+          console.error("Failed to load template", err)
+          setIsLoading(false) // ✅ even on error, stop loading
+        })
     } else {
       // If it's a new template (no id), initialize it
-      const newTemplate = {
-        id: generateId(),
-        title: '',
-        description: '',
-        logo: undefined,
-        sections: [],
-        lastSaved: new Date(),
-        lastPublished: new Date(),
-      };
-      setTemplate(newTemplate);
-      setIsLoading(false);
+      const newTemplate = getInitialTemplate()
+      setTemplate(newTemplate)
+      setIsLoading(false)
     }
-  }, [id]);
-  
+  }, [id])
+
   if (isLoading || !template) {
-    return <div>Loading template...</div>;
+    return <div>Loading template...</div>
   }
+
+  // Updated handleSave function with proper authentication
   const handleSave = async () => {
     const formData = new FormData()
     formData.append("title", template.title)
@@ -1740,14 +1750,21 @@ const CreateTemplate: React.FC = () => {
       formData.append("logo", template.logo)
     }
     formData.append("sections", JSON.stringify(template.sections))
-  
+
     try {
+      // Get a fresh CSRF token before making the request
+      const csrfResponse = await axios.get("http://127.0.0.1:8000/api/users/api/get-csrf-token/")
+
+      const csrfToken = csrfResponse.data.csrfToken || getCookie("csrftoken")
+
       if (id) {
         // Update existing template
         const response = await axios.put(`http://127.0.0.1:8000/api/users/templates/${id}/`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
+            "X-CSRFToken": csrfToken,
           },
+          withCredentials: true,
         })
         console.log("Template updated successfully:", response.data)
         alert("Template updated successfully!")
@@ -1757,18 +1774,26 @@ const CreateTemplate: React.FC = () => {
         const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
+            "X-CSRFToken": csrfToken,
           },
+          withCredentials: true,
         })
         console.log("Template created successfully:", response.data)
         alert("Template created successfully!")
         navigate(`/template/${response.data.id}`)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving template:", error)
-      alert("Failed to save template.")
+      if (error.response?.status === 403) {
+        alert("Authentication error. Please log in again.")
+        // Redirect to login page with a return URL
+        navigate(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
+      } else {
+        alert(`Failed to save template: ${error.response?.data?.message || error.message}`)
+      }
     }
   }
-  
+
   // Template Management
   const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
 
@@ -2260,22 +2285,30 @@ const CreateTemplate: React.FC = () => {
       </div>
     )
   }
+
+  // Updated handlePublishTemplate function with proper authentication
   const handlePublishTemplate = async () => {
     const formData = new FormData()
+
     formData.append("title", template.title)
     formData.append("description", template.description)
-
-    if (template.logo) {
-      formData.append("logo", template.logo) // ✅ Append image file
-    }
-
     formData.append("sections", JSON.stringify(template.sections))
 
+    if (template.logo) {
+      formData.append("logo", template.logo)
+    }
+
     try {
+      // Get a fresh CSRF token before making the request
+      const csrfResponse = await axios.get("http://127.0.0.1:8000/api/get-csrf-token/")
+      const csrfToken = csrfResponse.data.csrfToken || getCookie("csrftoken")
+
       const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
+          "X-CSRFToken": csrfToken,
         },
+        withCredentials: true,
       })
 
       setTemplate((prev) => ({
@@ -2286,10 +2319,16 @@ const CreateTemplate: React.FC = () => {
 
       console.log("Template published successfully:", response.data)
       alert("Template published and saved successfully!")
-      window.location.href = "/templates"
-    } catch (error) {
+      navigate("/templates")
+    } catch (error: any) {
       console.error("Error publishing template:", error)
-      alert("Failed to publish template.")
+      if (error.response?.status === 403) {
+        alert("Authentication error. Please log in again.")
+        // Redirect to login page with a return URL
+        navigate(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
+      } else {
+        alert(`Failed to publish template: ${error.response?.data?.message || error.message}`)
+      }
     }
   }
 
@@ -2710,7 +2749,28 @@ const CreateTemplate: React.FC = () => {
       return <div className="mobile-preview">Loading...</div>
     }
 
-    const activeSection = template.sections.find((s) => s.id === activeSectionId) || template.sections[0]
+    const activeSection = template.sections?.find((s) => s.id === activeSectionId) || template.sections?.[0]
+
+    if (!activeSection) {
+      return (
+        <div className="mobile-preview">
+          <div className="mobile-preview-header">
+            <button className="mobile-preview-close" onClick={() => setShowMobilePreview(false)}>
+              <X size={16} />
+              <span>Hide Preview</span>
+            </button>
+          </div>
+          <div className="mobile-device-container">
+            <div className="mobile-device">
+              <div className="mobile-content">
+                <div className="mobile-template-title">{template.title || "Untitled Template"}</div>
+                <div className="mobile-page-indicator">No pages added yet.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="mobile-preview">
@@ -2888,7 +2948,7 @@ const CreateTemplate: React.FC = () => {
         {activeTab === 2 && (
           <div className="report-page-container">
             <div style={{ width: "100%", maxWidth: "1200px" }}>
-            {!isLoading && template?.title && <Report template={template} />}
+              {!isLoading && template?.title && <Report template={template} />}
             </div>
             <div className="report-footer">
               <button className="next-button" onClick={() => setActiveTab(3)}>
