@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -8,7 +7,6 @@ import Create_template from './pages/Create_template';
 import Dashboard from './pages/Dashboard';
 import Template from './pages/Template_page';
 import TemplateView from './pages/TemplateView';
-import Training from './pages/components/Training';
 
 function App() {
     return (
@@ -23,10 +21,7 @@ function App() {
                             <Route path="/homee" element={<Home />} />
                             <Route path="/ct" element={<Create_template />} />
                             <Route path="/dashboard" element={<Dashboard />} />
-                            <Route path="/training" element={<Training />} />
-                            <Route path="template" element={<Template />} />
-                            <Route path="/template/:id/view" element={<TemplateView />} />
-                        </Routes>
+                            <Route path="/training" element={React.createElement(require('./pages/components/Training').default)} />
                     </div>
                 </div>
             </Router>

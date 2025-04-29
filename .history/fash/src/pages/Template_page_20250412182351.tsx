@@ -15,8 +15,7 @@ import {
   BookOpen,
   Package,
   AlertCircle,
-  Settings,
-  Eye
+  Settings
 } from 'lucide-react';
 
 const TemplatePage: React.FC = () => {
@@ -40,28 +39,28 @@ const TemplatePage: React.FC = () => {
   ];
 
   return (
-    <div className="tp-app-container">
+    <div className="app-container">
       {/* Top Navigation */}
-      <nav className="tp-navbar">
-        <div className="tp-navbar-brand">FASHCOGNITIVE</div>
-        <div className="tp-navbar-actions">
-          <button className="tp-nav-button">
+      <nav className="navbar">
+        <div className="navbar-brand">FASHCOGNITIVE</div>
+        <div className="navbar-actions">
+          <button className="nav-button">
             <User size={20} />
           </button>
-          <button className="tp-nav-button">
+          <button className="nav-button">
             <Settings size={20} />
           </button>
         </div>
       </nav>
 
       {/* Sidebar */}
-      <aside className="tp-sidebar">
-        <nav className="tp-sidebar-nav">
+      <aside className="sidebar">
+        <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
             <a
               key={index}
               href={item.href}
-              className={`tp-nav-link ${item.active ? 'active' : ''}`}
+              className={`nav-link ${item.active ? 'active' : ''}`}
             >
               <item.icon size={20} />
               <span>{item.label}</span>
@@ -70,42 +69,42 @@ const TemplatePage: React.FC = () => {
         </nav>
       </aside>
 
-      <div className="tp-template-container">
-        <div className="tp-template-header">
-          <nav className="tp-template-tabs">
-            <button className="tp-tab active">Templates</button>
-            <button className="tp-tab">Responses</button>
-            <button className="tp-tab">Public Library</button>
-            <button className="tp-tab">Archive</button>
+      <div className="template-container">
+        <div className="template-header">
+          <nav className="template-tabs">
+            <button className="tab active">Templates</button>
+            <button className="tab">Responses</button>
+            <button className="tab">Public Library</button>
+            <button className="tab">Archive</button>
           </nav>
         </div>
 
-        <div className="tp-template-content">
-          <section className="tp-creation-section">
-            <div className="tp-section-header">
+        <div className="template-content">
+          <section className="creation-section">
+            <div className="section-header">
               <h2>Create your template from one of the options below.</h2>
-              <button className="tp-close-button">
+              <button className="close-button">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="tp-creation-options">
-              <div className="tp-option-card" >
-                <div className="tp-option-icon">
+            <div className="creation-options">
+              <div className="option-card" >
+                <div className="option-icon">
                   <Plus size={24} />
                 </div>
                 <h3>Start from scratch</h3>
                 <p>Get started with a blank template.</p>
               </div>
-              <div className="tp-option-card">
-                <div className="tp-option-icon">
+              <div className="option-card">
+                <div className="option-icon">
                   <FileText size={24} />
                 </div>
                 <h3>Describe topic</h3>
                 <p>Enter a text prompt about your template.</p>
               </div>
-              <div className="tp-option-card">
-                <div className="tp-option-icon">
+              <div className="option-card">
+                <div className="option-icon">
                   <Search size={24} />
                 </div>
                 <h3>Find pre-made template</h3>
@@ -114,31 +113,31 @@ const TemplatePage: React.FC = () => {
             </div>
           </section>
 
-          <section className="tp-templates-section">
-            <div className="tp-templates-header">
-              <h2>Templates <span className="tp-count">(1 - {templates.length} of {templates.length})</span></h2>
-              <a href="/ct" className="tp-create-button">
+          <section className="templates-section">
+            <div className="templates-header">
+              <h2>Templates <span className="count">(1 - {templates.length} of {templates.length})</span></h2>
+              <a href="/ct" className="create-button">
                 <Plus size={16} />
                 Create
               </a>
             </div>
 
-            <div className="tp-search-controls">
-              <div className="tp-search-field">
-                <Search className="tp-search-icon" size={20} />
+            <div className="search-controls">
+              <div className="search-field">
+                <Search className="search-icon" size={20} />
                 <input type="text" placeholder="Search all templates" />
               </div>
-              <button className="tp-filter-button">
+              <button className="filter-button">
                 <Plus size={16} />
                 Add filter
               </button>
             </div>
 
-            <div className="tp-templates-table">
+            <div className="templates-table">
               <table>
                 <thead>
                   <tr>
-                    <th className="tp-checkbox-column">
+                    <th className="checkbox-column">
                       <input type="checkbox" />
                     </th>
                     <th>Template</th>
@@ -150,12 +149,12 @@ const TemplatePage: React.FC = () => {
                 <tbody>
                   {templates.map(template => (
                     <tr key={template.id}>
-                      <td className="tp-checkbox-column">
+                      <td className="checkbox-column">
                         <input type="checkbox" />
                       </td>
                       <td>
-                        <div className="tp-template-cell">
-                          <div className="tp-template-icon">
+                        <div className="template-cell">
+                          <div className="template-icon">
                             <FileText size={20} />
                           </div>
                           <span>{template.title}</span>
@@ -163,21 +162,17 @@ const TemplatePage: React.FC = () => {
                       </td>
                       <td>{template.lastModified}</td>
                       <td>
-                        <div className="tp-access-badge">
+                        <div className="access-badge">
                           <User size={16} />
                           <span>{template.access}</span>
                         </div>
                       </td>
                       <td>
-                        <div className="tp-action-buttons">
-                          <a href={`/template/${template.id}/view`} className="tp-view-button">
-                            <Eye size={16} />
-                            View
-                          </a>
-                          <button className="tp-start-inspection">
+                        <div className="action-buttons">
+                          <button className="start-inspection">
                             Start inspection
                           </button>
-                          <button className="tp-more-options">
+                          <button className="more-options">
                             <MoreHorizontal size={16} />
                           </button>
                         </div>

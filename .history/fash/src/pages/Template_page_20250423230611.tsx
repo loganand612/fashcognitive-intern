@@ -170,7 +170,7 @@ const TemplatePage: React.FC = () => {
                       </td>
                       <td>
                         <div className="tp-action-buttons">
-                          <a href={`/template/${template.id}/view`} className="tp-view-button">
+                          <a href="/ct" className="tp-view-button">
                             <Eye size={16} />
                             View
                           </a>

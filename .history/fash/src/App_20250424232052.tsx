@@ -19,19 +19,3 @@ function App() {
                         <Routes>
                             <Route path="/" element={<Home2 />} />
                             <Route path="/login" element={<Login />} />
-                            <Route path="/register" element={<Register />} />
-                            <Route path="/homee" element={<Home />} />
-                            <Route path="/ct" element={<Create_template />} />
-                            <Route path="/dashboard" element={<Dashboard />} />
-                            <Route path="/training" element={<Training />} />
-                            <Route path="template" element={<Template />} />
-                            <Route path="/template/:id/view" element={<TemplateView />} />
-                        </Routes>
-                    </div>
-                </div>
-            </Router>
-        </div>
-    );
-}
-
-export default App;

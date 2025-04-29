@@ -29,9 +29,3 @@ function App() {
                         </Routes>
                     </div>
                 </div>
-            </Router>
-        </div>
-    );
-}
-
-export default App;

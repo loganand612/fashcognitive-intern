@@ -15,8 +15,7 @@ import {
   BookOpen,
   Package,
   AlertCircle,
-  Settings,
-  Eye
+  Settings
 } from 'lucide-react';
 
 const TemplatePage: React.FC = () => {
@@ -155,7 +154,7 @@ const TemplatePage: React.FC = () => {
                       </td>
                       <td>
                         <div className="tp-template-cell">
-                          <div className="tp-template-icon">
+                          <div className="template-icon">
                             <FileText size={20} />
                           </div>
                           <span>{template.title}</span>
@@ -163,21 +162,17 @@ const TemplatePage: React.FC = () => {
                       </td>
                       <td>{template.lastModified}</td>
                       <td>
-                        <div className="tp-access-badge">
+                        <div className="access-badge">
                           <User size={16} />
                           <span>{template.access}</span>
                         </div>
                       </td>
                       <td>
-                        <div className="tp-action-buttons">
-                          <a href={`/template/${template.id}/view`} className="tp-view-button">
-                            <Eye size={16} />
-                            View
-                          </a>
-                          <button className="tp-start-inspection">
+                        <div className="action-buttons">
+                          <button className="start-inspection">
                             Start inspection
                           </button>
-                          <button className="tp-more-options">
+                          <button className="more-options">
                             <MoreHorizontal size={16} />
                           </button>
                         </div>

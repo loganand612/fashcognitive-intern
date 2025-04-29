@@ -27,11 +27,3 @@ function App() {
                             <Route path="template" element={<Template />} />
                             <Route path="/template/:id/view" element={<TemplateView />} />
                         </Routes>
-                    </div>
-                </div>
-            </Router>
-        </div>
-    );
-}
-
-export default App;
