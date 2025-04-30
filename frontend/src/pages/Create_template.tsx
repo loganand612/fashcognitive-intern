@@ -1720,7 +1720,7 @@ const CreateTemplate: React.FC = () => {
   useEffect(() => {
     if (id) {
       axios
-        .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
+        .get(`http://localhost:8000/api/users/templates/${id}/`)
         .then((res) => {
           setTemplateData(res.data)
           setTemplate(res.data)
@@ -1744,56 +1744,47 @@ const CreateTemplate: React.FC = () => {
 
   // Updated handleSave function with proper authentication
   const handleSave = async () => {
-    const formData = new FormData()
-    formData.append("title", template.title)
-    formData.append("description", template.description)
-    if (template.logo) {
-      formData.append("logo", template.logo)
+    const formData = new FormData();
+    formData.append("title", template.title);
+    formData.append("description", template.description);
+  
+    if (template.logo && typeof template.logo !== "string") {
+      formData.append("logo", template.logo); // Only attach if logo is a File
     }
-    formData.append("sections", JSON.stringify(template.sections))
-
+  
+    formData.append("sections", JSON.stringify(template.sections));
+  
     try {
-      // Get a fresh CSRF token before making the request
-      const csrfResponse = await axios.get("http://127.0.0.1:8000/api/users/api/get-csrf-token/")
-
-      const csrfToken = csrfResponse.data.csrfToken || getCookie("csrftoken")
-
-      if (id) {
-        // Update existing template
-        const response = await axios.put(`http://127.0.0.1:8000/api/users/templates/${id}/`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        })
-        console.log("Template updated successfully:", response.data)
-        alert("Template updated successfully!")
-        navigate(`/template/${id}`)
-      } else {
-        // Create new template
-        const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        })
-        console.log("Template created successfully:", response.data)
-        alert("Template created successfully!")
-        navigate(`/template/${response.data.id}`)
-      }
+      // ✅ Force-fetch CSRF cookie
+      await axios.get("api/users/get-csrf-token/", {
+        withCredentials: true,
+      });
+  
+      // ✅ Extract CSRF token from cookies
+      const csrfToken = document.cookie
+        .split("; ")
+        .find(row => row.startsWith("csrftoken="))
+        ?.split("=")[1];
+  
+      const response = await axios.post("http://localhost:8000/api/users/create_templates/", formData, {
+        headers: {
+          "X-CSRFToken": csrfToken || "",
+        },
+        withCredentials: true,
+      });
+  
+      console.log("Template saved successfully:", response.data);
+      alert("Template saved successfully!");
     } catch (error: any) {
-      console.error("Error saving template:", error)
+      console.error("Error saving template:", error);
       if (error.response?.status === 403) {
-        alert("Authentication error. Please log in again.")
-        // Redirect to login page with a return URL
-        navigate(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
+        alert("Authentication error. Please log in again.");
       } else {
-        alert(`Failed to save template: ${error.response?.data?.message || error.message}`)
+        alert(`Failed to save template: ${error.response?.data?.message || error.message}`);
       }
     }
-  }
+  };
+  
 
   // Template Management
   const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
@@ -2300,10 +2291,11 @@ const CreateTemplate: React.FC = () => {
     }
 
     try {
-      // Get a fresh CSRF token before making the request
-      const csrfResponse = await axios.get("http://127.0.0.1:8000/api/get-csrf-token/")
-      const csrfToken = csrfResponse.data.csrfToken || getCookie("csrftoken")
-
+      const csrfResponse = await axios.get("http://127.0.0.1:8000/api/users/get-csrf-token/", {
+        withCredentials: true,
+      });
+      const csrfToken = csrfResponse.data.csrfToken;
+      console.log("Frontend CSRF Token:", csrfToken);
       const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",

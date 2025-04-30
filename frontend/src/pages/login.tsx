@@ -12,25 +12,40 @@ const Login: React.FC = () => {
     const navigate = useNavigate();
 
 
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-    try {
-        const response = await axios.post('http://127.0.0.1:8000/api/users/login/', {
-            email,
-            password,
-        }, {
-            withCredentials: true,  // 🔥 SUPER IMPORTANT
-        });
+        try {
+            // Fetch CSRF token first (sets cookie)
+            await axios.get("http://localhost:8000/api/users/get-csrf-token/", {
+                withCredentials: true,
+            });
 
-        console.log("Login successful:", response.data);
-        setError("");
-        navigate("/dashboard");
-    } catch (err: any) {
-        console.error("Login error:", err);
-        setError(err.response?.data?.error || "An error occurred. Please try again.");
-    }
-};
+            // Get token from cookie
+            const csrfToken = document.cookie
+                .split("; ")
+                .find(row => row.startsWith("csrftoken="))
+                ?.split("=")[1];
+
+            if (!csrfToken) throw new Error("Missing CSRF token");
+
+            // Login request with CSRF header
+            await axios.post("http://localhost:8000/api/users/login/", {
+                email,
+                password,
+            }, {
+                withCredentials: true,
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                },
+            });
+
+            navigate("/dashboard");
+        } catch (err: any) {
+            console.error("Login error:", err);
+            setError(err.response?.data?.error || "Login failed. Try again.");
+        }
+    };
 
 
     return (

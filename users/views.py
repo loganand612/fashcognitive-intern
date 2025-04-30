@@ -20,7 +20,11 @@ from django.core.files.base import ContentFile
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import JsonResponse
 from rest_framework.authentication import SessionAuthentication
-
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from rest_framework.authentication import BasicAuthentication
+from django.middleware.csrf import CsrfViewMiddleware
 
 class RegisterUserView(APIView):
     permission_classes = [AllowAny]  # Allow anyone to register
@@ -37,20 +41,27 @@ class RegisterUserView(APIView):
 @permission_classes([AllowAny])
 def login_user(request):
     try:
-        data = request.data  # DRF automatically parses JSON
+        data = request.data
         email = data.get("email")
         password = data.get("password")
 
-        # Ensure email-based authentication works
+        print("Request Headers:", request.headers)
+        print("Cookies:", request.COOKIES)
         user = authenticate(username=email, password=password)
 
         if user is not None:
             login(request, user)
+            print(f"✅ Login successful for user: {user.email}")  # <- Print Email
+            print(f"✅ User ID: {user.id}")  # <- Print ID
             return Response({"message": "Login successful", "redirect": "/create_templates"}, status=status.HTTP_200_OK)
         else:
+            print(f"❌ Login failed for email: {email}")  # <- Print failure case
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
+        print(f"❗ Error during login: {str(e)}")  # <- Print Exception
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+
 
 
 @api_view(["GET", "POST"])
@@ -132,18 +143,37 @@ class DashboardAPI(APIView):
 
 class TemplateAPI(APIView):
     def get(self, request):
+        #print("🧭 HIT: templates_api view")
         templates = Template.objects.all()
         serializer = TemplateSerializer(templates, many=True)
         return Response(serializer.data)
 
 
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 class TemplateCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+        
+
     authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        print("🟢 Inside TemplateCreateView POST")
         print(f"Request data: {request.data}")
+        reason = CsrfViewMiddleware().process_view(request, None, (), {})
+        print("🧪 CSRF Reason:", reason)
+
+        print("🟢 Inside TemplateCreateView POST")
+        print("User:", request.user)
+        print("Authenticated:", request.user.is_authenticated)
         print(f"User: {request.user}")
+        print(f"Authenticated: {request.user.is_authenticated}")
+        print(f"X-CSRFToken: {request.META.get('HTTP_X_CSRFTOKEN')}")
+        print(f"sessionid: {request.COOKIES.get('sessionid')}")
+        if not request.user.is_authenticated:
+            return Response({"error": "User is not authenticated"}, status=status.HTTP_403_FORBIDDEN)
+       
         try:
             title = request.data.get("title")
             description = request.data.get("description")
@@ -276,6 +306,12 @@ def auth_status(request):
 
 
 
+
+from django.middleware.csrf import get_token
+
 @ensure_csrf_cookie
 def get_csrf_token(request):
-    return JsonResponse({"detail": "CSRF cookie set"})
+    csrf_token = get_token(request)
+    print("Generated CSRF Token:", csrf_token)  # 🔥 Debugging print
+    return JsonResponse({"csrfToken": csrf_token})
+
