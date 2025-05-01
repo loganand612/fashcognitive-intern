@@ -1,15 +1,10 @@
-
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
-import axios from "axios"
-import "./Create_template.css"
-import AccessManager from "./components/AccessManager"
-import { useParams, useNavigate } from "react-router-dom"
 
-import "./components/TemplateBuilderLayout.css"
-import "./components/FixTransitions.css"
+import { useState, useRef, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
 import {
   ChevronDown,
   ChevronUp,
@@ -27,7 +22,6 @@ import {
   ArrowLeft,
   Bell,
   FileText,
-  CheckCircle,
   MessageSquare,
   CornerDownRight,
   ArrowRight,
@@ -44,8 +38,14 @@ import {
   Download,
   Building,
   Flag,
+  CheckCircle,
 } from "lucide-react"
-import jsPDF from "jspdf"
+import { jsPDF } from "jspdf"
+import AccessManager from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessManager"
+import { fetchCSRFToken } from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/utils/csrf"
+import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/Create_template.css"
+import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
+import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
 
 // Utility functions
 function getCookie(name: string): string | null {
@@ -1606,9 +1606,10 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
 }
 
 // Main Component
-const CreateTemplate: React.FC = () => {
-  const { id } = useParams() // if id exists, we're in edit mode
+const CreateTemplate = () => {
   const navigate = useNavigate()
+
+  const [templateId, setTemplateId] = useState<string | null>(null)
 
   const [templateData, setTemplateData] = useState({
     title: "",
@@ -1705,7 +1706,7 @@ const CreateTemplate: React.FC = () => {
   })
   const [activeTab, setActiveTab] = useState<number>(0)
 
-  const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
   const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
@@ -1718,7 +1719,12 @@ const CreateTemplate: React.FC = () => {
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   useEffect(() => {
+    // Check if we have a template ID in the URL
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get("id")
+
     if (id) {
+      setTemplateId(id)
       axios
         .get(`http://localhost:8000/api/users/templates/${id}/`)
         .then((res) => {
@@ -1734,64 +1740,98 @@ const CreateTemplate: React.FC = () => {
       // If it's a new template (no id), initialize it
       const newTemplate = getInitialTemplate()
       setTemplate(newTemplate)
+      setActiveSectionId(newTemplate.sections[0]?.id || null)
       setIsLoading(false)
     }
-  }, [id])
+  }, [])
 
   if (isLoading || !template) {
     return <div>Loading template...</div>
   }
 
-  // Updated handleSave function with proper authentication
-  const handleSave = async () => {
-    const formData = new FormData();
-    formData.append("title", template.title);
-    formData.append("description", template.description);
-  
-    if (template.logo && typeof template.logo !== "string") {
-      formData.append("logo", template.logo); // Only attach if logo is a File
+  function cleanTemplateForSave(template: Template): Template {
+    const { id, ...templateWithoutId } = template
+    return {
+      ...templateWithoutId,
+      id: id, // Keep the template ID
+      sections: template.sections.map(({ id: sectionId, ...sectionWithoutId }) => ({
+        ...sectionWithoutId,
+        id: sectionId, // Add the id back to each section
+        questions: sectionWithoutId.questions.map(({ id: questionId, ...questionWithoutId }) => ({
+          ...questionWithoutId,
+          id: questionId, // Add the id back to each question
+        })),
+      })),
     }
-  
-    formData.append("sections", JSON.stringify(template.sections));
-  
+  }
+
+  // Updated handleSave function with proper CSRF token handling
+  const handleSave = async () => {
+    if (!templateData.title) {
+      alert("Please enter a template title")
+      return
+    }
+
     try {
-      // ✅ Force-fetch CSRF cookie
-      await axios.get("api/users/get-csrf-token/", {
-        withCredentials: true,
-      });
-  
-      // ✅ Extract CSRF token from cookies
-      const csrfToken = document.cookie
-        .split("; ")
-        .find(row => row.startsWith("csrftoken="))
-        ?.split("=")[1];
-  
-      const response = await axios.post("http://localhost:8000/api/users/create_templates/", formData, {
+      // 1. First, get a fresh CSRF token
+      const csrfToken = await fetchCSRFToken()
+
+      // 2. Prepare the form data
+      const formData = new FormData()
+      formData.append("title", templateData.title)
+      formData.append("description", templateData.description)
+
+      // 3. Handle the logo if it exists
+      if (template.logo) {
+        // If logo is a base64 string, convert to blob
+        if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
+          const response = await fetch(template.logo)
+          const blob = await response.blob()
+          formData.append("logo", blob, "logo.png")
+        } else {
+          formData.append("logo", template.logo)
+        }
+      }
+
+      // 4. Add sections data
+      formData.append("sections", JSON.stringify(template.sections))
+
+      const cleanedTemplate = cleanTemplateForSave(template)
+
+      // 5. Make the API request with the fresh CSRF token
+      const saveResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
+        method: "POST",
         headers: {
-          "X-CSRFToken": csrfToken || "",
+          "X-CSRFToken": csrfToken,
         },
-        withCredentials: true,
-      });
-  
-      console.log("Template saved successfully:", response.data);
-      alert("Template saved successfully!");
-    } catch (error: any) {
-      console.error("Error saving template:", error);
-      if (error.response?.status === 403) {
-        alert("Authentication error. Please log in again.");
+        body: formData,
+        credentials: "include", // Important: include cookies
+      })
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json()
+        throw new Error(errorData.error || "Failed to save template")
+      }
+
+      // Success handling
+      console.log("Template saved successfully!")
+      alert("Template saved successfully!")
+    } catch (error: unknown) {
+      console.error("Error saving template:", error)
+      if (error instanceof Error) {
+        alert(`Failed to save template: ${error.message}`)
       } else {
-        alert(`Failed to save template: ${error.response?.data?.message || error.message}`);
+        alert("Failed to save template: Unknown error occurred")
       }
     }
-  };
-  
+  }
 
   // Template Management
   const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
 
   const handleBack = () => {
     if (window.confirm("Do you want to save before leaving?")) handleSave()
-    console.log("Navigating back...")
+      navigate("/templates")
   }
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2278,49 +2318,70 @@ const CreateTemplate: React.FC = () => {
     )
   }
 
-  // Updated handlePublishTemplate function with proper authentication
+  // Updated handlePublishTemplate function with proper CSRF token handling
   const handlePublishTemplate = async () => {
-    const formData = new FormData()
-
-    formData.append("title", template.title)
-    formData.append("description", template.description)
-    formData.append("sections", JSON.stringify(template.sections))
-
-    if (template.logo) {
-      formData.append("logo", template.logo)
-    }
-
     try {
-      const csrfResponse = await axios.get("http://127.0.0.1:8000/api/users/get-csrf-token/", {
-        withCredentials: true,
-      });
-      const csrfToken = csrfResponse.data.csrfToken;
-      console.log("Frontend CSRF Token:", csrfToken);
-      const response = await axios.post("http://127.0.0.1:8000/api/users/create_templates/", formData, {
+      // 1. First, get a fresh CSRF token
+      const csrfToken = await fetchCSRFToken()
+
+      // 2. Prepare the form data
+      const formData = new FormData()
+      formData.append("title", template.title)
+      formData.append("description", template.description)
+
+      // 3. Handle the logo if it exists
+      if (template.logo) {
+        // If logo is a base64 string, convert to blob
+        if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
+          const response = await fetch(template.logo)
+          const blob = await response.blob()
+          formData.append("logo", blob, "logo.png")
+        } else {
+          formData.append("logo", template.logo)
+        }
+      }
+
+      // 4. Add sections data
+      const cleanedTemplate = cleanTemplateForSave(template)
+      formData.append("sections", JSON.stringify(cleanedTemplate.sections))
+
+      // 5. Make the API request with the fresh CSRF token
+      const publishResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
+        method: "POST",
         headers: {
-          "Content-Type": "multipart/form-data",
           "X-CSRFToken": csrfToken,
         },
-        withCredentials: true,
+        body: formData,
+        credentials: "include", // Important: include cookies
       })
 
+      if (!publishResponse.ok) {
+        const errorData = await publishResponse.json()
+        throw new Error(errorData.error || "Failed to publish template")
+      }
+
+      // Success handling
       setTemplate((prev) => ({
         ...prev,
         lastSaved: new Date(),
         lastPublished: new Date(),
       }))
 
-      console.log("Template published successfully:", response.data)
+      console.log("Template published successfully!")
       alert("Template published and saved successfully!")
       navigate("/templates")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error publishing template:", error)
-      if (error.response?.status === 403) {
-        alert("Authentication error. Please log in again.")
-        // Redirect to login page with a return URL
-        navigate(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          alert("Authentication error. Please log in again.")
+          navigate(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
+        } else {
+          alert(`Failed to publish template: ${error.response?.data?.error || error.message}`)
+        }
       } else {
-        alert(`Failed to publish template: ${error.response?.data?.message || error.message}`)
+        alert("Failed to publish template: Unknown error occurred.")
       }
     }
   }
@@ -2412,7 +2473,9 @@ const CreateTemplate: React.FC = () => {
 
     if (shouldShowTrigger(question, "display_message")) {
       // Get the message from the rule that triggered this
-      const rule = question.logicRules?.find((r) => r.trigger === "display_message")
+      const rule = question.logicRules?.find(
+        (r) => r.trigger === "display_message"
+      )      
       const message = rule?.message || "Important: This response requires immediate attention."
 
       return (

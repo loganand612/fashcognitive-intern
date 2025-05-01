@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../assets/login.css";
 import logs from "../assets/img/flag.jpg";
+import { fetchCSRFToken } from "../utils/csrf";
 import axios from 'axios';
 
 
@@ -12,40 +13,40 @@ const Login: React.FC = () => {
     const navigate = useNavigate();
 
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
+      
         try {
-            // Fetch CSRF token first (sets cookie)
-            await axios.get("http://localhost:8000/api/users/get-csrf-token/", {
-                withCredentials: true,
-            });
-
-            // Get token from cookie
-            const csrfToken = document.cookie
-                .split("; ")
-                .find(row => row.startsWith("csrftoken="))
-                ?.split("=")[1];
-
-            if (!csrfToken) throw new Error("Missing CSRF token");
-
-            // Login request with CSRF header
-            await axios.post("http://localhost:8000/api/users/login/", {
-                email,
-                password,
-            }, {
-                withCredentials: true,
-                headers: {
-                    "X-CSRFToken": csrfToken,
-                },
-            });
-
-            navigate("/dashboard");
-        } catch (err: any) {
-            console.error("Login error:", err);
-            setError(err.response?.data?.error || "Login failed. Try again.");
+          // 1. First, get a fresh CSRF token
+          const csrfToken = await fetchCSRFToken();
+      
+          // 2. Make the login request with the fresh token
+          const loginResponse = await fetch("http://localhost:8000/api/users/login/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken,
+            },
+            body: JSON.stringify({ email, password }),
+            credentials: "include",
+          });
+      
+          if (!loginResponse.ok) {
+            const errorData = await loginResponse.json();
+            throw new Error(errorData.error || "Login failed");
+          }
+      
+          // Success handling
+          console.log("Login successful!");
+           
+          navigate("/dashboard");
+          // Your existing success handling code
+          
+        } catch (error) {
+          console.error("Login error:", error);
+          // Your existing error handling code
         }
-    };
+      };
 
 
     return (

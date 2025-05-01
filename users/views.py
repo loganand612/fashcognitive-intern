@@ -25,6 +25,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authentication import BasicAuthentication
 from django.middleware.csrf import CsrfViewMiddleware
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 class RegisterUserView(APIView):
     permission_classes = [AllowAny]  # Allow anyone to register
@@ -161,8 +163,6 @@ class TemplateCreateView(APIView):
     def post(self, request):
         print("🟢 Inside TemplateCreateView POST")
         print(f"Request data: {request.data}")
-        reason = CsrfViewMiddleware().process_view(request, None, (), {})
-        print("🧪 CSRF Reason:", reason)
 
         print("🟢 Inside TemplateCreateView POST")
         print("User:", request.user)
@@ -173,25 +173,31 @@ class TemplateCreateView(APIView):
         print(f"sessionid: {request.COOKIES.get('sessionid')}")
         if not request.user.is_authenticated:
             return Response({"error": "User is not authenticated"}, status=status.HTTP_403_FORBIDDEN)
-       
         try:
             title = request.data.get("title")
             description = request.data.get("description")
-            logo_base64 = request.data.get("logo")
+            logo = request.FILES.get("logo") or request.data.get("logo")
+            logo_file = None            
             sections_data = request.data.get("sections")
+            if isinstance(sections_data, list):
+                sections_data = sections_data[0]
+
             template_id = request.data.get("id")  # For updating an existing template
 
             if not title:
                 return Response({"error": "Title is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Decode logo (if present)
-            logo_file = None
-            if logo_base64:
-                format, imgstr = logo_base64.split(';base64,')
-                ext = format.split('/')[-1]
-                logo_file = ContentFile(base64.b64decode(imgstr), name=f"logo.{ext}")
+            if isinstance(logo, str) and 'base64,' in logo:
+                try:
+                    format, imgstr = logo.split(';base64,')
+                    ext = format.split('/')[-1]
+                    logo_file = ContentFile(base64.b64decode(imgstr), name=f"logo.{ext}")
+                except Exception as e:
+                    print("Error decoding base64 logo:", e)
+            # If InMemoryUploadedFile
+            elif hasattr(logo, 'read'):
+                logo_file = logo
             
-
             # Parse sections
             try:
                 sections = json.loads(sections_data) if isinstance(sections_data, str) else sections_data
@@ -219,7 +225,7 @@ class TemplateCreateView(APIView):
                 section_id = section_data.get("id")
                 section = None
 
-                if section_id:
+                if section_id and str(section_id).isdigit():
                     try:
                         section = Section.objects.get(id=section_id, template=template)
                         section.title = section_data.get("title", section.title)
@@ -228,7 +234,7 @@ class TemplateCreateView(APIView):
                         section.is_collapsed = section_data.get("isCollapsed", section.is_collapsed)
                         section.save()
                     except Section.DoesNotExist:
-                        # If the section ID doesn't exist, create a new section
+                        print(f"Section ID {section_id} not found; creating new section.")
                         section = Section.objects.create(
                             template=template,
                             title=section_data.get("title"),
@@ -236,6 +242,7 @@ class TemplateCreateView(APIView):
                             order=section_data.get("order", 0),
                             is_collapsed=section_data.get("isCollapsed", False),
                         )
+
                 else:
                     # If no section ID is provided, create a new section
                     section = Section.objects.create(
@@ -246,16 +253,18 @@ class TemplateCreateView(APIView):
                         is_collapsed=section_data.get("isCollapsed", False),
                     )
 
+
                 # Create/update questions for this section
                 for question_data in section_data.get("questions", []):
                     # Check for response_type or responseType (handle both for compatibility)
+                    print(f"🔍 Processing question: {question_data}")
                     response_type = question_data.get("response_type") or question_data.get("responseType")
                     if not response_type:
-                        return Response({"error": f"response_type is required for question: {question_data}"}, status=status.HTTP_400_BAD_REQUEST)
-
+                        print(f"❌ Missing response_type for question: {question_data}")
+                        return Response({"error": f"response_type is required for question: {question_data}"}, status=400)
 
                     question_id = question_data.get("id")
-                    if question_id:
+                    if question_id and str(question_id).isdigit():
                         question = Question.objects.filter(id=question_id, section=section).first()
                         if question:
                             question.text = question_data.get("text", question.text)
@@ -264,7 +273,9 @@ class TemplateCreateView(APIView):
                             question.order = question_data.get("order", question.order)
                             question.save()
                         else:
-                            return Response({"error": f"Question with id {question_id} not found."}, status=status.HTTP_400_BAD_REQUEST)
+                            print(f"❌ Question with id {question_id} not found in section {section.id}")
+                            return Response({"error": f"Question with id {question_id} not found."}, status=400)   
+                                         
                     else:
                         Question.objects.create(
                             section=section,
@@ -277,8 +288,9 @@ class TemplateCreateView(APIView):
             return Response({"message": "Template saved successfully!"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(f"Internal Server Error: {e}")  
-            return Response({"error": "Something went wrong. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(f"❌ Exception Traceback:\n{e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class TemplateDetailView(RetrieveAPIView):
@@ -306,12 +318,20 @@ def auth_status(request):
 
 
 
-
-from django.middleware.csrf import get_token
-
 @ensure_csrf_cookie
 def get_csrf_token(request):
     csrf_token = get_token(request)
-    print("Generated CSRF Token:", csrf_token)  # 🔥 Debugging print
-    return JsonResponse({"csrfToken": csrf_token})
-
+    print("Generated CSRF Token:", csrf_token)
+    
+    response = JsonResponse({"csrfToken": csrf_token})
+    # Ensure the CSRF cookie is set with the correct settings
+    response.set_cookie(
+        'csrftoken', 
+        csrf_token,
+        max_age=3600,  # 1 hour
+        path='/',
+        secure=False,  # Set to True in production with HTTPS
+        httponly=False,  # CSRF token needs to be accessible via JavaScript
+        samesite='Lax'  # Helps prevent CSRF in modern browsers
+    )
+    return response
