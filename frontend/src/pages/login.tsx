@@ -3,15 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import "../assets/login.css";
 import logs from "../assets/img/flag.jpg";
 import { fetchCSRFToken } from "../utils/csrf";
-import axios from 'axios';
-
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+    const [error, setError] = useState(""); // Used for error handling
     const navigate = useNavigate();
-
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -38,16 +35,13 @@ const Login: React.FC = () => {
       
           // Success handling
           console.log("Login successful!");
-           
           navigate("/dashboard");
-          // Your existing success handling code
           
         } catch (error) {
           console.error("Login error:", error);
-          // Your existing error handling code
+          setError("Login failed. Please check your credentials and try again."); // Set error message
         }
-      };
-
+    };
 
     return (
         <div className="login-container">
@@ -89,12 +83,11 @@ const Login: React.FC = () => {
 
                         <button type="submit" className="login-button">Login</button>
 
-                        {error && <p style={{ color: "red" }}>{error}</p>}
+                        {error && <p style={{ color: "red" }}>{error}</p>} {/* Display error message */}
 
                         <div className="bottom-links">
                             <Link to="#">Forgot Password?</Link>
-                            <Link to="/register" className="signup-button">Sign Up</Link>
-                        </div>
+                            <Link to="/register" className="signup-button">Sign Up</Link>                        </div>
                     </form>
                 </div>
             </div>

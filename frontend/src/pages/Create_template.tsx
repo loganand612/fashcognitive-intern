@@ -41,11 +41,11 @@ import {
   CheckCircle,
 } from "lucide-react"
 import { jsPDF } from "jspdf"
-import AccessManager from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessManager"
-import { fetchCSRFToken } from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/utils/csrf"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/Create_template.css"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
+import AccessManager from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessManager"
+import { fetchCSRFToken } from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/utils/csrf"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/Create_template.css"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
 
 // Utility functions
 function getCookie(name: string): string | null {
@@ -1718,6 +1718,7 @@ const CreateTemplate = () => {
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
+  // Update the useEffect hook that loads the template data to properly set the template state
   useEffect(() => {
     // Check if we have a template ID in the URL
     const params = new URLSearchParams(window.location.search)
@@ -1725,29 +1726,40 @@ const CreateTemplate = () => {
 
     if (id) {
       setTemplateId(id)
+      setIsLoading(true)
       axios
         .get(`http://localhost:8000/api/users/templates/${id}/`)
         .then((res) => {
-          setTemplateData(res.data)
+          // Make sure we set both templateData and template with the response data
+          setTemplateData({
+            title: res.data.title || "",
+            description: res.data.description || "",
+          })
           setTemplate(res.data)
-          setIsLoading(false) // ✅ mark as loaded
+
+          // Set the active section to the first section if available
+          if (res.data.sections && res.data.sections.length > 0) {
+            setActiveSectionId(res.data.sections[0].id)
+          }
+
+          setIsLoading(false)
         })
         .catch((err) => {
           console.error("Failed to load template", err)
-          setIsLoading(false) // ✅ even on error, stop loading
+          setIsLoading(false)
         })
     } else {
       // If it's a new template (no id), initialize it
       const newTemplate = getInitialTemplate()
       setTemplate(newTemplate)
+      setTemplateData({
+        title: newTemplate.title || "",
+        description: newTemplate.description || "",
+      })
       setActiveSectionId(newTemplate.sections[0]?.id || null)
       setIsLoading(false)
     }
   }, [])
-
-  if (isLoading || !template) {
-    return <div>Loading template...</div>
-  }
 
   function cleanTemplateForSave(template: Template): Template {
     const { id, ...templateWithoutId } = template
@@ -1767,23 +1779,20 @@ const CreateTemplate = () => {
 
   // Updated handleSave function with proper CSRF token handling
   const handleSave = async () => {
-    if (!templateData.title) {
+    if (!template.title) {
       alert("Please enter a template title")
       return
     }
 
     try {
-      // 1. First, get a fresh CSRF token
       const csrfToken = await fetchCSRFToken()
-
-      // 2. Prepare the form data
       const formData = new FormData()
-      formData.append("title", templateData.title)
-      formData.append("description", templateData.description)
 
-      // 3. Handle the logo if it exists
+      // Use template state directly instead of templateData
+      formData.append("title", template.title)
+      formData.append("description", template.description)
+
       if (template.logo) {
-        // If logo is a base64 string, convert to blob
         if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
           const response = await fetch(template.logo)
           const blob = await response.blob()
@@ -1793,30 +1802,38 @@ const CreateTemplate = () => {
         }
       }
 
-      // 4. Add sections data
       formData.append("sections", JSON.stringify(template.sections))
 
-      const cleanedTemplate = cleanTemplateForSave(template)
+      const isEdit = !!templateId
+      const url = isEdit
+        ? `http://localhost:8000/api/users/templates/${templateId}/`
+        : "http://localhost:8000/api/users/create_templates/"
 
-      // 5. Make the API request with the fresh CSRF token
-      const saveResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
-        method: "POST",
+      console.log(`Saving template to ${url} with method ${isEdit ? "PUT" : "POST"}`)
+
+      const response = await fetch(url, {
+        method: isEdit ? "PUT" : "POST",
         headers: {
           "X-CSRFToken": csrfToken,
         },
         body: formData,
-        credentials: "include", // Important: include cookies
+        credentials: "include",
       })
 
-      if (!saveResponse.ok) {
-        const errorData = await saveResponse.json()
+      if (!response.ok) {
+        const errorData = await response.json()
         throw new Error(errorData.error || "Failed to save template")
       }
 
-      // Success handling
-      console.log("Template saved successfully!")
-      alert("Template saved successfully!")
-    } catch (error: unknown) {
+      // Update the template with the latest save time
+      setTemplate((prev) => ({
+        ...prev,
+        lastSaved: new Date(),
+      }))
+
+      alert(isEdit ? "Template updated successfully!" : "Template created successfully!")
+      navigate("/templates")
+    } catch (error) {
       console.error("Error saving template:", error)
       if (error instanceof Error) {
         alert(`Failed to save template: ${error.message}`)
@@ -1826,12 +1843,24 @@ const CreateTemplate = () => {
     }
   }
 
-  // Template Management
-  const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
+  // Update the updateTemplate function to also update templateData
+  const updateTemplateFn = (updates: Partial<Template>) => {
+    setTemplate((prev) => ({ ...prev, ...updates }))
 
+    // Also update templateData if title or description is changed
+    if (updates.title !== undefined || updates.description !== undefined) {
+      setTemplateData((prev) => ({
+        ...prev,
+        title: updates.title !== undefined ? updates.title : prev.title,
+        description: updates.description !== undefined ? updates.description : prev.description,
+      }))
+    }
+  }
+
+  // Template Management
   const handleBack = () => {
     if (window.confirm("Do you want to save before leaving?")) handleSave()
-      navigate("/templates")
+    navigate("/templates")
   }
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1842,7 +1871,7 @@ const CreateTemplate = () => {
         const result = event.target?.result as string
         if (result) {
           const resizedImage = await resizeImage(result)
-          updateTemplate({ logo: resizedImage })
+          updateTemplateFn({ logo: resizedImage })
         }
       }
       reader.readAsDataURL(file)
@@ -2473,9 +2502,7 @@ const CreateTemplate = () => {
 
     if (shouldShowTrigger(question, "display_message")) {
       // Get the message from the rule that triggered this
-      const rule = question.logicRules?.find(
-        (r) => r.trigger === "display_message"
-      )      
+      const rule = question.logicRules?.find((r) => r.trigger === "display_message")
       const message = rule?.message || "Important: This response requires immediate attention."
 
       return (
@@ -2971,14 +2998,14 @@ const CreateTemplate = () => {
                     type="text"
                     className="template-title"
                     value={template.title}
-                    onChange={(e) => updateTemplate({ title: e.target.value })}
+                    onChange={(e) => updateTemplateFn({ title: e.target.value })}
                     placeholder="Untitled template"
                   />
                   <input
                     type="text"
                     className="template-description"
                     value={template.description}
-                    onChange={(e) => updateTemplate({ description: e.target.value })}
+                    onChange={(e) => updateTemplateFn({ description: e.target.value })}
                     placeholder="Add a description"
                   />
                 </div>

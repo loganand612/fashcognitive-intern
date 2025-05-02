@@ -291,6 +291,16 @@ class TemplateCreateView(APIView):
             print(f"❌ Exception Traceback:\n{e}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    def put(self, request, pk=None):
+        request.data._mutable = True  # May be required if using QueryDict
+
+        if not pk:
+            return Response({"error": "Template ID is required for update"}, status=400)
+
+        request.data["id"] = pk  # So you can reuse your existing logic
+        return self.post(request)  # Reuse your existing logic
+
+
 
 
 class TemplateDetailView(RetrieveAPIView):

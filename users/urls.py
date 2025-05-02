@@ -15,14 +15,7 @@ urlpatterns = [
     path("templates/<int:pk>/", TemplateDetailView.as_view(), name="template-detail"),
     path("dashboard/templates/", DashboardTemplateView.as_view(), name="dashboard_templates"),
     path("get-csrf-token/", get_csrf_token, name="get-csrf-token"),
+    path("templates/<int:pk>/", TemplateCreateView.as_view(), name="template-update"),
+
 ]
 
-from django.http import JsonResponse
-
-def catch_all_debug(request, *args, **kwargs):
-    print("🚨 HIT FALLBACK catch-all route:", request.path)
-    return JsonResponse({"error": "Fallback hit", "path": request.path}, status=404)
-
-urlpatterns += [
-    path('<path:path>', catch_all_debug),  # TEMPORARY DEBUG ROUTE
-]
