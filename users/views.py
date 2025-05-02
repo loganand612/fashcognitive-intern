@@ -161,14 +161,7 @@ class TemplateCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        print("🟢 Inside TemplateCreateView POST")
-        print(f"Request data: {request.data}")
-
-        print("🟢 Inside TemplateCreateView POST")
         print("User:", request.user)
-        print("Authenticated:", request.user.is_authenticated)
-        print(f"User: {request.user}")
-        print(f"Authenticated: {request.user.is_authenticated}")
         print(f"X-CSRFToken: {request.META.get('HTTP_X_CSRFTOKEN')}")
         print(f"sessionid: {request.COOKIES.get('sessionid')}")
         if not request.user.is_authenticated:

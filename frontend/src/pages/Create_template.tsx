@@ -1753,119 +1753,119 @@ const CreateTemplate = () => {
     if (Array.isArray(obj)) {
       return obj.map(toSnakeCase);
     } else if (obj !== null && typeof obj === "object") {
-      return Object.entries(obj).reduce((acc, [key, value]) => {
+      const newObj: any = {};
+      for (const key in obj) {
+        if (!obj.hasOwnProperty(key)) continue;
         const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
-        acc[snakeKey] = toSnakeCase(value);
-        return acc;
-      }, {} as any);
+        newObj[snakeKey] = toSnakeCase(obj[key]);
+      }
+      return newObj;
     }
     return obj;
   }
-
+  
+  
+  
   function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
     return {
-      ...(isNew ? {} : { id: template.id }), // Only include id if editing
+      ...(isNew ? {} : { id: template.id }),
       title: template.title,
       description: template.description,
       logo: template.logo,
-      sections: template.sections.map((section) => ({
-        id: isNew ? generateId() : section.id ?? generateId(), // fallback if somehow undefined
-        title: section.title,
-        description: section.description,
-        isCollapsed: section.isCollapsed,
-        questions: section.questions.map((q) => ({
-          id: isNew ? generateId() : q.id ?? generateId(), // fallback if q.id is undefined
-          text: q.text,
-          responseType: q.responseType, // ✅ camelCase to match TS type
-          required: q.required,
-          flagged: q.flagged,
-          options: q.options,
-          value: q.value,
-          conditionalLogic: q.conditionalLogic,
-          conditionalProof: q.conditionalProof,
-          logicRules: q.logicRules,
-          multipleSelection: q.multipleSelection,
-        })),
-      }))      
+      sections: template.sections.map((section) => {
+        const newSectionId = isNew || typeof section.id === "number" ? generateId() : section.id;
+  
+        return {
+          id: newSectionId,
+          title: section.title,
+          description: section.description,
+          isCollapsed: section.isCollapsed,
+          questions: section.questions.map((q) => {
+            const newQuestionId = isNew || typeof q.id === "number" ? generateId() : q.id;
+  
+            return {
+              id: newQuestionId,
+              text: q.text,
+              responseType: q.responseType ?? "Text", // ensure fallback
+              required: q.required,
+              flagged: q.flagged,
+              options: q.options,
+              value: q.value,
+              conditionalLogic: q.conditionalLogic,
+              conditionalProof: q.conditionalProof,
+              logicRules: q.logicRules,
+              multipleSelection: q.multipleSelection,
+            };
+          }),
+        };
+      }),
     };
   }
+  
+
+  
   
 
   // Updated handleSave function with proper CSRF token handling
   const handleSave = async () => {
     const isNew = !id;
-    const cleanedTemplate = cleanTemplateForSave(template, isNew);
-    const formData = new FormData();
-
-    formData.append("sections", JSON.stringify(cleanedTemplate.sections));
-
-    if (!templateData.title) {
-      alert("Please enter a template title")
-      return
+  
+    if (!template.title) {
+      alert("Please enter a template title");
+      return;
     }
-
+  
     try {
-      // 1. First, get a fresh CSRF token
-      const csrfToken = await fetchCSRFToken()
-
-      // 2. Prepare the form data
-      const formData = new FormData()
-      formData.append("title", templateData.title)
-      formData.append("description", templateData.description)
-
-      // 3. Handle the logo if it exists
+      const csrfToken = await fetchCSRFToken();
+      const formData = new FormData();
+  
+      // Add title and description
+      formData.append("title", template.title);
+      formData.append("description", template.description);
+  
+      // Add logo if exists
       if (template.logo) {
-        // If logo is a base64 string, convert to blob
         if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
-          const response = await fetch(template.logo)
-          const blob = await response.blob()
-          formData.append("logo", blob, "logo.png")
+          const response = await fetch(template.logo);
+          const blob = await response.blob();
+          formData.append("logo", blob, "logo.png");
         } else {
-          formData.append("logo", template.logo)
+          formData.append("logo", template.logo);
         }
       }
-
-      // 4. Add sections data
-      const cleanedTemplate = cleanTemplateForSave(template, isNew);
-      formData.append("sections", JSON.stringify(cleanedTemplate.sections));
-
-
-      // 5. Make the API request with the fresh CSRF token
-      const url = id
-        ? `http://localhost:8000/api/users/templates/${id}/` // Editing
-        : "http://localhost:8000/api/users/create_templates/"; // New
-
-      const method = id ? "PUT" : "POST";
-
-
-        const saveResponse = await fetch(url, {
-          method,
-          headers: {
-            "X-CSRFToken": csrfToken,
-          },
-          body: formData,
-          credentials: "include",
-        });
-
-
+  
+      // Add sections (correctly cleaned + snake_cased)
+      const cleaned = cleanTemplateForSave(template, isNew);
+      const snakeCaseSections = toSnakeCase(cleaned.sections);
+      formData.append("sections", JSON.stringify(snakeCaseSections));
+  
+      const url = isNew
+        ? "http://localhost:8000/api/users/create_templates/"
+        : `http://localhost:8000/api/users/templates/${id}/`;
+  
+      const method = isNew ? "POST" : "PATCH";
+  
+      const saveResponse = await fetch(url, {
+        method,
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+        body: formData,
+        credentials: "include",
+      });
+  
       if (!saveResponse.ok) {
-        const errorData = await saveResponse.json()
-        throw new Error(errorData.error || "Failed to save template")
+        const errorData = await saveResponse.json();
+        throw new Error(errorData.error || "Failed to save template");
       }
-
-      // Success handling
-      console.log("Template saved successfully!")
-      alert("Template saved successfully!")
-    } catch (error: unknown) {
-      console.error("Error saving template:", error)
-      if (error instanceof Error) {
-        alert(`Failed to save template: ${error.message}`)
-      } else {
-        alert("Failed to save template: Unknown error occurred")
-      }
+  
+      alert("Template saved successfully!");
+    } catch (error: any) {
+      console.error("Error saving template:", error);
+      alert(`Failed to save template: ${error.message}`);
     }
-  }
-
+  };
+  
   // Template Management
   const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
 

@@ -72,10 +72,14 @@ const TemplateView = () => {
       <aside className="tp-sidebar">
         <nav className="tp-sidebar-nav">
           {menuItems.map((item, index) => (
-            <Link to={item.href} className={`tp-nav-link ${item.active ? 'active' : ''}`}>
+            <a
+              key={index}
+              href={item.href}
+              className={`tp-nav-link ${item.active ? 'active' : ''}`}
+            >
               <item.icon size={20} />
               <span>{item.label}</span>
-            </Link>
+            </a>
           ))}
         </nav>
       </aside>
@@ -94,10 +98,9 @@ const TemplateView = () => {
           <div className="tp-template-view-header">
             <h1>{template.title}</h1>
             <Link to={`/templates/edit/${template.id}`} className="tp-edit-button">
-            <Edit size={16} />
-            Edit Template
+              <Edit size={16} />
+              Edit Template
             </Link>
-
           </div>
 
           <div className="tp-template-description">
