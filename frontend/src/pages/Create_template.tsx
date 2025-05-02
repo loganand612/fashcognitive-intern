@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useParams } from "react-router-dom";
 
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
@@ -47,6 +48,7 @@ import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/fro
 import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
 import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
 
+// U
 // Utility functions
 function getCookie(name: string): string | null {
   let cookieValue = null
@@ -282,7 +284,6 @@ const shouldShowTrigger = (question: Question, triggerType: TriggerAction): bool
 
   return false
 }
-
 
 // Helper function to get condition icon
 const getConditionIcon = (condition: LogicCondition) => {
@@ -1606,13 +1607,10 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
   )
 }
 
-interface Props {
-  id?: string;
-}
-
-const CreateTemplate: React.FC<Props> = ({ id }) => {
+// Main Component
+const CreateTemplate = () => {
   const navigate = useNavigate()
-  console.log("Editing template with id:", id);
+
   const [templateId, setTemplateId] = useState<string | null>(null)
 
   const [templateData, setTemplateData] = useState({
@@ -1620,19 +1618,6 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
     description: "",
   })
   const generateId = () => Math.random().toString(36).substring(2, 9)
-  
-  useEffect(() => {
-    if (id) {
-      axios
-        .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
-        .then((res) => {
-          setFormState(res.data); // This assumes your state is named formState
-        })
-        .catch((err) => {
-          console.error("Failed to load template", err);
-        });
-    }
-  }, [id]);
 
   const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
     id: generateId(),
@@ -1734,84 +1719,103 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+  const { id } = useParams();
 
-  // Update the useEffect hook that loads the template data to properly set the template state
+
   useEffect(() => {
-    // Check if we have a template ID in the URL
-    const params = new URLSearchParams(window.location.search)
-    const id = params.get("id")
-
     if (id) {
-      setTemplateId(id)
-      setIsLoading(true)
       axios
         .get(`http://localhost:8000/api/users/templates/${id}/`)
         .then((res) => {
-          console.log("Fetched template data:", res.data);
-          // Make sure we set both templateData and template with the response data
-          setTemplateData({
-            title: res.data.title || "",
-            description: res.data.description || "",
-          })
-          setTemplate(res.data)
-
-          // Set the active section to the first section if available
-          if (res.data.sections && res.data.sections.length > 0) {
-            setActiveSectionId(res.data.sections[0].id)
-          }
-
-          setIsLoading(false)
+          setTemplate(res.data);
+          setTemplateData(res.data);
+          setIsLoading(false);
         })
         .catch((err) => {
-          console.error("Failed to load template", err)
-          setIsLoading(false)
-        })
+          console.error("Failed to load template", err);
+          setIsLoading(false);
+        });
     } else {
-      // If it's a new template (no id), initialize it
-      const newTemplate = getInitialTemplate()
-      setTemplate(newTemplate)
-      setTemplateData({
-        title: newTemplate.title || "",
-        description: newTemplate.description || "",
-      })
-      setActiveSectionId(newTemplate.sections[0]?.id || null)
-      setIsLoading(false)
+      const newTemplate = getInitialTemplate();
+      setTemplate(newTemplate);
+      setActiveSectionId(newTemplate.sections[0]?.id || null);
+      setIsLoading(false);
     }
-  }, [])
+  }, [id]);
+  
+  
 
-  function cleanTemplateForSave(template: Template): Template {
-    const { id, ...templateWithoutId } = template
-    return {
-      ...templateWithoutId,
-      id: id, // Keep the template ID
-      sections: template.sections.map(({ id: sectionId, ...sectionWithoutId }) => ({
-        ...sectionWithoutId,
-        id: sectionId, // Add the id back to each section
-        questions: sectionWithoutId.questions.map(({ id: questionId, ...questionWithoutId }) => ({
-          ...questionWithoutId,
-          id: questionId, // Add the id back to each question
-        })),
-      })),
+  if (isLoading || !template) {
+    return <div>Loading template...</div>
+  }
+
+  function toSnakeCase(obj: any): any {
+    if (Array.isArray(obj)) {
+      return obj.map(toSnakeCase);
+    } else if (obj !== null && typeof obj === "object") {
+      return Object.entries(obj).reduce((acc, [key, value]) => {
+        const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+        acc[snakeKey] = toSnakeCase(value);
+        return acc;
+      }, {} as any);
     }
+    return obj;
+  }
+
+  function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
+    return {
+      ...(isNew ? {} : { id: template.id }), // Only include id if editing
+      title: template.title,
+      description: template.description,
+      logo: template.logo,
+      sections: template.sections.map((section) => ({
+        id: isNew ? generateId() : section.id ?? generateId(), // fallback if somehow undefined
+        title: section.title,
+        description: section.description,
+        isCollapsed: section.isCollapsed,
+        questions: section.questions.map((q) => ({
+          id: isNew ? generateId() : q.id ?? generateId(), // fallback if q.id is undefined
+          text: q.text,
+          responseType: q.responseType, // ✅ camelCase to match TS type
+          required: q.required,
+          flagged: q.flagged,
+          options: q.options,
+          value: q.value,
+          conditionalLogic: q.conditionalLogic,
+          conditionalProof: q.conditionalProof,
+          logicRules: q.logicRules,
+          multipleSelection: q.multipleSelection,
+        })),
+      }))      
+    };
   }
   
 
   // Updated handleSave function with proper CSRF token handling
   const handleSave = async () => {
-    if (!template.title) {
+    const isNew = !id;
+    const cleanedTemplate = cleanTemplateForSave(template, isNew);
+    const formData = new FormData();
+
+    formData.append("sections", JSON.stringify(cleanedTemplate.sections));
+
+    if (!templateData.title) {
       alert("Please enter a template title")
       return
     }
 
     try {
+      // 1. First, get a fresh CSRF token
       const csrfToken = await fetchCSRFToken()
+
+      // 2. Prepare the form data
       const formData = new FormData()
+      formData.append("title", templateData.title)
+      formData.append("description", templateData.description)
 
-      // Use template state directly instead of templateData
-      formData.append("title", template.title)
-      formData.append("description", template.description)
-
+      // 3. Handle the logo if it exists
       if (template.logo) {
+        // If logo is a base64 string, convert to blob
         if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
           const response = await fetch(template.logo)
           const blob = await response.blob()
@@ -1821,38 +1825,38 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
         }
       }
 
-      formData.append("sections", JSON.stringify(template.sections))
+      // 4. Add sections data
+      const cleanedTemplate = cleanTemplateForSave(template, isNew);
+      formData.append("sections", JSON.stringify(cleanedTemplate.sections));
 
-      const isEdit = !!templateId
-      const url = isEdit
-        ? `http://localhost:8000/api/users/templates/${templateId}/`
-        : "http://localhost:8000/api/users/create_templates/"
 
-      console.log(`Saving template to ${url} with method ${isEdit ? "PUT" : "POST"}`)
+      // 5. Make the API request with the fresh CSRF token
+      const url = id
+        ? `http://localhost:8000/api/users/templates/${id}/` // Editing
+        : "http://localhost:8000/api/users/create_templates/"; // New
 
-      const response = await fetch(url, {
-        method: isEdit ? "PUT" : "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-        },
-        body: formData,
-        credentials: "include",
-      })
+      const method = id ? "PUT" : "POST";
 
-      if (!response.ok) {
-        const errorData = await response.json()
+
+        const saveResponse = await fetch(url, {
+          method,
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+          body: formData,
+          credentials: "include",
+        });
+
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json()
         throw new Error(errorData.error || "Failed to save template")
       }
 
-      // Update the template with the latest save time
-      setTemplate((prev) => ({
-        ...prev,
-        lastSaved: new Date(),
-      }))
-
-      alert(isEdit ? "Template updated successfully!" : "Template created successfully!")
-      navigate("/templates")
-    } catch (error) {
+      // Success handling
+      console.log("Template saved successfully!")
+      alert("Template saved successfully!")
+    } catch (error: unknown) {
       console.error("Error saving template:", error)
       if (error instanceof Error) {
         alert(`Failed to save template: ${error.message}`)
@@ -1862,29 +1866,13 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
     }
   }
 
-  // Update the updateTemplate function to also update templateData
-  const updateTemplateFn = (updates: Partial<Template>) => {
-    setTemplate((prev) => ({ ...prev, ...updates }))
-
-    // Also update templateData if title or description is changed
-    if (updates.title !== undefined || updates.description !== undefined) {
-      setTemplateData((prev) => ({
-        ...prev,
-        title: updates.title !== undefined ? updates.title : prev.title,
-        description: updates.description !== undefined ? updates.description : prev.description,
-      }))
-    }
-  }
-
   // Template Management
+  const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
+
   const handleBack = () => {
     if (window.confirm("Do you want to save before leaving?")) handleSave()
-    navigate("/templates")
+      navigate("/templates")
   }
-
-  useEffect(() => {
-    console.log("Current template state:", template);
-  }, [template]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1894,7 +1882,7 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
         const result = event.target?.result as string
         if (result) {
           const resizedImage = await resizeImage(result)
-          updateTemplateFn({ logo: resizedImage })
+          updateTemplate({ logo: resizedImage })
         }
       }
       reader.readAsDataURL(file)
@@ -2394,7 +2382,8 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
       }
 
       // 4. Add sections data
-      const cleanedTemplate = cleanTemplateForSave(template)
+      const isNew = !id;
+      const cleanedTemplate = cleanTemplateForSave(template, isNew)
       formData.append("sections", JSON.stringify(cleanedTemplate.sections))
 
       // 5. Make the API request with the fresh CSRF token
@@ -2525,7 +2514,9 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
 
     if (shouldShowTrigger(question, "display_message")) {
       // Get the message from the rule that triggered this
-      const rule = question.logicRules?.find((r) => r.trigger === "display_message")
+      const rule = question.logicRules?.find(
+        (r) => r.trigger === "display_message"
+      )      
       const message = rule?.message || "Important: This response requires immediate attention."
 
       return (
@@ -3017,16 +3008,19 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
                   />
                 </div>
                 <div className="template-info">
-                    <input
+                  <input
                     type="text"
-                    name="title"
+                    className="template-title"
                     value={template.title}
-                    onChange={(e) => updateTemplateFn({ title: e.target.value })}
-                     />
-                  <textarea
-                    name="description"
+                    onChange={(e) => updateTemplate({ title: e.target.value })}
+                    placeholder="Untitled template"
+                  />
+                  <input
+                    type="text"
+                    className="template-description"
                     value={template.description}
-                    onChange={(e) => updateTemplateFn({ description: e.target.value })}
+                    onChange={(e) => updateTemplate({ description: e.target.value })}
+                    placeholder="Add a description"
                   />
                 </div>
               </div>
@@ -3090,7 +3084,3 @@ const CreateTemplate: React.FC<Props> = ({ id }) => {
 }
 
 export default CreateTemplate
-function setFormState(data: any) {
-  throw new Error("Function not implemented.")
-}
-
