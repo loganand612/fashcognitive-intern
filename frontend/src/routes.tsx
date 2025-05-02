@@ -9,6 +9,13 @@ import Template from "./pages/Template";
 import TemplatePage from "./pages/Create_template";
 import TemplateView from "./pages/TemplateView"; 
 
+import { useParams } from "react-router-dom";
+
+// Wrapper component to pass `id` as a prop
+const CreateTemplateWithId = () => {
+  const { id } = useParams();
+  return <CreateTemplate id={id} />;
+};
 
 const AppRoutes: React.FC = () => {
   return (
@@ -21,7 +28,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/templates" element={<Template />} />
       <Route path="/templates" element={<TemplatePage />} />
       <Route path="/template/:id" element={<TemplateView />} />
-      <Route path="/templates/edit/:id" element={<CreateTemplate />} />
+      <Route path="/templates/edit/:id" element={<CreateTemplateWithId />} />
     </Routes>
   );
 };

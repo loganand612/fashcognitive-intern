@@ -1,7 +1,7 @@
 import type React from "react";
 import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/styles.css";
 import { Menu } from "lucide-react";
-
+import { useParams, Link } from "react-router-dom";
 
 // Import the icon images and video from the assets folder
 import createIcon from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/create.png";
@@ -21,8 +21,9 @@ const Home2: React.FC = () => {
         </button>
         <div className="logo">FASHCOGNITIVE</div>
         <div className="auth-buttons">
-          <a href="\login" className="login-button1">Log in</a>
-          <a href="\register" className="signup-button1">Sign up for free</a>
+        <Link to="/login" className="login-button1">Log in</Link>
+        <Link to="/register" className="signup-button1">Sign up for free</Link>
+
         </div>
       </header>
 

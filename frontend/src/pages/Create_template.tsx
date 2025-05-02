@@ -283,6 +283,7 @@ const shouldShowTrigger = (question: Question, triggerType: TriggerAction): bool
   return false
 }
 
+
 // Helper function to get condition icon
 const getConditionIcon = (condition: LogicCondition) => {
   switch (condition) {
@@ -1605,10 +1606,13 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
   )
 }
 
-// Main Component
-const CreateTemplate = () => {
-  const navigate = useNavigate()
+interface Props {
+  id?: string;
+}
 
+const CreateTemplate: React.FC<Props> = ({ id }) => {
+  const navigate = useNavigate()
+  console.log("Editing template with id:", id);
   const [templateId, setTemplateId] = useState<string | null>(null)
 
   const [templateData, setTemplateData] = useState({
@@ -1616,6 +1620,19 @@ const CreateTemplate = () => {
     description: "",
   })
   const generateId = () => Math.random().toString(36).substring(2, 9)
+  
+  useEffect(() => {
+    if (id) {
+      axios
+        .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
+        .then((res) => {
+          setFormState(res.data); // This assumes your state is named formState
+        })
+        .catch((err) => {
+          console.error("Failed to load template", err);
+        });
+    }
+  }, [id]);
 
   const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
     id: generateId(),
@@ -1730,6 +1747,7 @@ const CreateTemplate = () => {
       axios
         .get(`http://localhost:8000/api/users/templates/${id}/`)
         .then((res) => {
+          console.log("Fetched template data:", res.data);
           // Make sure we set both templateData and template with the response data
           setTemplateData({
             title: res.data.title || "",
@@ -1776,6 +1794,7 @@ const CreateTemplate = () => {
       })),
     }
   }
+  
 
   // Updated handleSave function with proper CSRF token handling
   const handleSave = async () => {
@@ -1862,6 +1881,10 @@ const CreateTemplate = () => {
     if (window.confirm("Do you want to save before leaving?")) handleSave()
     navigate("/templates")
   }
+
+  useEffect(() => {
+    console.log("Current template state:", template);
+  }, [template]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -2994,19 +3017,16 @@ const CreateTemplate = () => {
                   />
                 </div>
                 <div className="template-info">
-                  <input
+                    <input
                     type="text"
-                    className="template-title"
+                    name="title"
                     value={template.title}
                     onChange={(e) => updateTemplateFn({ title: e.target.value })}
-                    placeholder="Untitled template"
-                  />
-                  <input
-                    type="text"
-                    className="template-description"
+                     />
+                  <textarea
+                    name="description"
                     value={template.description}
                     onChange={(e) => updateTemplateFn({ description: e.target.value })}
-                    placeholder="Add a description"
                   />
                 </div>
               </div>
@@ -3070,3 +3090,7 @@ const CreateTemplate = () => {
 }
 
 export default CreateTemplate
+function setFormState(data: any) {
+  throw new Error("Function not implemented.")
+}
+
