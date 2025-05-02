@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useParams } from "react-router-dom";
 
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
@@ -1717,56 +1718,86 @@ const CreateTemplate = () => {
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+  const { id } = useParams();
+
 
   useEffect(() => {
-    // Check if we have a template ID in the URL
-    const params = new URLSearchParams(window.location.search)
-    const id = params.get("id")
-
     if (id) {
-      setTemplateId(id)
       axios
         .get(`http://localhost:8000/api/users/templates/${id}/`)
         .then((res) => {
-          setTemplateData(res.data)
-          setTemplate(res.data)
-          setIsLoading(false) // ✅ mark as loaded
+          setTemplate(res.data);
+          setTemplateData(res.data);
+          setIsLoading(false);
         })
         .catch((err) => {
-          console.error("Failed to load template", err)
-          setIsLoading(false) // ✅ even on error, stop loading
-        })
+          console.error("Failed to load template", err);
+          setIsLoading(false);
+        });
     } else {
-      // If it's a new template (no id), initialize it
-      const newTemplate = getInitialTemplate()
-      setTemplate(newTemplate)
-      setActiveSectionId(newTemplate.sections[0]?.id || null)
-      setIsLoading(false)
+      const newTemplate = getInitialTemplate();
+      setTemplate(newTemplate);
+      setActiveSectionId(newTemplate.sections[0]?.id || null);
+      setIsLoading(false);
     }
-  }, [])
+  }, [id]);
+  
+  
 
   if (isLoading || !template) {
     return <div>Loading template...</div>
   }
 
-  function cleanTemplateForSave(template: Template): Template {
-    const { id, ...templateWithoutId } = template
-    return {
-      ...templateWithoutId,
-      id: id, // Keep the template ID
-      sections: template.sections.map(({ id: sectionId, ...sectionWithoutId }) => ({
-        ...sectionWithoutId,
-        id: sectionId, // Add the id back to each section
-        questions: sectionWithoutId.questions.map(({ id: questionId, ...questionWithoutId }) => ({
-          ...questionWithoutId,
-          id: questionId, // Add the id back to each question
-        })),
-      })),
+  function toSnakeCase(obj: any): any {
+    if (Array.isArray(obj)) {
+      return obj.map(toSnakeCase);
+    } else if (obj !== null && typeof obj === "object") {
+      return Object.entries(obj).reduce((acc, [key, value]) => {
+        const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+        acc[snakeKey] = toSnakeCase(value);
+        return acc;
+      }, {} as any);
     }
+    return obj;
   }
+
+  function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
+    return {
+      ...(isNew ? {} : { id: template.id }), // Only include id if editing
+      title: template.title,
+      description: template.description,
+      logo: template.logo,
+      sections: template.sections.map((section) => ({
+        id: isNew ? generateId() : section.id ?? generateId(), // fallback if somehow undefined
+        title: section.title,
+        description: section.description,
+        isCollapsed: section.isCollapsed,
+        questions: section.questions.map((q) => ({
+          id: isNew ? generateId() : q.id ?? generateId(), // fallback if q.id is undefined
+          text: q.text,
+          responseType: q.responseType, // ✅ camelCase to match TS type
+          required: q.required,
+          flagged: q.flagged,
+          options: q.options,
+          value: q.value,
+          conditionalLogic: q.conditionalLogic,
+          conditionalProof: q.conditionalProof,
+          logicRules: q.logicRules,
+          multipleSelection: q.multipleSelection,
+        })),
+      }))      
+    };
+  }
+  
 
   // Updated handleSave function with proper CSRF token handling
   const handleSave = async () => {
+    const isNew = !id;
+    const cleanedTemplate = cleanTemplateForSave(template, isNew);
+    const formData = new FormData();
+
+    formData.append("sections", JSON.stringify(cleanedTemplate.sections));
+
     if (!templateData.title) {
       alert("Please enter a template title")
       return
@@ -1794,19 +1825,27 @@ const CreateTemplate = () => {
       }
 
       // 4. Add sections data
-      formData.append("sections", JSON.stringify(template.sections))
+      const cleanedTemplate = cleanTemplateForSave(template, isNew);
+      formData.append("sections", JSON.stringify(cleanedTemplate.sections));
 
-      const cleanedTemplate = cleanTemplateForSave(template)
 
       // 5. Make the API request with the fresh CSRF token
-      const saveResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-        },
-        body: formData,
-        credentials: "include", // Important: include cookies
-      })
+      const url = id
+        ? `http://localhost:8000/api/users/templates/${id}/` // Editing
+        : "http://localhost:8000/api/users/create_templates/"; // New
+
+      const method = id ? "PUT" : "POST";
+
+
+        const saveResponse = await fetch(url, {
+          method,
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+          body: formData,
+          credentials: "include",
+        });
+
 
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json()
@@ -2342,7 +2381,8 @@ const CreateTemplate = () => {
       }
 
       // 4. Add sections data
-      const cleanedTemplate = cleanTemplateForSave(template)
+      const isNew = !id;
+      const cleanedTemplate = cleanTemplateForSave(template, isNew)
       formData.append("sections", JSON.stringify(cleanedTemplate.sections))
 
       // 5. Make the API request with the fresh CSRF token
