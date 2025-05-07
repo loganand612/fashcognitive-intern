@@ -35,6 +35,7 @@ const Login: React.FC = () => {
       
           // Success handling
           console.log("Login successful!");
+          localStorage.setItem("username", email);
           navigate("/dashboard");
           
         } catch (error) {

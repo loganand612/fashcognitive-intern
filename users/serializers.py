@@ -54,10 +54,11 @@ class TemplateSerializer(serializers.ModelSerializer):
     logo = serializers.CharField(required=False, allow_blank=True)  # Accept base64 string for input
     lastModified = serializers.SerializerMethodField()
     access = serializers.SerializerMethodField()
+    createdBy = serializers.SerializerMethodField()
 
     class Meta:
         model = Template
-        fields = ['id', 'title', 'description', 'logo', 'lastModified', 'access', 'sections']
+        fields = ['id', 'title', 'description', 'logo', 'lastModified', 'access', 'sections', 'createdBy']
 
     def create(self, validated_data):
         sections_data = validated_data.pop('sections', [])
@@ -100,8 +101,9 @@ class TemplateSerializer(serializers.ModelSerializer):
 
     def get_access(self, obj):
         return obj.access if hasattr(obj, 'access') else "All users"
-    
-        
+
+    def get_createdBy(self, obj):
+        return obj.user.email
 
 
 class TemplateCreateView(APIView):

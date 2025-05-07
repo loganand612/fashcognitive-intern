@@ -16,6 +16,6 @@ urlpatterns = [
     path("dashboard/templates/", DashboardTemplateView.as_view(), name="dashboard_templates"),
     path("get-csrf-token/", get_csrf_token, name="get-csrf-token"),
     path("templates/<int:pk>/", TemplateCreateView.as_view(), name="template-update"),
-
+    path("user/templates/", TemplateAPI.as_view(), name="user-templates"),
 ]
 

@@ -319,7 +319,13 @@ def auth_status(request):
         }
     })
 
-
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_templates(request):
+    user = request.user
+    templates = Template.objects.filter(user=user)
+    serializer = TemplateSerializer(templates, many=True)
+    return Response(serializer.data)
 
 @ensure_csrf_cookie
 def get_csrf_token(request):
