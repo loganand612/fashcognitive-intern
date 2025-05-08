@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import "../assets/Template.css"
 import {
@@ -19,6 +19,7 @@ import {
   Package,
   AlertCircle,
   Settings,
+  ChevronDown,
 } from "lucide-react"
 
 interface Template {
@@ -44,6 +45,7 @@ interface DebugInfo {
 
 const TemplatePage: React.FC = () => {
   const navigate = useNavigate()
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/dashboard" },
@@ -63,6 +65,7 @@ const TemplatePage: React.FC = () => {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false)
 
   const loggedInUser = localStorage.getItem("username")
 
@@ -80,7 +83,38 @@ const TemplatePage: React.FC = () => {
     "/api/users/templates/",
   ]
 
-  const handleCreateTemplate = () => navigate("/create_templates")
+  // Toggle the create template dropdown
+  const toggleCreateDropdown = () => {
+    setShowCreateDropdown(!showCreateDropdown)
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCreateDropdown(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  const handleLogout = () => {
+    // Clear authentication tokens or user data
+    localStorage.removeItem('authToken'); // Example: Remove token from localStorage
+
+    // Redirect to login page
+    window.location.href = '/login';
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
 
   useEffect(() => {
     const testAllEndpoints = async () => {
@@ -103,7 +137,8 @@ const TemplatePage: React.FC = () => {
 
               const data = await response.json()
               console.log("Full response data:", data);
-              console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));              setTemplates(data.filter((template: Template) => template.createdBy === loggedInUser))
+              console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
+              setTemplates(data.filter((template: Template) => template.createdBy === loggedInUser))
               
               setDebugInfo({ endpoints: results, successEndpoint: fullUrl, responseData: data })
               setLoading(false)
@@ -133,81 +168,124 @@ const TemplatePage: React.FC = () => {
   }, [])
 
   return (
-    <div className="app-container">
-      <nav className="navbar">
-        <div className="navbar-brand">FASHCOGNITIVE</div>
-        <div className="navbar-actions">
-          <button className="nav-button"><User size={20} /></button>
-          <button className="nav-button"><Settings size={20} /></button>
+    <div className="tp-app-container">
+      <nav className="tp-navbar">
+        <div className="tp-navbar-brand">FASHCOGNITIVE</div>
+        <div className="tp-navbar-actions">
+          <button className="tp-nav-button">
+            <User className="tp-nav-icon" />
+          </button>
+          <div className="tp-dropdown-container">
+            <button className="tp-nav-button" onClick={toggleDropdown}>
+              <Settings className="tp-nav-icon" />
+            </button>
+            {isDropdownOpen && (
+              <div className="tp-dropdown-menu">
+                <button className="tp-dropdown-item" onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
-      <aside className="sidebar">
-        <nav className="sidebar-nav">
+      <aside className="tp-sidebar">
+        <nav className="tp-sidebar-nav">
           {menuItems.map((item, i) => (
-            <a key={i} href={item.href} className={`nav-link ${item.active ? "active" : ""}`}>
+            <a key={i} href={item.href} className={`tp-nav-link ${item.active ? "active" : ""}`}>
               <item.icon size={20} /><span>{item.label}</span>
             </a>
           ))}
         </nav>
       </aside>
 
-      <div className="template-container">
-        <div className="template-header">
-          <nav className="template-tabs">
-            <button className="tab active">Templates</button>
-            <button className="tab">Responses</button>
-            <button className="tab">Public Library</button>
-            <button className="tab">Archive</button>
+      <div className="tp-template-container">
+        <div className="tp-template-header">
+          <nav className="tp-template-tabs">
+            <button className="tp-tab active">Templates</button>
+            <button className="tp-tab">Responses</button>
+            <button className="tp-tab">Public Library</button>
+            <button className="tp-tab">Archive</button>
           </nav>
         </div>
 
-        <div className="template-content">
-          <section className="creation-section">
-            <div className="section-header">
+        <div className="tp-template-content">
+          <section className="tp-creation-section">
+            <div className="tp-section-header">
               <h2>Create your template from one of the options below.</h2>
-              <button className="close-button"><X size={20} /></button>
+              <button className="tp-close-button"><X size={20} /></button>
             </div>
 
-            <div className="creation-options">
-              <div className="option-card"><div className="option-icon"><Plus size={24} /></div><h3>Start from scratch</h3><p>Get started with a blank template.</p></div>
-              <div className="option-card"><div className="option-icon"><FileText size={24} /></div><h3>Describe topic</h3><p>Enter a text prompt about your template.</p></div>
-              <div className="option-card"><div className="option-icon"><Search size={24} /></div><h3>Find pre-made template</h3><p>Choose from over 100,000 editable templates.</p></div>
+            <div className="tp-creation-options">
+              <div className="tp-option-card">
+                <div className="tp-option-icon"><Plus size={24} /></div>
+                <h3>Start from scratch</h3>
+                <p>Get started with a blank template.</p>
+              </div>
+              <div className="tp-option-card">
+                <div className="tp-option-icon"><FileText size={24} /></div>
+                <h3>Describe topic</h3>
+                <p>Enter a text prompt about your template.</p>
+              </div>
+              <div className="tp-option-card">
+                <div className="tp-option-icon"><Search size={24} /></div>
+                <h3>Find pre-made template</h3>
+                <p>Choose from over 100,000 editable templates.</p>
+              </div>
             </div>
           </section>
 
-          <section className="templates-section">
-            <div className="templates-header">
-              <h2>Templates <span className="count">(1 - {filteredTemplates.length} of {templates.length})</span></h2>
-              <button className="create-button" onClick={handleCreateTemplate}><Plus size={16} /> Create</button>
+          <section className="tp-templates-section">
+            <div className="tp-templates-header">
+              <h2>Templates <span className="tp-count">(1 - {filteredTemplates.length} of {templates.length})</span></h2>
+              <div className="tp-create-dropdown" ref={dropdownRef}>
+                <button className="tp-create-button" onClick={toggleCreateDropdown}>
+                  <Plus size={16} />
+                  Create
+                  <ChevronDown size={16} className={`tp-dropdown-icon ${showCreateDropdown ? 'open' : ''}`} />
+                </button>
+                {showCreateDropdown && (
+                  <div className="tp-dropdown-menu">
+                    <a href="/create_templates" className="tp-dropdown-item">
+                      <FileText size={16} />
+                      Standard Template
+                    </a>
+                    <a href="/garment-template" className="tp-dropdown-item">
+                      <FileText size={16} />
+                      Garment Template
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {loading && <div className="loading">Loading templates...</div>}
+            {loading && <div className="tp-loading">Loading templates...</div>}
             {error && (
-              <div className="error-message">
+              <div className="tp-error-message">
                 {error}<p>Showing demo data for display purposes.</p>
                 <details><summary>API Debug Info (Click to expand)</summary><pre>{JSON.stringify(debugInfo, null, 2)}</pre></details>
               </div>
             )}
 
-            <div className="search-controls">
-              <div className="search-field">
-                <Search className="search-icon" size={20} />
+            <div className="tp-search-controls">
+              <div className="tp-search-field">
+                <Search className="tp-search-icon" size={20} />
                 <input
-                  type="text"
+                  type="text" 
                   placeholder="Search all templates"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button className="filter-button"><Plus size={16} /> Add filter</button>
+              <button className="tp-filter-button"><Plus size={16} /> Add filter</button>
             </div>
 
-            <div className="templates-table">
+            <div className="tp-templates-table">
               <table>
                 <thead>
                   <tr>
-                    <th className="checkbox-column"><input type="checkbox" /></th>
+                    <th className="tp-checkbox-column"><input type="checkbox" /></th>
                     <th>Template</th>
                     <th>Last modified</th>
                     <th>Access</th>
@@ -217,14 +295,24 @@ const TemplatePage: React.FC = () => {
                 <tbody>
                   {filteredTemplates.map((template) => (
                     <tr key={template.id}>
-                      <td className="checkbox-column"><input type="checkbox" /></td>
-                      <td><div className="template-cell"><div className="template-icon"><FileText size={20} /></div><span>{template.title}</span></div></td>
-                      <td>{template.lastModified || "Not available"}</td>
-                      <td><div className="access-badge"><User size={16} /><span>{template.access || "No access specified"}</span></div></td>
+                      <td className="tp-checkbox-column"><input type="checkbox" /></td>
                       <td>
-                        <div className="action-buttons">
-                          <button className="start-inspection">Start inspection</button>
-                          <button className="view-button" onClick={() => navigate(`/template/${template.id}`)}>View</button>
+                        <div className="tp-template-cell">
+                          <div className="tp-template-icon"><FileText size={20} /></div>
+                          <span>{template.title}</span>
+                        </div>
+                      </td>
+                      <td>{template.lastModified || "Not available"}</td>
+                      <td>
+                        <div className="tp-access-badge">
+                          <User size={16} />
+                          <span>{template.access || "No access specified"}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="tp-action-buttons">
+                          <button className="tp-start-inspection">Start inspection</button>
+                          <button className="tp-view-button" onClick={() => navigate(`/template/${template.id}`)}>View</button>
                         </div>
                       </td>
                     </tr>

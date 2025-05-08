@@ -4,6 +4,8 @@ from .views import (
     TemplateAPI, TemplateCreateView, TemplateDetailView,
     DashboardTemplateView, auth_status, get_csrf_token
 )
+from .views import GarmentTemplateCreateView
+
 
 urlpatterns = [
     path("login/", login_user, name="login"),
@@ -17,5 +19,6 @@ urlpatterns = [
     path("get-csrf-token/", get_csrf_token, name="get-csrf-token"),
     path("templates/<int:pk>/", TemplateCreateView.as_view(), name="template-update"),
     path("user/templates/", TemplateAPI.as_view(), name="user-templates"),
+    path('garment-template/', GarmentTemplateCreateView.as_view(), name='garment-template'),
 ]
 

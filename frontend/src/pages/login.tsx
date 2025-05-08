@@ -1,94 +1,117 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../assets/login.css";
-import logs from "../assets/img/flag.jpg";
+import logs from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/logs.png";
 import { fetchCSRFToken } from "../utils/csrf";
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState(""); // Used for error handling
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const [error, setError] = useState("");
     const navigate = useNavigate();
+
+    const togglePasswordVisibility = () => {
+        setPasswordVisible((prev) => !prev);
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-      
+
         try {
-          // 1. First, get a fresh CSRF token
-          const csrfToken = await fetchCSRFToken();
-      
-          // 2. Make the login request with the fresh token
-          const loginResponse = await fetch("http://localhost:8000/api/users/login/", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": csrfToken,
-            },
-            body: JSON.stringify({ email, password }),
-            credentials: "include",
-          });
-      
-          if (!loginResponse.ok) {
-            const errorData = await loginResponse.json();
-            throw new Error(errorData.error || "Login failed");
-          }
-      
-          // Success handling
-          console.log("Login successful!");
-          localStorage.setItem("username", email);
-          navigate("/dashboard");
-          
+            const csrfToken = await fetchCSRFToken();
+
+            const loginResponse = await fetch("http://localhost:8000/api/users/login/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+                body: JSON.stringify({ email, password }),
+                credentials: "include",
+            });
+
+            if (!loginResponse.ok) {
+                const errorData = await loginResponse.json();
+                throw new Error(errorData.error || "Login failed");
+            }
+
+            console.log("Login successful!");
+            localStorage.setItem("username", email);
+            navigate("/dashboard");
         } catch (error) {
-          console.error("Login error:", error);
-          setError("Login failed. Please check your credentials and try again."); // Set error message
+            console.error("Login error:", error);
+            setError("Login failed. Please check your credentials and try again.");
         }
     };
 
     return (
         <div className="login-container">
-            <div className="left-panel">
-                <img src={logs} alt="Logo" className="logo" />
-                <h2 className="font">Manage your assets and operations, all in one place</h2>
-            </div>
-            <div className="right-panel">
-                <div className="login-card">
-                    <h1>Hello Again!</h1>
-                    <p>Welcome Back</p>
+            <div className="login-content">
+                <div className="login-left">
+                    <div className="logo-section">
+                        <img src={logs} alt="Fashcognitive Logo" className="company-logo" />
+                        <div className="welcome-text">
+                            <h1 className="text1">Welcome Back to<br />Fashcognitive</h1>
+                            <p className="text2">Manage your assets and operations, all in one place with our AI-powered solutions.</p>
+                        </div>
+                    </div>
+                </div>
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label htmlFor="email">Email Address</label>
+                <div className="login-right">
+                    <form className="login-form" onSubmit={handleSubmit}>
+                        <h2>Sign In</h2>
+                        <p className="subtitle">Welcome back! Please enter your details.</p>
+
+                        <div className="input-group">
+                            <Mail className="input-icon" size={18} />
                             <input
                                 type="email"
                                 id="email"
                                 name="email"
                                 required
-                                placeholder="Enter your email"
+                                placeholder="Email Address"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label htmlFor="password">Password</label>
+                        <div className="input-group">
+                            <Lock className="input-icon" size={18} />
                             <input
-                                type="password"
+                                type={passwordVisible ? "text" : "password"}
                                 id="password"
                                 name="password"
                                 required
-                                placeholder="Enter your password"
+                                placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                onClick={togglePasswordVisibility}
+                                aria-label={passwordVisible ? "Hide password" : "Show password"}
+                            >
+                                {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
 
-                        <button type="submit" className="login-button">Login</button>
+                        {error && <p style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
 
-                        {error && <p style={{ color: "red" }}>{error}</p>} {/* Display error message */}
+                        <div className="form-options">
+                            <Link to="/forgot-password" className="forgot-password">
+                                Forgot Password?
+                            </Link>
+                        </div>
 
-                        <div className="bottom-links">
-                            <Link to="#">Forgot Password?</Link>
-                            <Link to="/register" className="signup-button">Sign Up</Link>                        </div>
+                        <button type="submit" className="submit-btn">Sign In</button>
+
+                        <p className="signup-link">
+                            Don't have an account? <Link to="/register">Sign up</Link>
+                        </p>
                     </form>
                 </div>
             </div>

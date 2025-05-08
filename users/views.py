@@ -155,8 +155,6 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 class TemplateCreateView(APIView):
-        
-
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -344,3 +342,107 @@ def get_csrf_token(request):
         samesite='Lax'  # Helps prevent CSRF in modern browsers
     )
     return response
+
+
+from .models import Template, Section, Question, QuestionOption
+
+class GarmentTemplateCreateView(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            title = request.data.get("title")
+            description = request.data.get("description")
+            logo = request.FILES.get("logo") or request.data.get("logo")
+            template_id = request.data.get("id")
+            sections_data = request.data.get("sections")
+
+            if not title:
+                return Response({"error": "Title is required"}, status=400)
+
+            # Handle logo base64
+            logo_file = None
+            if isinstance(logo, str) and 'base64,' in logo:
+                try:
+                    format, imgstr = logo.split(';base64,')
+                    ext = format.split('/')[-1]
+                    logo_file = ContentFile(base64.b64decode(imgstr), name=f"logo.{ext}")
+                except Exception as e:
+                    print("Logo decode error:", e)
+            elif hasattr(logo, 'read'):
+                logo_file = logo
+
+            # Parse section JSON
+            sections = json.loads(sections_data) if isinstance(sections_data, str) else sections_data
+
+            # Create or update template
+            if template_id:
+                template = get_object_or_404(Template, id=template_id)
+                template.title = title
+                template.description = description
+                if logo_file:
+                    template.logo = logo_file
+                template.template_type = 'garment'
+                template.save()
+            else:
+                template = Template.objects.create(
+                    user=request.user,
+                    title=title,
+                    description=description,
+                    logo=logo_file,
+                    template_type='garment'
+                )
+
+            # Loop through sections
+            for index, section_data in enumerate(sections):
+                section_type = section_data.get("type", "standard")
+                content = section_data.get("content", {})
+                aql = content.get("aqlSettings", {})
+                section = Section.objects.create(
+                    template=template,
+                    title=section_data.get("title"),
+                    description=content.get("description", ""),
+                    order=index,
+                    is_collapsed=section_data.get("isCollapsed", False),
+                    is_garment_section=(section_type == "garmentDetails"),
+                    aql_level=aql.get("aqlLevel"),
+                    inspection_level=aql.get("inspectionLevel"),
+                    sampling_plan=aql.get("samplingPlan"),
+                    severity=aql.get("severity"),
+                    sizes=content.get("sizes", []),
+                    colors=content.get("colors", []),
+                    default_defects=content.get("defaultDefects", []),
+                    include_carton_offered=content.get("includeCartonOffered", True),
+                    include_carton_inspected=content.get("includeCartonInspected", True),
+                )
+
+                # If standard, process questions
+                if section_type == "standard":
+                    for q_index, question_data in enumerate(content.get("questions", [])):
+                        question = Question.objects.create(
+                            section=section,
+                            text=question_data.get("text"),
+                            response_type=question_data.get("responseType"),
+                            required=question_data.get("required", False),
+                            order=q_index,
+                        )
+                        for o_index, option in enumerate(question_data.get("options", [])):
+                            QuestionOption.objects.create(
+                                question=question,
+                                text=option,
+                                order=o_index
+                            )
+
+            return Response({"message": "Garment template saved successfully"}, status=201)
+
+        except Exception as e:
+            print("❌ Error:", e)
+            return Response({"error": str(e)}, status=400)
+
+    def put(self, request, pk=None):
+        if not pk:
+            return Response({"error": "Template ID is required for update"}, status=400)
+        request.data._mutable = True
+        request.data["id"] = pk
+        return self.post(request)

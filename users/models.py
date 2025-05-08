@@ -26,6 +26,11 @@ class CustomUser(AbstractUser):
         
 
 class Template(models.Model):
+    TEMPLATE_TYPE_CHOICES = [
+        ('standard', 'Standard'),
+        ('garment', 'Garment'),
+    ]
+
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)  
     description = models.TextField(blank=True, null=True)
@@ -59,6 +64,18 @@ class Section(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Garment-specific fields
+    is_garment_section = models.BooleanField(default=False)
+    aql_level = models.CharField(max_length=10, blank=True, null=True)
+    inspection_level = models.CharField(max_length=10, blank=True, null=True)
+    sampling_plan = models.CharField(max_length=10, blank=True, null=True)
+    severity = models.CharField(max_length=15, blank=True, null=True)
+    sizes = ArrayField(models.CharField(max_length=10), blank=True, null=True, default=list)
+    colors = ArrayField(models.CharField(max_length=20), blank=True, null=True, default=list)
+    default_defects = ArrayField(models.CharField(max_length=100), blank=True, null=True, default=list)
+    include_carton_offered = models.BooleanField(default=True)
+    include_carton_inspected = models.BooleanField(default=True)
+
     def __str__(self):
         return f"{self.template.title} - {self.title}"
     
@@ -72,50 +89,35 @@ class Section(models.Model):
 
 
 class Question(models.Model):
-    TEXT = 'Text'
-    NUMBER = 'Number'
-    CHECKBOX = 'Checkbox'
-    YES_NO = 'Yes/No'
-    MULTIPLE_CHOICE = 'Multiple choice'
-    SLIDER = 'Slider'
-    MEDIA = 'Media'
-    ANNOTATION = 'Annotation'
-    DATE_TIME = 'Date & Time'
-    SITE = 'Site'
-    INSPECTION_DATE = 'Inspection date'
-    PERSON = 'Person'
-    INSPECTION_LOCATION = 'Inspection location'
-    
     RESPONSE_TYPE_CHOICES = [
-        (TEXT, 'Text'),
-        (NUMBER, 'Number'),
-        (CHECKBOX, 'Checkbox'),
-        (YES_NO, 'Yes/No'),
-        (MULTIPLE_CHOICE, 'Multiple choice'),
-        (SLIDER, 'Slider'),
-        (MEDIA, 'Media'),
-        (ANNOTATION, 'Annotation'),
-        (DATE_TIME, 'Date & Time'),
-        (SITE, 'Site'),
-        (INSPECTION_DATE, 'Inspection date'),
-        (PERSON, 'Person'),
-        (INSPECTION_LOCATION, 'Inspection location'),
+        ('Text', 'Text'),
+        ('Number', 'Number'),
+        ('Checkbox', 'Checkbox'),
+        ('Yes/No', 'Yes/No'),
+        ('Multiple choice', 'Multiple choice'),
+        ('Slider', 'Slider'),
+        ('Media', 'Media'),
+        ('Annotation', 'Annotation'),
+        ('Date & Time', 'Date & Time'),
+        ('Site', 'Site'),
+        ('Inspection date', 'Inspection date'),
+        ('Person', 'Person'),
+        ('Inspection location', 'Inspection location'),
     ]
-    
+
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='questions')
     text = models.CharField(max_length=500)
-    response_type = models.CharField(max_length=50, choices=RESPONSE_TYPE_CHOICES, default=TEXT)
+    response_type = models.CharField(max_length=50, choices=RESPONSE_TYPE_CHOICES, default='Text')
     required = models.BooleanField(default=False)
     order = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
     min_value = models.IntegerField(default=0, blank=True, null=True)
     max_value = models.IntegerField(default=100, blank=True, null=True)
-    
+
     def __str__(self):
         return f"{self.section.title} - {self.text}"
-    
+
     class Meta:
         db_table = 'questions'
         ordering = ['order']
@@ -124,6 +126,7 @@ class Question(models.Model):
             models.Index(fields=['response_type']),
             models.Index(fields=['order']),
         ]
+
 
 
 class QuestionOption(models.Model):
@@ -235,3 +238,4 @@ class InspectionResponse(models.Model):
     class Meta:
         db_table = 'inspection_responses'
         unique_together = ('inspection', 'response')
+
