@@ -1,0 +1,329 @@
+/* Print-specific styles for garment template */
+@media print {
+  /* Hide non-printable elements */
+  .top-navigation,
+  .report-actions,
+  .grid-actions,
+  .table-header-actions,
+  .color-cell button,
+  .add-defect-container,
+  .defect-actions,
+  input[type="file"],
+  button.defect-action-button,
+  button.remove-image-button,
+  button.report-remove-media-button,
+  button.grid-action-button,
+  button.table-edit-button,
+  button.table-delete-button {
+    display: none !important;
+  }
+
+  /* Hide React App title in print */
+  /* Force background colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* General page setup */
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12pt;
+    line-height: 1.3;
+    background: #fff;
+    color: #000;
+  }
+
+  /* Container styles */
+  .report-preview-container {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  .report-preview {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+
+  /* Header styles */
+  .report-header-preview {
+    padding: 15px 0;
+    border-bottom: 2px solid #000;
+    margin-bottom: 25px;
+    page-break-inside: avoid;
+    page-break-after: avoid;
+  }
+
+  .report-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .report-logo {
+    width: 80px;
+    height: 80px;
+    margin-right: 20px;
+    flex-shrink: 0;
+  }
+
+  .report-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .logo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f5;
+    border: 1px solid #ddd;
+    font-weight: bold;
+    font-size: 18px;
+    color: #333;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .report-title-info {
+    flex-grow: 1;
+    text-align: center;
+  }
+
+  .report-title-info h3 {
+    font-size: 20pt;
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #000;
+    letter-spacing: 0.5px;
+  }
+
+  .report-title-info p {
+    font-size: 10pt;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Add a placeholder on the right side to balance the logo */
+  .report-header-spacer {
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  /* Section styles */
+  .report-section-preview {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+
+  .report-section-preview h4 {
+    font-size: 14pt;
+    margin: 0 0 10px 0;
+    padding: 5px;
+    background-color: #f0f0f5;
+    border-radius: 0;
+  }
+
+  /* Table styles */
+  .garment-table-preview {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+    table-layout: fixed;
+  }
+
+  .garment-table-preview th,
+  .garment-table-preview td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: center;
+  }
+
+  .garment-table-preview th {
+    background-color: #f0f0f5;
+    font-weight: bold;
+  }
+
+  .garment-table-preview .color-column {
+    text-align: left;
+    font-weight: bold;
+    background-color: #f8f8fc;
+  }
+
+  .garment-table-preview .size-header {
+    background-color: #ebebf5;
+  }
+
+  .garment-table-preview .qty-header {
+    background-color: #f0f0fa;
+    font-size: 10pt;
+  }
+
+  /* Ensure the table structure matches the image */
+  .garment-table-preview thead tr:first-child th:first-child {
+    background-color: #f5f5fa;
+    font-weight: bold;
+  }
+
+  /* Style for the COLOR header */
+  .garment-table-preview thead tr:first-child th:first-child {
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* Add vertical borders between size columns */
+  .garment-table-preview th:nth-child(3n+1):not(:first-child),
+  .garment-table-preview td:nth-child(3n+1):not(:first-child) {
+    border-left: 2px solid #aaa;
+  }
+
+  /* Ensure size columns are properly sized */
+  .garment-table-preview th,
+  .garment-table-preview td {
+    width: auto;
+  }
+
+  .garment-table-preview .color-column {
+    width: 15%;
+  }
+
+  /* Total row styling */
+  .garment-table-preview .total-row {
+    background-color: #f0f0f5;
+    font-weight: bold;
+  }
+
+  .garment-table-preview .total-cell {
+    font-weight: bold;
+  }
+
+  /* Input styling for print */
+  .garment-table-preview input.qty-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: center;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  /* Carton info styling */
+  .carton-info {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .carton-info label {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+
+  .carton-info input {
+    border: 1px solid #ddd;
+    padding: 5px;
+    width: 80px;
+  }
+
+  /* Defect table styling */
+  .defect-table-preview {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+
+  .defect-table-preview th,
+  .defect-table-preview td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: center;
+  }
+
+  .defect-table-preview th {
+    background-color: #f0f0f5;
+    font-weight: bold;
+  }
+
+  /* Defect images styling */
+  .defect-images-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 15px;
+  }
+
+  .defect-image-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .defect-image-header {
+    background-color: #f0f0f5;
+    padding: 5px;
+    font-weight: bold;
+  }
+
+  .defect-image-container {
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .defect-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .defect-image-remarks {
+    padding: 5px;
+    font-size: 10pt;
+    border-top: 1px solid #ddd;
+  }
+
+  /* Page breaks */
+  .report-section-preview.defect-log-preview {
+    page-break-before: always;
+  }
+
+  .photograph-section {
+    page-break-before: always;
+  }
+
+  /* Footer */
+  @page {
+    @bottom-center {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 9pt;
+      color: #666;
+    }
+
+    @bottom-left {
+      content: "Generated on " attr(data-print-date);
+      font-size: 9pt;
+      color: #666;
+    }
+
+    @bottom-right {
+      content: "© Fashcognitive Inspection System";
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+}

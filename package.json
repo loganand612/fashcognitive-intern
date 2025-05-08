@@ -1,5 +1,11 @@
 {
   "dependencies": {
-    "framer-motion": "^12.9.2"
+    "framer-motion": "^12.10.1",
+    "react-signature-canvas": "^1.1.0-alpha.2",
+    "web-vitals": "^4.2.4"
+  },
+  "devDependencies": {
+    "@types/react-signature-canvas": "^1.0.7",
+    "typescript": "^5.8.3"
   }
 }

@@ -1,0 +1,39 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import './Dashboard.css'; // Assuming similar styles as Dashboard
+import './Template.css'; // Reusing styles from Template
+
+const Training = () => {
+  return (
+    <div className="dashboard-container">
+      <aside className="sidebar">
+        <nav>
+          <ul>
+            <li><Link to="/home">Home</Link></li>
+            <li><Link to="/template">Templates</Link></li>
+            <li><Link to="/training" className="active">Training</Link></li>
+            <li><Link to="/inspections">Inspections</Link></li>
+            <li><Link to="/schedule">Schedule</Link></li>
+            <li><Link to="/actions">Actions</Link></li>
+            <li><Link to="/assets">Assets</Link></li>
+            <li><Link to="/issues">Issues</Link></li>
+          </ul>
+        </nav>
+      </aside>
+      <main className="main-content">
+        <header className="header">
+          <h1>Training</h1>
+        </header>
+        <div className="tabs">
+          <button className="tab active">Trainings</button>
+          <button className="tab">Responses</button>
+          <button className="tab">Public Library</button>
+          <button className="tab">Archive</button>
+        </div>
+        <section className="content">
+          <div className="create-options">
+            <div className="option">
+              <div className="icon">+</div>
+              <p>Start from scratch</p>
+              <span>Create a new training from scratch.</span>
+            </div>
