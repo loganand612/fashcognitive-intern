@@ -35,6 +35,7 @@ class Template(models.Model):
     title = models.CharField(max_length=255)  
     description = models.TextField(blank=True, null=True)
     logo = models.ImageField(upload_to='logos/', null=True, blank=True) 
+    template_type = models.CharField(max_length=20,choices=TEMPLATE_TYPE_CHOICES,default='standard')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_published = models.DateTimeField(blank=True, null=True)

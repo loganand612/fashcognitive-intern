@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   User,
   UserPlus,
@@ -37,6 +38,12 @@ export interface Connection {
   avatar?: string;
   initials: string;
   status: 'active' | 'pending' | 'declined';
+}
+
+interface CurrentUser {
+  id: number;
+  username: string;
+  email: string;
 }
 
 interface AccessManagerProps {
@@ -84,19 +91,58 @@ const AccessManager: React.FC<AccessManagerProps> = ({
   initialUsers = [],
   onUpdatePermissions
 }) => {
-  // Default owner if no users provided
-  const defaultOwner: UserPermission = {
-    id: generateId(),
-    name: 'You',
-    email: 'current.user@example.com',
-    permissionLevel: 'owner',
-    status: 'active',
-    lastAccessed: new Date()
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch current user data
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/users/auth-status/', {
+          withCredentials: true
+        });
+        setCurrentUser(response.data.user);
+      } catch (error) {
+        console.error('Failed to fetch current user:', error);
+        // If we can't get the user from API, try to get from localStorage
+        const email = localStorage.getItem('username');
+        if (email) {
+          setCurrentUser({
+            id: 0,
+            username: email.split('@')[0],
+            email: email
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+  // Create default owner based on current user
+  const createDefaultOwner = (): UserPermission => {
+    return {
+      id: generateId(),
+      name: currentUser ? (currentUser.username || currentUser.email.split('@')[0]) : 'You',
+      email: currentUser ? currentUser.email : 'current.user@example.com',
+      permissionLevel: 'owner',
+      status: 'active',
+      lastAccessed: new Date()
+    };
   };
 
   const [users, setUsers] = useState<UserPermission[]>(
-    initialUsers.length > 0 ? initialUsers : [defaultOwner]
+    initialUsers.length > 0 ? initialUsers : [createDefaultOwner()]
   );
+
+  // Update default owner when current user is loaded
+  useEffect(() => {
+    if (!isLoading && currentUser && initialUsers.length === 0) {
+      setUsers([createDefaultOwner()]);
+    }
+  }, [currentUser, isLoading, initialUsers.length]);
 
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -290,6 +336,12 @@ const AccessManager: React.FC<AccessManagerProps> = ({
         <h2>Manage Access</h2>
         <p>Control who can view and edit "{templateTitle}"</p>
       </div>
+
+      {isLoading && (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <p>Loading user information...</p>
+        </div>
+      )}
 
       <div className="access-actions">
         <div className="search-container">

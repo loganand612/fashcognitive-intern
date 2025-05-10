@@ -698,6 +698,8 @@
   border-radius: 6px;
   background-color: #f9f9f9;
   color: #999;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .text-input {

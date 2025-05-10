@@ -47,6 +47,8 @@ import { fetchCSRFToken } from "D:/intern/safety_culture/fashcognitive-intern/fr
 import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
 import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
 import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
+import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/ReportPageFix.css"
+import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessPageFix.css"
 
 // U
 // Utility functions
@@ -1585,7 +1587,6 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
       </div>
 
       <div className="report-footer">
-        <p>Powered by SafetyCulture</p>
         <div className="report-footer-buttons">
           <button className="report-footer-button">
             <FileText className="report-footer-icon" />
@@ -1717,6 +1718,15 @@ const CreateTemplate = () => {
   const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Add a class to the document body when mobile preview is hidden
+  useEffect(() => {
+    if (showMobilePreview) {
+      document.body.classList.remove('mobile-preview-hidden')
+    } else {
+      document.body.classList.add('mobile-preview-hidden')
+    }
+  }, [showMobilePreview])
+
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const { id } = useParams();
@@ -1742,8 +1752,8 @@ const CreateTemplate = () => {
       setIsLoading(false);
     }
   }, [id]);
-  
-  
+
+
 
   if (isLoading || !template) {
     return <div>Loading template...</div>
@@ -1763,9 +1773,9 @@ const CreateTemplate = () => {
     }
     return obj;
   }
-  
-  
-  
+
+
+
   function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
     return {
       ...(isNew ? {} : { id: template.id }),
@@ -1774,7 +1784,7 @@ const CreateTemplate = () => {
       logo: template.logo,
       sections: template.sections.map((section) => {
         const newSectionId = isNew || typeof section.id === "number" ? generateId() : section.id;
-  
+
         return {
           id: newSectionId,
           title: section.title,
@@ -1782,7 +1792,7 @@ const CreateTemplate = () => {
           isCollapsed: section.isCollapsed,
           questions: section.questions.map((q) => {
             const newQuestionId = isNew || typeof q.id === "number" ? generateId() : q.id;
-  
+
             return {
               id: newQuestionId,
               text: q.text,
@@ -1801,28 +1811,28 @@ const CreateTemplate = () => {
       }),
     };
   }
-  
 
-  
-  
+
+
+
 
   // Updated handleSave function with proper CSRF token handling
   const handleSave = async () => {
     const isNew = !id;
-  
+
     if (!template.title) {
       alert("Please enter a template title");
       return;
     }
-  
+
     try {
       const csrfToken = await fetchCSRFToken();
       const formData = new FormData();
-  
+
       // Add title and description
       formData.append("title", template.title);
       formData.append("description", template.description);
-  
+
       // Add logo if exists
       if (template.logo) {
         if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
@@ -1833,18 +1843,18 @@ const CreateTemplate = () => {
           formData.append("logo", template.logo);
         }
       }
-  
+
       // Add sections (correctly cleaned + snake_cased)
       const cleaned = cleanTemplateForSave(template, isNew);
       const snakeCaseSections = toSnakeCase(cleaned.sections);
       formData.append("sections", JSON.stringify(snakeCaseSections));
-  
+
       const url = isNew
         ? "http://localhost:8000/api/users/create_templates/"
         : `http://localhost:8000/api/users/templates/${id}/`;
-  
+
       const method = isNew ? "POST" : "PATCH";
-  
+
       const saveResponse = await fetch(url, {
         method,
         headers: {
@@ -1853,19 +1863,19 @@ const CreateTemplate = () => {
         body: formData,
         credentials: "include",
       });
-  
+
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json();
         throw new Error(errorData.error || "Failed to save template");
       }
-  
+
       alert("Template saved successfully!");
     } catch (error: any) {
       console.error("Error saving template:", error);
       alert(`Failed to save template: ${error.message}`);
     }
   };
-  
+
   // Template Management
   const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
 
@@ -2516,7 +2526,7 @@ const CreateTemplate = () => {
       // Get the message from the rule that triggered this
       const rule = question.logicRules?.find(
         (r) => r.trigger === "display_message"
-      )      
+      )
       const message = rule?.message || "Important: This response requires immediate attention."
 
       return (
@@ -2984,7 +2994,7 @@ const CreateTemplate = () => {
       <div className="builder-content">
         {activeTab === 0 && (
           <div className="template-builder-container">
-            <div className="template-content">
+            <div className={`template-content ${showMobilePreview ? 'with-preview' : ''}`}>
               <div className="template-header">
                 <div className="template-logo">
                   {template.logo ? (
@@ -3039,7 +3049,7 @@ const CreateTemplate = () => {
                 </div>
               </div>
             </div>
-            <div className="mobile-preview-container">{renderMobilePreview()}</div>
+            {renderMobilePreview()}
           </div>
         )}
         {activeTab === 2 && (
@@ -3057,18 +3067,75 @@ const CreateTemplate = () => {
         )}
         {activeTab === 3 && (
           <div className="access-page-container">
-            <div className="access-tab">
-              <AccessManager
-                templateId={template.id}
-                templateTitle={template.title || "Untitled Template"}
-                initialUsers={[]}
-                onUpdatePermissions={(users) => {
-                  console.log("Updated permissions:", users)
-                  // Here you would update the template with the new permissions
-                  // setTemplate({ ...template, permissions: users });
-                }}
-              />
+            <h1 className="access-main-title">Template Access & Settings</h1>
+            <p className="access-main-description">Configure access permissions and inspection timeframe for this template.</p>
+
+            <div className="access-content">
+              <div className="access-tab">
+                <div className="session-section">
+                  <h2>
+                    <Calendar size={20} className="section-icon" />
+                    Inspection Timeframe
+                  </h2>
+                  <p>Set the start and due dates for inspections using this template.</p>
+
+                  <div className="date-fields">
+                    <div className="date-field">
+                      <label htmlFor="startDate">Start Date <span className="required-indicator">*</span></label>
+                      <div className="date-input-container">
+                        <input
+                          type="date"
+                          id="startDate"
+                          name="startDate"
+                          min={new Date().toISOString().split('T')[0]}
+                          className="date-input"
+                          style={{appearance: "none", WebkitAppearance: "none"}}
+                        />
+                        <Calendar size={16} className="date-icon" />
+                      </div>
+                      <div className="date-helper-text">Earliest date inspections can begin</div>
+                    </div>
+                    <div className="date-field">
+                      <label htmlFor="dueDate">Due Date <span className="required-indicator">*</span></label>
+                      <div className="date-input-container">
+                        <input
+                          type="date"
+                          id="dueDate"
+                          name="dueDate"
+                          min={new Date().toISOString().split('T')[0]}
+                          className="date-input"
+                          style={{appearance: "none", WebkitAppearance: "none"}}
+                        />
+                        <Calendar size={16} className="date-icon" />
+                      </div>
+                      <div className="date-helper-text">Deadline for completing inspections</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="access-tab">
+                <div className="permissions-section">
+                  <h2>
+                    <User size={20} className="section-icon" />
+                    User Permissions
+                  </h2>
+                  <p>Manage who can access, edit, and use this template.</p>
+
+                  <AccessManager
+                    templateId={template.id}
+                    templateTitle={template.title || "Untitled Template"}
+                    initialUsers={[]}
+                    onUpdatePermissions={(users) => {
+                      console.log("Updated permissions:", users)
+                      // Here you would update the template with the new permissions
+                      // setTemplate({ ...template, permissions: users });
+                    }}
+                  />
+                </div>
+              </div>
             </div>
+
             <div className="access-footer">
               <button className="publish-button" onClick={handlePublishTemplate}>
                 <Upload className="publish-icon" />

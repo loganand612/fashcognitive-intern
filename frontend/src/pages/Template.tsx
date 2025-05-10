@@ -103,7 +103,7 @@ const TemplatePage: React.FC = () => {
   }, [])
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   const handleLogout = () => {
     // Clear authentication tokens or user data
     localStorage.removeItem('authToken'); // Example: Remove token from localStorage
@@ -139,7 +139,7 @@ const TemplatePage: React.FC = () => {
               console.log("Full response data:", data);
               console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
               setTemplates(data.filter((template: Template) => template.createdBy === loggedInUser))
-              
+
               setDebugInfo({ endpoints: results, successEndpoint: fullUrl, responseData: data })
               setLoading(false)
               return
@@ -190,10 +190,10 @@ const TemplatePage: React.FC = () => {
         </div>
       </nav>
 
-      <aside className="tp-sidebar">
-        <nav className="tp-sidebar-nav">
+      <aside className="dashboard-sidebar">
+        <nav className="dashboard-sidebar-nav">
           {menuItems.map((item, i) => (
-            <a key={i} href={item.href} className={`tp-nav-link ${item.active ? "active" : ""}`}>
+            <a key={i} href={item.href} className={`dashboard-nav-link ${item.active ? "active" : ""}`}>
               <item.icon size={20} /><span>{item.label}</span>
             </a>
           ))}
@@ -272,7 +272,7 @@ const TemplatePage: React.FC = () => {
               <div className="tp-search-field">
                 <Search className="tp-search-icon" size={20} />
                 <input
-                  type="text" 
+                  type="text"
                   placeholder="Search all templates"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

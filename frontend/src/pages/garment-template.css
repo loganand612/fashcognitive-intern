@@ -2208,6 +2208,8 @@
   background-color: #f9f9f9;
   width: 100%;
   transition: all 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .date-input:hover {
@@ -2667,6 +2669,176 @@
   font-weight: 600;
   margin-bottom: 16px;
   color: var(--color-text);
+}
+
+/* Access page styles */
+.access-page-container {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.access-main-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.access-main-description {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+}
+
+.access-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.access-tab {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  padding: 24px;
+}
+
+.session-section h2,
+.permissions-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.session-section p,
+.permissions-section p {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+}
+
+.date-fields {
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.date-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.date-field label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.date-input-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.date-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.date-input {
+  width: 100%;
+  padding: 12px 40px 12px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.date-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.date-input-error {
+  border-color: #e53935;
+}
+
+.date-error-message {
+  color: #e53935;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.date-helper-text {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+.required-indicator {
+  color: #e53935;
+}
+
+.access-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+.publish-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.publish-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.publish-button:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.publish-note {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 8px;
 }
 
 .defect-images-grid {

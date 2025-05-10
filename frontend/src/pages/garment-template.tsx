@@ -2,6 +2,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer } from 'lucide-react'
 import "./garment-template.css"
 import "./print-styles.css"
@@ -23,25 +24,7 @@ type ResponseType =
   | "Annotation"
   | "Date & Time"
 
-// Kept for future implementation of conditional logic
-// Commented out to avoid unused variable warning
-/*
-type LogicOperator =
-  | "equals"
-  | "notEquals"
-  | "greaterThan"
-  | "lessThan"
-  | "greaterThanOrEqual"
-  | "lessThanOrEqual"
-  | "between"
-  | "isOneOf"
-  | "isNotOneOf"
-  | "contains"
-  | "notContains"
-  | "startsWith"
-  | "endsWith"
-  | "matches"
-*/
+
 
 type TriggerAction = "require_action" | "require_evidence" | "notify" | "ask_questions" | "display_message"
 
@@ -648,6 +631,7 @@ const renderQuestionResponse = (
 
 // Main Component
 const Garment_Template: React.FC = () => {
+  const navigate = useNavigate()
   const [template, setTemplate] = useState<Template>(getInitialTemplate())
   const [activeTab, setActiveTab] = useState<number>(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
@@ -747,8 +731,12 @@ const Garment_Template: React.FC = () => {
   }
 
   const handleBack = () => {
-    if (window.confirm("Do you want to save before leaving?")) handleSave()
-    console.log("Navigating back...")
+    if (window.confirm("Do you want to save before leaving?")) {
+      handleSave()
+      navigate("/templates")
+    } else {
+      navigate("/templates")
+    }
   }
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2811,7 +2799,6 @@ const Garment_Template: React.FC = () => {
                 <div className="date-field">
                   <label htmlFor="start-date">Start Date <span className="required-indicator">*</span></label>
                   <div className="date-input-container">
-                    <Calendar size={16} className="date-icon" />
                     <input
                       type="date"
                       id="start-date"
@@ -2819,7 +2806,9 @@ const Garment_Template: React.FC = () => {
                       onChange={handleStartDateChange}
                       min={today} // Prevent selecting dates before today
                       className={`date-input ${dateErrors.startDate ? 'date-input-error' : ''}`}
+                      style={{appearance: "none", WebkitAppearance: "none"}}
                     />
+                    <Calendar size={16} className="date-icon" />
                   </div>
                   {dateErrors.startDate && (
                     <div className="date-error-message">{dateErrors.startDate}</div>
@@ -2830,7 +2819,6 @@ const Garment_Template: React.FC = () => {
                 <div className="date-field">
                   <label htmlFor="due-date">Due Date <span className="required-indicator">*</span></label>
                   <div className="date-input-container">
-                    <Calendar size={16} className="date-icon" />
                     <input
                       type="date"
                       id="due-date"
@@ -2838,7 +2826,9 @@ const Garment_Template: React.FC = () => {
                       onChange={handleDueDateChange}
                       min={startDate} // Prevent selecting a due date before start date
                       className={`date-input ${dateErrors.dueDate ? 'date-input-error' : ''}`}
+                      style={{appearance: "none", WebkitAppearance: "none"}}
                     />
+                    <Calendar size={16} className="date-icon" />
                   </div>
                   {dateErrors.dueDate && (
                     <div className="date-error-message">{dateErrors.dueDate}</div>

@@ -1,0 +1,225 @@
+/* Access Page Fix CSS - Matching garment-template.tsx styling */
+
+/* CSS Variables to match garment-template styling */
+:root {
+  --color-text: #333333;
+  --color-text-secondary: #666666;
+  --color-background: #ffffff;
+  --color-background-secondary: #f9f9fa;
+  --color-primary: #4895ef;
+  --color-primary-light: #6aabf2;
+  --color-border: #e9ecef;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Access Page Container Styling */
+.access-page-container {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-left: 280px;
+  margin-top: var(--header-height);
+  min-height: calc(100vh - var(--header-height));
+  background-color: var(--bg-light);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* Access Main Title Styling */
+.access-main-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--color-text);
+  letter-spacing: -0.5px;
+}
+
+/* Access Main Description Styling */
+.access-main-description {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+  max-width: 800px;
+}
+
+/* Access Content Styling */
+.access-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Access Tab Styling */
+.access-tab {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  padding: 28px;
+  margin-bottom: 0;
+  border: 1px solid var(--color-border);
+  width: 100%;
+}
+
+/* Access Footer Styling */
+.access-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+/* Publish Button Styling */
+.publish-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #4895ef 0%, #3a7bc8 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(72, 149, 239, 0.2);
+}
+
+.publish-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(72, 149, 239, 0.3);
+}
+
+.publish-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Session Section Styling */
+.session-section {
+  margin-bottom: 32px;
+}
+
+.session-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--color-text);
+}
+
+.session-section p {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+}
+
+/* Permissions Section Styling */
+.permissions-section {
+  margin-bottom: 32px;
+}
+
+.permissions-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--color-text);
+}
+
+.permissions-section p {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+}
+
+/* Section Icon Styling */
+.section-icon {
+  color: var(--color-primary);
+}
+
+/* Date Fields Styling */
+.date-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-field label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.date-field input {
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.date-field input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(72, 149, 239, 0.2);
+  outline: none;
+}
+
+.date-field .error-message {
+  font-size: 13px;
+  color: #e53935;
+  margin-top: 4px;
+}
+
+/* Responsive Styles */
+@media (max-width: 1200px) {
+  .access-page-container {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .access-page-container {
+    margin-left: 0;
+    padding: 16px;
+  }
+
+  .date-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .access-tab {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .access-page-container {
+    padding: 12px;
+  }
+
+  .access-main-title {
+    font-size: 24px;
+  }
+
+  .publish-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
