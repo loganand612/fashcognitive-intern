@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Settings,
   User,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
 import ConnectionsPanel, { Connection } from './components/ConnectionsPanel';
 
@@ -72,11 +73,37 @@ const Dashboard: React.FC = () => {
   };
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     window.location.href = '/login';
   };
+
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutsideSettings = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const settingsButton = document.querySelector('.dashboard-nav-button');
+      const dropdownMenu = document.querySelector('.dropdown-menu');
+
+      if (
+        isDropdownOpen &&
+        settingsButton &&
+        dropdownMenu &&
+        !settingsButton.contains(target) &&
+        !dropdownMenu.contains(target)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutsideSettings);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideSettings);
+    };
+  }, [isDropdownOpen]);
 
   const menuItems = [
     { icon: Home, label: 'Home', href: '/dashboard' },
@@ -112,12 +139,43 @@ const Dashboard: React.FC = () => {
             <User className="dashboard-nav-icon" />
           </button>
           <div className="dropdown-container">
-            <button className="dashboard-nav-button" onClick={toggleDropdown}>
+            <button
+              className="dashboard-nav-button"
+              onClick={toggleDropdown}
+              style={{
+                position: 'relative',
+                backgroundColor: isDropdownOpen ? 'rgba(72, 149, 239, 0.1)' : 'transparent'
+              }}
+              title="Settings"
+            >
               <Settings className="dashboard-nav-icon" />
             </button>
             {isDropdownOpen && (
               <div className="dropdown-menu">
-                <button className="dropdown-item" onClick={handleLogout}>Logout</button>
+                <button
+                  className="dropdown-item logout-button"
+                  onClick={handleLogout}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem 1.5rem',
+                    background: 'linear-gradient(135deg, #ff4b4b 0%, #ff6b6b 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 'var(--border-radius)',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'var(--transition)',
+                    margin: '0.5rem 1rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    width: 'calc(100% - 2rem)'
+                  }}
+                >
+                  <LogOut size={18} />
+                  <span>Logout</span>
+                </button>
               </div>
             )}
           </div>

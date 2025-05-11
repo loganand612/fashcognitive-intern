@@ -628,6 +628,12 @@
   opacity: 1;
 }
 
+.logout-button:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: var(--shadow-md) !important;
+  background: linear-gradient(135deg, #ff3a3a 0%, #ff5a5a 100%) !important;
+}
+
 .tp-search-controls {
   display: flex;
   gap: 1rem;

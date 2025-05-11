@@ -2,11 +2,14 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer } from 'lucide-react'
 import "./garment-template.css"
 import "./print-styles.css"
 import AccessManager from "./components/AccessManager"
+import { getAqlCodeLetter, getSamplePlan } from "../utils/aqlHelpers"
+import { InspectionLevel as AqlInspectionLevel } from "../utils/aqlTables";
+
 
 // Types
 type ResponseType =
@@ -168,6 +171,8 @@ interface DefectData {
   images?: string[];
   [key: string]: any; // Add index signature
 }
+
+// This function will be defined inside the component
 
 // Constants
 const AQL_LEVELS: AQLLevel[] = ["1.0", "1.5", "2.5", "4.0", "6.5"]
@@ -632,13 +637,187 @@ const renderQuestionResponse = (
 // Main Component
 const Garment_Template: React.FC = () => {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
   const [template, setTemplate] = useState<Template>(getInitialTemplate())
+  const [isLoading, setIsLoading] = useState<boolean>(!!id)
   const [activeTab, setActiveTab] = useState<number>(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
   const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
+
+  // Load existing template if in edit mode
+  useEffect(() => {
+    console.log("Garment_Template: Component mounted, id param:", id);
+
+    if (id) {
+      console.log("Garment_Template: Attempting to load template with ID:", id);
+      setIsLoading(true)
+      fetch(`http://127.0.0.1:8000/api/users/templates/${id}/`)
+        .then(response => {
+          console.log("Garment_Template: API response status:", response.status);
+          if (!response.ok) {
+            throw new Error(`Failed to load template. Status: ${response.status}`)
+          }
+          return response.json()
+        })
+        .then(data => {
+          console.log('Garment_Template: Loaded template data:', data)
+          console.log('Garment_Template: Template type:', data.template_type)
+
+          try {
+            // Make sure the template is a garment template
+            if (data.template_type === 'garment') {
+              console.log('Garment_Template: Setting template data for garment template')
+
+              // Ensure the template has the required structure
+              const processedTemplate = {
+                ...data,
+                sections: data.sections || [],
+                title: data.title || "Untitled Garment Template",
+                description: data.description || "Add a description for this garment inspection template",
+                logo: data.logo || undefined
+              };
+
+              // Ensure each section has the required structure
+              processedTemplate.sections = processedTemplate.sections.map((section: any) => {
+                if (!section.id) section.id = generateId();
+                if (!section.title) section.title = "Untitled Section";
+                if (!section.type) section.type = "standard";
+
+                // Ensure garmentDetails sections have the required content
+                if (section.type === "garmentDetails") {
+                  if (!section.content) section.content = {};
+                  if (!section.content.aqlSettings) section.content.aqlSettings = {
+                    aqlLevel: "2.5",
+                    inspectionLevel: "II",
+                    samplingPlan: "Single",
+                    severity: "Normal"
+                  };
+                  if (!section.content.sizes) section.content.sizes = [...DEFAULT_SIZES];
+                  if (!section.content.colors) section.content.colors = [...DEFAULT_COLORS];
+                  if (!section.content.defaultDefects) section.content.defaultDefects = [...DEFAULT_DEFECTS];
+                  section.content.includeCartonOffered = section.content.includeCartonOffered !== false;
+                  section.content.includeCartonInspected = section.content.includeCartonInspected !== false;
+                }
+
+                // Ensure standard sections have the required content
+                if (section.type === "standard") {
+                  if (!section.content) section.content = {};
+                  if (!section.content.questions) section.content.questions = [];
+                }
+
+                return {
+                  ...section,
+                  isCollapsed: section.isCollapsed || false
+                };
+              });
+
+              // If no garmentDetails section exists, add one
+              if (!processedTemplate.sections.some((s: any) => s.type === "garmentDetails")) {
+                processedTemplate.sections.push(getDefaultGarmentDetailsSection());
+              }
+
+              // If no standard section exists, add a title page
+              if (!processedTemplate.sections.some((s: any) => s.type === "standard")) {
+                const titlePageSection = {
+                  id: generateId(),
+                  type: "standard" as SectionType,
+                  title: "Title Page",
+                  isCollapsed: false,
+                  content: {
+                    description: "The Title Page is the first page of your garment inspection report.",
+                    questions: [
+                      {
+                        id: generateId(),
+                        text: "Report No",
+                        responseType: "Text" as ResponseType,
+                        required: true,
+                        flagged: false,
+                        value: null,
+                        logicRules: [],
+                      }
+                    ]
+                  }
+                };
+                processedTemplate.sections.unshift(titlePageSection);
+              }
+
+              console.log('Garment_Template: Processed template:', processedTemplate);
+              setTemplate(processedTemplate);
+              setActiveSectionId(processedTemplate.sections[0]?.id || null);
+
+              // Initialize reportData based on the loaded template
+              const garmentSection = processedTemplate.sections.find((s: any) => s.type === "garmentDetails");
+              if (garmentSection) {
+                console.log('Garment_Template: Initializing reportData with loaded template data');
+
+                // Initialize defects from the template
+                const initialDefects = garmentSection.content?.defaultDefects?.map((defect: string) => ({
+                  type: defect,
+                  remarks: "",
+                  critical: 0,
+                  major: 0,
+                  minor: 0,
+                })) || [];
+
+                // Initialize AQL settings from the template
+                const aqlSettings = garmentSection.content?.aqlSettings || {
+                  aqlLevel: "2.5",
+                  inspectionLevel: "II",
+                  samplingPlan: "Single",
+                  severity: "Normal"
+                };
+
+                setReportData({
+                  quantities: {},
+                  cartonOffered: "30",
+                  cartonInspected: "5",
+                  cartonToInspect: "5",
+                  defects: initialDefects,
+                  aqlSettings: {
+                    ...aqlSettings,
+                    status: "PASS"
+                  },
+                  editingAql: false,
+                  newSize: "",
+                  newColor: "",
+                  questionAnswers: {}
+                });
+              }
+            } else {
+              console.error('Garment_Template: Attempted to load a non-garment template in garment editor')
+              alert('This is not a garment template. Redirecting to standard template editor.')
+              navigate(`/templates/edit/${id}`)
+            }
+          } catch (error) {
+            console.error('Garment_Template: Error processing template data:', error);
+            // Log more details about the template data
+            console.error('Garment_Template: Template data that caused the error:', JSON.stringify(data, null, 2));
+
+            // Fall back to default template
+            const defaultTemplate = getInitialTemplate();
+            console.log('Garment_Template: Using default template:', defaultTemplate);
+
+            setTemplate(defaultTemplate);
+            setActiveSectionId(defaultTemplate.sections[0]?.id || null);
+
+            alert('Error processing template data. Using default template. Check console for details.');
+          }
+        })
+        .catch(error => {
+          console.error('Garment_Template: Error loading template:', error)
+          alert('Failed to load template. Using default template.')
+        })
+        .finally(() => {
+          console.log('Garment_Template: Finished loading attempt, setting isLoading to false')
+          setIsLoading(false)
+        })
+    } else {
+      console.log("Garment_Template: No ID provided, using default template")
+    }
+  }, [id, navigate])
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
   const [newSize, setNewSize] = useState<string>("")
   const [newColor, setNewColor] = useState<string>("")
@@ -725,17 +904,140 @@ const Garment_Template: React.FC = () => {
   // Template Management
   const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
 
-  const handleSave = () => {
-    updateTemplate({ lastSaved: new Date() })
-    console.log("Saving template:", template)
+  const fetchCSRFToken = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/users/get-csrf-token/", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch CSRF token");
+      }
+
+      const data = await response.json();
+      return data.csrfToken;
+    } catch (error) {
+      console.error("Error fetching CSRF token:", error);
+      throw error;
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      // Get CSRF token
+      const csrfToken = await fetchCSRFToken();
+
+      // Create FormData object
+      const formData = new FormData();
+
+      // Add title and description
+      formData.append("title", template.title);
+      formData.append("description", template.description);
+
+      // Add template_type to ensure it's saved as a garment template
+      formData.append("template_type", "garment");
+
+      // Add logo if exists
+      if (template.logo) {
+        if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
+          const response = await fetch(template.logo);
+          const blob = await response.blob();
+          formData.append("logo", blob, "logo.png");
+        }
+      }
+
+      // Prepare sections data
+      const sectionsData = template.sections.map(section => {
+        if (section.type === "garmentDetails" && isGarmentDetailsContent(section.content)) {
+          return {
+            id: section.id,
+            title: section.title,
+            type: section.type,
+            isCollapsed: section.isCollapsed,
+            content: {
+              aqlSettings: section.content.aqlSettings,
+              sizes: section.content.sizes,
+              colors: section.content.colors,
+              includeCartonOffered: section.content.includeCartonOffered,
+              includeCartonInspected: section.content.includeCartonInspected,
+              defaultDefects: section.content.defaultDefects
+            }
+          };
+        } else {
+          return {
+            id: section.id,
+            title: section.title,
+            type: section.type,
+            isCollapsed: section.isCollapsed,
+            content: section.content
+          };
+        }
+      });
+
+      // Add sections data
+      formData.append("sections", JSON.stringify(sectionsData));
+
+      // Determine if this is a new template or an edit
+      const isNew = !id;
+
+      // Set the appropriate URL and method based on whether we're creating or updating
+      const url = isNew
+        ? "http://localhost:8000/api/users/garment-template/"
+        : `http://localhost:8000/api/users/templates/${id}/`;
+
+      const method = isNew ? "POST" : "PATCH";
+
+      // Make API request
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save template");
+      }
+
+      // Get the response data
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (error) {
+        console.warn("Could not parse response as JSON:", error);
+        responseData = {};
+      }
+
+      // Update local state with the database ID if available
+      if (responseData && responseData.id) {
+        updateTemplate({
+          id: responseData.id.toString(),
+          lastSaved: new Date()
+        });
+        console.log("Template saved with ID:", responseData.id);
+      } else {
+        updateTemplate({ lastSaved: new Date() });
+      }
+
+      alert("Template saved successfully!");
+      console.log("Template saved successfully:", template);
+    } catch (error: any) {
+      console.error("Error saving template:", error);
+      alert(`Failed to save template: ${error.message || "Unknown error"}`);
+    }
   }
 
   const handleBack = () => {
     if (window.confirm("Do you want to save before leaving?")) {
       handleSave()
-      navigate("/templates")
+      // Use direct navigation for more reliability
+      window.location.href = "/templates"
     } else {
-      navigate("/templates")
+      window.location.href = "/templates"
     }
   }
 
@@ -1130,6 +1432,48 @@ const Garment_Template: React.FC = () => {
     });
     return total;
   };
+
+  const evaluateAqlStatus = () => {
+    const lotSize = calculateGrandTotal("offeredQty");
+    const inspectionLevel = reportData.aqlSettings.inspectionLevel;
+    const aqlLevel = reportData.aqlSettings.aqlLevel;
+
+    // Check if the inspection level is one of the valid AQL inspection levels
+    if (isValidAqlInspectionLevel(inspectionLevel)) {
+      const code = getAqlCodeLetter(lotSize, inspectionLevel);
+      const plan = code ? getSamplePlan(code, aqlLevel) : null;
+
+      if (plan) {
+        const totalMajorDefects = calculateTotalDefects("major");
+
+        const status = totalMajorDefects > plan.accept ? "FAIL" : "PASS";
+        setReportData(prev => ({
+          ...prev,
+          aqlSettings: {
+            ...prev.aqlSettings,
+            status,
+          },
+        }));
+      }
+    } else {
+      // For non-standard inspection levels, use a default status
+      console.warn(`Inspection level ${inspectionLevel} is not supported by AQL tables. Using default status.`);
+      setReportData(prev => ({
+        ...prev,
+        aqlSettings: {
+          ...prev.aqlSettings,
+          status: "PASS", // Default to PASS for unsupported inspection levels
+        },
+      }));
+    }
+  };
+
+  // Helper function to check if an inspection level is valid for AQL calculations
+  const isValidAqlInspectionLevel = (level: InspectionLevel): level is AqlInspectionLevel => {
+    return level === "I" || level === "II" || level === "III";
+  };
+
+
 
   const addReportDefect = () => {
     setReportData((prev) => ({
@@ -2762,19 +3106,70 @@ const Garment_Template: React.FC = () => {
       }
     };
 
-    const handlePublish = () => {
+    const handlePublish = async () => {
       // Validate dates before publishing
       if (validateDates()) {
-        // Save the template with session dates
-        updateTemplate({
-          ...template,
-          startDate: startDate,
-          dueDate: dueDate,
-          lastSaved: new Date()
-        });
+        try {
+          // Update template with session dates
+          updateTemplate({
+            ...template,
+            startDate: startDate,
+            dueDate: dueDate,
+            lastSaved: new Date()
+          });
 
-        alert('Template published successfully!');
-        window.location.href = '/dashboard';
+          // Save the template to the backend
+          await handleSave();
+
+          // Mark as published in the database
+          const csrfToken = await fetchCSRFToken();
+          const formData = new FormData();
+          formData.append("template_id", template.id);
+          formData.append("title", template.title);
+          formData.append("publish", "true");
+
+          const publishResponse = await fetch("http://localhost:8000/api/users/garment-template/", {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": csrfToken,
+            },
+            body: formData,
+            credentials: "include",
+          });
+
+          if (!publishResponse.ok) {
+            let errorData;
+            try {
+              errorData = await publishResponse.json();
+              throw new Error(errorData.error || "Failed to publish template");
+            } catch (jsonError) {
+              throw new Error(`Failed to publish template: ${publishResponse.statusText}`);
+            }
+          }
+
+          // Try to get the response data
+          let publishData;
+          try {
+            publishData = await publishResponse.json();
+            console.log("Publish response:", publishData);
+
+            // If we got a template_id back from the server, update our template
+            if (publishData && publishData.template_id) {
+              updateTemplate({
+                id: publishData.template_id.toString(),
+                lastPublished: new Date()
+              });
+            }
+          } catch (error) {
+            console.warn("Could not parse publish response as JSON:", error);
+          }
+
+          alert('Template published successfully!');
+          window.location.href = '/dashboard';
+        } catch (error: any) {
+          console.error("Error publishing template:", error);
+          alert(`Failed to publish template: ${error.message || "Unknown error"}`);
+        }
       } else {
         // Show error message if validation fails
         alert('Please correct the errors before publishing.');
@@ -2880,6 +3275,91 @@ const Garment_Template: React.FC = () => {
   }
 
   // Main Render
+  if (isLoading) {
+    console.log("Garment_Template: Rendering loading state");
+    return (
+      <div className="garment-template-builder-page">
+        <div className="loading-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '24px',
+          fontWeight: 'bold'
+        }}>
+          <p>Loading garment template...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Log template data for debugging
+  console.log("Garment_Template: Rendering full template UI");
+  console.log("Garment_Template: Current template data:", template);
+  console.log("Garment_Template: Template sections:", template.sections);
+
+  // Safety check for template structure
+  if (!template || !template.sections || !Array.isArray(template.sections) || template.sections.length === 0) {
+    console.error("Garment_Template: Invalid template structure detected");
+    return (
+      <div className="garment-template-builder-page">
+        <div className="error-container" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '18px',
+          padding: '20px',
+          textAlign: 'center'
+        }}>
+          <h2 style={{ color: 'red', marginBottom: '20px' }}>Error Loading Template</h2>
+          <p>There was a problem loading the template data. The template structure appears to be invalid.</p>
+          <div style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => window.location.href = '/templates'}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#4a90e2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                marginRight: '10px'
+              }}
+            >
+              Return to Templates
+            </button>
+            <button
+              onClick={() => {
+                // Reset to a new template
+                const defaultTemplate = getInitialTemplate();
+                setTemplate(defaultTemplate);
+                setActiveSectionId(defaultTemplate.sections[0]?.id || null);
+                setIsLoading(false);
+
+                // Force a re-render by setting a timeout
+                setTimeout(() => {
+                  console.log("Garment_Template: Forcing re-render with new template");
+                }, 100);
+              }}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#5cb85c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Create New Template
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="garment-template-builder-page">
       <div className="top-navigation">

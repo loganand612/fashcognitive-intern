@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Settings,
   ChevronDown,
+  LogOut,
 } from "lucide-react"
 
 interface Template {
@@ -116,6 +117,30 @@ const TemplatePage: React.FC = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutsideSettings = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const settingsButton = document.querySelector('.tp-nav-button');
+      const dropdownMenu = document.querySelector('.tp-dropdown-menu');
+
+      if (
+        isDropdownOpen &&
+        settingsButton &&
+        dropdownMenu &&
+        !settingsButton.contains(target) &&
+        !dropdownMenu.contains(target)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutsideSettings);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideSettings);
+    };
+  }, [isDropdownOpen]);
+
   useEffect(() => {
     const testAllEndpoints = async () => {
       setLoading(true)
@@ -176,13 +201,42 @@ const TemplatePage: React.FC = () => {
             <User className="tp-nav-icon" />
           </button>
           <div className="tp-dropdown-container">
-            <button className="tp-nav-button" onClick={toggleDropdown}>
+            <button
+              className="tp-nav-button"
+              onClick={toggleDropdown}
+              style={{
+                position: 'relative',
+                backgroundColor: isDropdownOpen ? 'rgba(72, 149, 239, 0.1)' : 'transparent'
+              }}
+              title="Settings"
+            >
               <Settings className="tp-nav-icon" />
             </button>
             {isDropdownOpen && (
               <div className="tp-dropdown-menu">
-                <button className="tp-dropdown-item" onClick={handleLogout}>
-                  Logout
+                <button
+                  className="tp-dropdown-item logout-button"
+                  onClick={handleLogout}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.75rem 1.5rem',
+                    background: 'linear-gradient(135deg, #ff4b4b 0%, #ff6b6b 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 'var(--border-radius)',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'var(--transition)',
+                    margin: '0.5rem 1rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    width: 'calc(100% - 2rem)'
+                  }}
+                >
+                  <LogOut size={18} />
+                  <span>Logout</span>
                 </button>
               </div>
             )}

@@ -17,8 +17,13 @@ urlpatterns = [
     path("templates/<int:pk>/", TemplateDetailView.as_view(), name="template-detail"),
     path("dashboard/templates/", DashboardTemplateView.as_view(), name="dashboard_templates"),
     path("get-csrf-token/", get_csrf_token, name="get-csrf-token"),
-    path("templates/<int:pk>/", TemplateCreateView.as_view(), name="template-update"),
     path("user/templates/", TemplateAPI.as_view(), name="user-templates"),
     path('garment-template/', GarmentTemplateCreateView.as_view(), name='garment-template'),
+    path("api/templates/", TemplateCreateView.as_view(), name="api-template-create"),
+    # API endpoints for frontend
+    path("users/garment-template/", GarmentTemplateCreateView.as_view(), name='api-garment-template'),
+    path("users/garment-template/publish/", GarmentTemplateCreateView.as_view(), name='api-garment-template-publish'),
+    path("users/get-csrf-token/", get_csrf_token, name="api-get-csrf-token"),
+    path("users/templates/<int:pk>/", TemplateDetailView.as_view(), name="api-template-detail"),
 ]
 

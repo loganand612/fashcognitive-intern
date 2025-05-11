@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
-from .models import Template, Section, Question, Inspection  
+from .models import Template, Section, Question, Inspection
 from rest_framework.parsers import MultiPartParser
 import json
 from django.shortcuts import get_object_or_404, render
@@ -62,7 +62,7 @@ def login_user(request):
     except Exception as e:
         print(f"❗ Error during login: {str(e)}")  # <- Print Exception
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 
 
@@ -168,7 +168,7 @@ class TemplateCreateView(APIView):
             title = request.data.get("title")
             description = request.data.get("description")
             logo = request.FILES.get("logo") or request.data.get("logo")
-            logo_file = None            
+            logo_file = None
             sections_data = request.data.get("sections")
             if isinstance(sections_data, list):
                 sections_data = sections_data[0]
@@ -188,7 +188,7 @@ class TemplateCreateView(APIView):
             # If InMemoryUploadedFile
             elif hasattr(logo, 'read'):
                 logo_file = logo
-            
+
             # Parse sections
             try:
                 sections = json.loads(sections_data) if isinstance(sections_data, str) else sections_data
@@ -265,8 +265,8 @@ class TemplateCreateView(APIView):
                             question.save()
                         else:
                             print(f"❌ Question with id {question_id} not found in section {section.id}")
-                            return Response({"error": f"Question with id {question_id} not found."}, status=400)   
-                                         
+                            return Response({"error": f"Question with id {question_id} not found."}, status=400)
+
                     else:
                         Question.objects.create(
                             section=section,
@@ -297,6 +297,113 @@ class TemplateCreateView(APIView):
 class TemplateDetailView(RetrieveAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
+
+    def patch(self, request, pk=None):
+        template = self.get_object()
+
+        try:
+            title = request.data.get("title")
+            description = request.data.get("description")
+            logo = request.FILES.get("logo") or request.data.get("logo")
+            logo_file = None
+            sections_data = request.data.get("sections")
+
+            # Update basic template fields
+            if title:
+                template.title = title
+            if description:
+                template.description = description
+
+            # Handle logo if provided
+            if isinstance(logo, str) and 'base64,' in logo:
+                try:
+                    format, imgstr = logo.split(';base64,')
+                    ext = format.split('/')[-1]
+                    logo_file = ContentFile(base64.b64decode(imgstr), name=f"logo.{ext}")
+                    template.logo = logo_file
+                except Exception as e:
+                    print("Error decoding base64 logo:", e)
+            elif hasattr(logo, 'read'):
+                template.logo = logo
+
+            template.save()
+
+            # Process sections if provided
+            if sections_data:
+                try:
+                    sections = json.loads(sections_data) if isinstance(sections_data, str) else sections_data
+
+                    # Process sections and questions
+                    for section_data in sections:
+                        section_id = section_data.get("id")
+                        section = None
+
+                        if section_id and str(section_id).isdigit():
+                            try:
+                                section = Section.objects.get(id=section_id, template=template)
+                                section.title = section_data.get("title", section.title)
+                                section.description = section_data.get("description", section.description)
+                                section.order = section_data.get("order", section.order)
+                                section.is_collapsed = section_data.get("isCollapsed", section.is_collapsed)
+                                section.save()
+                            except Section.DoesNotExist:
+                                section = Section.objects.create(
+                                    template=template,
+                                    title=section_data.get("title"),
+                                    description=section_data.get("description", ""),
+                                    order=section_data.get("order", 0),
+                                    is_collapsed=section_data.get("isCollapsed", False),
+                                )
+                        else:
+                            # If no section ID is provided, create a new section
+                            section = Section.objects.create(
+                                template=template,
+                                title=section_data.get("title"),
+                                description=section_data.get("description", ""),
+                                order=section_data.get("order", 0),
+                                is_collapsed=section_data.get("isCollapsed", False),
+                            )
+
+                        # Create/update questions for this section
+                        for question_data in section_data.get("questions", []):
+                            response_type = question_data.get("response_type") or question_data.get("responseType")
+                            if not response_type:
+                                return Response({"error": f"response_type is required for question"}, status=400)
+
+                            question_id = question_data.get("id")
+                            if question_id and str(question_id).isdigit():
+                                question = Question.objects.filter(id=question_id, section=section).first()
+                                if question:
+                                    question.text = question_data.get("text", question.text)
+                                    question.response_type = response_type
+                                    question.required = question_data.get("required", question.required)
+                                    question.order = question_data.get("order", question.order)
+                                    question.save()
+                                else:
+                                    Question.objects.create(
+                                        section=section,
+                                        text=question_data.get("text"),
+                                        response_type=response_type,
+                                        required=question_data.get("required", False),
+                                        order=question_data.get("order", 0),
+                                    )
+                            else:
+                                Question.objects.create(
+                                    section=section,
+                                    text=question_data.get("text"),
+                                    response_type=response_type,
+                                    required=question_data.get("required", False),
+                                    order=question_data.get("order", 0),
+                                )
+                except Exception as e:
+                    print(f"Error processing sections: {e}")
+                    return Response({"error": f"Error processing sections: {str(e)}"}, status=400)
+
+            return Response({"message": "Template updated successfully!"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(f"❌ Exception in PATCH: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DashboardTemplateView(View):
@@ -329,11 +436,11 @@ def user_templates(request):
 def get_csrf_token(request):
     csrf_token = get_token(request)
     print("Generated CSRF Token:", csrf_token)
-    
+
     response = JsonResponse({"csrfToken": csrf_token})
     # Ensure the CSRF cookie is set with the correct settings
     response.set_cookie(
-        'csrftoken', 
+        'csrftoken',
         csrf_token,
         max_age=3600,  # 1 hour
         path='/',
@@ -351,6 +458,10 @@ class GarmentTemplateCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # Check if this is a publish request
+        if request.data.get("publish") == "true":
+            return self.publish_template(request)
+
         try:
             title = request.data.get("title")
             description = request.data.get("description")
@@ -434,7 +545,10 @@ class GarmentTemplateCreateView(APIView):
                                 order=o_index
                             )
 
-            return Response({"message": "Garment template saved successfully"}, status=201)
+            return Response({
+                "message": "Garment template saved successfully",
+                "id": template.id
+            }, status=201)
 
         except Exception as e:
             print("❌ Error:", e)
@@ -446,3 +560,38 @@ class GarmentTemplateCreateView(APIView):
         request.data._mutable = True
         request.data["id"] = pk
         return self.post(request)
+
+    def publish_template(self, request):
+        try:
+            template_id = request.data.get("template_id")
+            if not template_id:
+                return Response({"error": "Template ID is required for publishing"}, status=400)
+
+            # Check if the template exists by frontend_id
+            template = None
+            try:
+                # First try to find by numeric ID
+                if str(template_id).isdigit():
+                    template = Template.objects.filter(id=template_id).first()
+
+                # If not found, try to find by title (as a fallback)
+                if not template:
+                    title = request.data.get("title")
+                    if title:
+                        template = Template.objects.filter(title=title, user=request.user).order_by('-created_at').first()
+
+                if not template:
+                    return Response({"error": f"Template with ID {template_id} not found"}, status=404)
+            except Exception as e:
+                print(f"Error finding template: {e}")
+                return Response({"error": f"Error finding template: {str(e)}"}, status=400)
+
+            # Update the template with publish date
+            from django.utils import timezone
+            template.last_published = timezone.now()
+            template.save()
+
+            return Response({"message": "Template published successfully", "template_id": template.id}, status=200)
+        except Exception as e:
+            print("❌ Error publishing template:", e)
+            return Response({"error": str(e)}, status=400)
