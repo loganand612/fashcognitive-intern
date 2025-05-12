@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../assets/login.css";
-import logs from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/logs.png";
+import logs from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/img/logs.png";
 import { fetchCSRFToken } from "../utils/csrf";
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 

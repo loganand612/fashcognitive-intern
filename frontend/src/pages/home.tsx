@@ -552,14 +552,14 @@ const Home2: React.FC = () => {
                 reports.
               </p>
               <div className="Home2-hero-buttons">
-                <a
-                  href="signin"
+                <Link
+                  to="/register"
                   className="Home2-btn Home2-btn-primary Home2-btn-lg Home2-btn-hover-effect"
                   onMouseEnter={enterButton}
                   onMouseLeave={leaveHover}
                 >
                   Start Building Templates Free
-                </a>
+                </Link>
                 <a
                   href="#demo"
                   className="Home2-btn Home2-btn-outline Home2-btn-lg Home2-btn-hover-effect"
@@ -1025,14 +1025,14 @@ const Home2: React.FC = () => {
               efficient mobile inspections using StreamLineer.
             </p>
             <div className="Home2-cta-buttons">
-              <a
-                href="signin"
+              <Link
+                to="/register"
                 className="Home2-btn Home2-btn-primary Home2-btn-lg Home2-btn-hover-effect"
                 onMouseEnter={enterButton}
                 onMouseLeave={leaveHover}
               >
                 Start Building Templates Free
-              </a>
+              </Link>
               <a
                 href="#request-demo"
                 className="Home2-btn Home2-btn-outline Home2-btn-lg Home2-btn-hover-effect"

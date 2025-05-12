@@ -42,13 +42,13 @@ import {
   CheckCircle,
 } from "lucide-react"
 import { jsPDF } from "jspdf"
-import AccessManager from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessManager"
-import { fetchCSRFToken } from "D:/intern/safety_culture/fashcognitive-intern/frontend/src/utils/csrf"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/ReportPageFix.css"
-import "D:/intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessPageFix.css"
+import AccessManager from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessManager"
+import { fetchCSRFToken } from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/utils/csrf"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/ReportPageFix.css"
+import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessPageFix.css"
 
 // U
 // Utility functions
