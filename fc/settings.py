@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'fc.urls'
+ROOT_URLCONF = 'FC.urls'
 
 
 CORS_ALLOW_CREDENTIALS = True
@@ -89,7 +89,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'fc.wsgi.application'
+WSGI_APPLICATION = 'FC.wsgi.application'
 
 
 # Database
@@ -101,11 +101,11 @@ WSGI_APPLICATION = 'fc.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Fash',       
-        'USER': 'log',          
-        'PASSWORD': 'log',    
-        'HOST': 'localhost',         
-        'PORT': '5432',             
+        'NAME': 'Fash',
+        'USER': 'log',
+        'PASSWORD': 'log',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -132,8 +132,8 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / "templates",  
-            BASE_DIR / "users/templates",  
+            BASE_DIR / "templates",
+            BASE_DIR / "users/templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -205,6 +205,6 @@ SESSION_COOKIE_DOMAIN = "localhost"
 CSRF_COOKIE_DOMAIN = "localhost"
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
-#SESSION_COOKIE_AGE = 150  
+#SESSION_COOKIE_AGE = 150
 
 #SESSION_EXPIRE_AT_BROWSER_CLOSE = True

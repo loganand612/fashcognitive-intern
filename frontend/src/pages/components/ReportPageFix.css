@@ -213,7 +213,7 @@
 /* Fix for the report footer */
 .report-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   padding: 24px;
   border-top: 1px solid var(--border-color);
   margin-top: 32px;
@@ -717,6 +717,8 @@
 .report-footer-buttons {
   display: flex;
   gap: 16px;
+  justify-content: center;
+  width: 100%;
 }
 
 .report-footer-button {
