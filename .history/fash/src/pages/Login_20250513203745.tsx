@@ -16,7 +16,7 @@ const Login: React.FC = () => {
                 <div className="login-left">
                     <div className="logo-section">
                         <div className="welcome-text">
-                            <h1 className='text1'>Welcome Back to<br />Streamlineer<span className="accent-dot">.</span></h1>
+                            <h1 className='text1'>Welcome Back to<br />StreamlineerStreamlineer-LOGO<span className="accent-dot">.</span></h1>
                             <p className='text2'>Build smarter checklists and conduct flawless inspections with our intuitive platform.</p>
                         </div>
                     </div>

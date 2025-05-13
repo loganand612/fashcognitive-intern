@@ -358,8 +358,6 @@ function isGarmentDetailsContent(content: StandardSectionContent | GarmentDetail
 
 
 
-
-
 const renderQuestionResponse = (
   question: Question,
   sectionId: string,
@@ -543,18 +541,8 @@ const renderQuestionResponse = (
     case "Annotation":
       return (
         <div className="response-field annotation-field">
-          <div className="signature-container">
-            <div className="signature-canvas-wrapper">
-              {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') ? (
-                <div className="signature-preview">
-                  <img src={question.value} alt="Signature" className="signature-image" />
-                </div>
-              ) : (
-                <div className="annotation-placeholder-box">
-                  Click to sign in the report page
-                </div>
-              )}
-            </div>
+          <div className="annotation-placeholder-box">
+            Annotation Placeholder
           </div>
         </div>
       );
@@ -801,7 +789,7 @@ const Garment_Template: React.FC = () => {
     if (section.type === "garmentDetails") {
       if (
         window.confirm(
-          "Are you sure you want to delete the Garment details section? This will remove all garment-specific configuration.",
+          "Are you sure you want to delete the Garment etails section? This will remove all garment-specific configuration.",
         )
       ) {
         setTemplate((prev) => ({ ...prev, sections: prev.sections.filter((s) => s.id !== sectionId) }))
@@ -1212,8 +1200,6 @@ const Garment_Template: React.FC = () => {
     })
   }
 
-
-
   const calculateTotalDefects = (field: string) => {
     return reportData.defects.reduce((total, defect) => {
       // Use type assertion to let TypeScript know we can index this
@@ -1262,8 +1248,6 @@ const Garment_Template: React.FC = () => {
       questionAnswers: { ...prev.questionAnswers, [questionId]: value },
     }))
   }
-
-
 
   // Print function using browser's native print capability
   const printReport = () => {
@@ -2143,145 +2127,8 @@ const Garment_Template: React.FC = () => {
       case "Annotation":
         return (
           <div className="report-response-field">
-            <div className="report-signature-container">
-              <div className="signature-canvas-wrapper">
-                <canvas
-                  ref={(canvas) => {
-                    if (!canvas) return;
-
-                    // Store canvas in a ref to avoid recreating it
-                    if ((canvas as any).__initialized) return;
-                    (canvas as any).__initialized = true;
-
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return;
-
-                    // Set canvas dimensions
-                    canvas.width = canvas.offsetWidth;
-                    canvas.height = canvas.offsetHeight;
-
-                    // Set canvas styles
-                    ctx.lineWidth = 2;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.strokeStyle = '#000000';
-
-                    // Clear canvas
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    // If there's already a saved signature, draw it
-                    if (value && typeof value === 'string' && value.startsWith('data:image/png')) {
-                      const img = new Image();
-                      img.onload = () => {
-                        ctx.drawImage(img, 0, 0);
-                      };
-                      img.src = value;
-                    }
-
-                    // Set up drawing variables
-                    let isDrawing = false;
-                    let lastX = 0;
-                    let lastY = 0;
-
-                    // Store canvas and context in local variables that are definitely not null
-                    const canvasElement = canvas;
-                    const context = ctx;
-
-                    // Define drawing functions
-                    function startDrawing(e: MouseEvent | TouchEvent) {
-                      isDrawing = true;
-
-                      const rect = canvasElement.getBoundingClientRect();
-                      let clientX, clientY;
-
-                      if (e instanceof TouchEvent) {
-                        clientX = e.touches[0].clientX;
-                        clientY = e.touches[0].clientY;
-                      } else {
-                        clientX = e.clientX;
-                        clientY = e.clientY;
-                      }
-
-                      lastX = clientX - rect.left;
-                      lastY = clientY - rect.top;
-                    }
-
-                    function draw(e: MouseEvent | TouchEvent) {
-                      if (!isDrawing) return;
-
-                      const rect = canvasElement.getBoundingClientRect();
-                      let clientX, clientY;
-
-                      if (e instanceof TouchEvent) {
-                        clientX = e.touches[0].clientX;
-                        clientY = e.touches[0].clientY;
-                        e.preventDefault(); // Prevent scrolling on touch devices
-                      } else {
-                        clientX = e.clientX;
-                        clientY = e.clientY;
-                      }
-
-                      const x = clientX - rect.left;
-                      const y = clientY - rect.top;
-
-                      context.beginPath();
-                      context.moveTo(lastX, lastY);
-                      context.lineTo(x, y);
-                      context.stroke();
-
-                      lastX = x;
-                      lastY = y;
-                    }
-
-                    function endDrawing() {
-                      if (isDrawing) {
-                        // Only save the signature when the drawing is complete
-                        const signatureImage = canvasElement.toDataURL('image/png');
-                        updateQuestionAnswer(question.id, signatureImage);
-                        isDrawing = false;
-                      }
-                    }
-
-                    // Add event listeners
-                    canvasElement.addEventListener('mousedown', startDrawing);
-                    canvasElement.addEventListener('mousemove', draw);
-                    canvasElement.addEventListener('mouseup', endDrawing);
-                    canvasElement.addEventListener('mouseleave', endDrawing);
-                    canvasElement.addEventListener('touchstart', startDrawing);
-                    canvasElement.addEventListener('touchmove', draw);
-                    canvasElement.addEventListener('touchend', endDrawing);
-                  }}
-                  className="report-signature-canvas"
-                  width={300}
-                  height={150}
-                />
-                <div className="report-signature-controls">
-                  <button
-                    className="report-clear-signature-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-
-                      // Find the canvas element
-                      const canvasElement = e.currentTarget.closest('.signature-canvas-wrapper')?.querySelector('canvas') as HTMLCanvasElement;
-                      if (!canvasElement) return;
-
-                      const ctx = canvasElement.getContext('2d');
-                      if (!ctx) return;
-
-                      // Clear the canvas
-                      ctx.fillStyle = '#ffffff';
-                      ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
-
-                      // Clear the saved value
-                      updateQuestionAnswer(question.id, null);
-                    }}
-                    type="button"
-                  >
-                    Clear Signature
-                  </button>
-                </div>
-              </div>
+            <div className="annotation-placeholder-box">
+              Annotation Placeholder (Report)
             </div>
           </div>
         );
@@ -3047,7 +2894,7 @@ const Garment_Template: React.FC = () => {
     <div className="garment-template-builder-page">
       <div className="top-navigation">
         <div className="nav-left">
-          <div className="company-name">STREAMLINEER</div>
+          <div className="company-name">FASHCOGNITIVE</div>
           <button className="back-button" onClick={handleBack}>
             <ArrowLeft size={16} />
             <span>back</span>

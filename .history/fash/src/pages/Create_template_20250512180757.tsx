@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import "./Create_template.css"
 import AccessManager from './components/AccessManager'
 
@@ -43,7 +43,6 @@ import {
   Flag,
 } from "lucide-react"
 import jsPDF from "jspdf"
-import SignaturePad from 'react-signature-canvas'
 
 // Types
 type ResponseType =

@@ -65,7 +65,7 @@
 
 .nav-center {
   position: absolute;
-  left: 45%; /* Changed from 50% to 45% to move tabs to the left */
+  left: 50%;
   transform: translateX(-50%);
   display: flex;
   justify-content: center;

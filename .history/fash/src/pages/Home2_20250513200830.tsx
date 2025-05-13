@@ -851,7 +851,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-mobile-img-container Home2-animate-on-scroll ${mobileVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src={AZ}
+                src={TM}
                 alt="Mobile App"
                 width={600}
                 height={500}

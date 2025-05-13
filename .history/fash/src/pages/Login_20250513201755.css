@@ -76,8 +76,8 @@
 }
 
 .company-logo {
-    width: 300px;
-    max-height: 100px;
+    width: 180px;
+    max-height: 180px;
     margin-bottom: 3rem;
     transition: var(--transition);
 }
@@ -363,7 +363,37 @@
     }
 }
 
+/* Custom cursor styles */
+.custom-cursor {
+    position: fixed;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: difference;
+    transition: transform 0.2s ease, width 0.2s ease, height 0.2s ease, background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+}
 
+.custom-cursor.button {
+    width: 60px;
+    height: 60px;
+    background-color: rgba(72, 149, 239, 0.15);
+}
+
+.custom-cursor.link {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(72, 149, 239, 0.1);
+}
 
 /* Accent dot for titles */
 .accent-dot {

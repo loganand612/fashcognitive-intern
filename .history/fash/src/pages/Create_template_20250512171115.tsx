@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import "./Create_template.css"
 import AccessManager from './components/AccessManager'
 
@@ -43,7 +43,6 @@ import {
   Flag,
 } from "lucide-react"
 import jsPDF from "jspdf"
-import SignaturePad from 'react-signature-canvas'
 
 // Types
 type ResponseType =
@@ -1566,14 +1565,25 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                           </div>
                         </div>
 
-                        {(question.responseType === "Media" || question.responseType === "Annotation") &&
-                          question.value && (
+                        {question.responseType === "Media" && question.value && (
                             <div className="report-question-media">
                               <img
                                 src={(question.value as string) || "/placeholder.svg"}
                                 alt={question.text}
                                 className="report-media-preview"
                               />
+                            </div>
+                          )}
+
+                        {question.responseType === "Annotation" && question.value && (
+                            <div className="report-question-signature">
+                              <div className="signature-preview">
+                                <img
+                                  src={(question.value as string) || "/placeholder.svg"}
+                                  alt={question.text}
+                                  className="signature-image"
+                                />
+                              </div>
                             </div>
                           )}
 
@@ -1969,9 +1979,18 @@ const CreateTemplate: React.FC = () => {
       case "Annotation":
         return (
           <div className="response-field annotation-field">
-            <div className="annotation-area">
-              <Edit size={20} />
-              <span>Add annotation</span>
+            <div className="signature-container">
+              <div className="signature-canvas-wrapper">
+                {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') ? (
+                  <div className="signature-preview">
+                    <img src={question.value} alt="Signature" className="signature-image" />
+                  </div>
+                ) : (
+                  <div className="annotation-placeholder-box">
+                    Click to sign in the report page
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )
@@ -2462,33 +2481,44 @@ const CreateTemplate: React.FC = () => {
       case "Annotation":
         return (
           <div className="mobile-annotation">
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              id={`annotation-${question.id}`}
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  const reader = new FileReader()
-                  reader.onload = (event) => {
-                    if (event.target?.result) {
-                      updateQuestion(activeSection.id, question.id, { value: event.target.result as string })
-                    }
-                  }
-                  reader.readAsDataURL(e.target.files[0])
-                }
-              }}
-            />
             {!question.value ? (
-              <label htmlFor={`annotation-${question.id}`} className="mobile-annotation-placeholder">
+              <div
+                className="mobile-signature-canvas"
+                onClick={(e) => {
+                  // Create a canvas element
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 300;
+                  canvas.height = 150;
+
+                  // Get the context and draw a signature
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    // Set drawing style
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+
+                    // Draw a simple signature
+                    ctx.beginPath();
+                    ctx.moveTo(50, 100);
+                    ctx.bezierCurveTo(100, 50, 200, 150, 250, 80);
+                    ctx.stroke();
+
+                    // Convert to image data URL
+                    const signatureImage = canvas.toDataURL('image/png');
+
+                    // Update the question with the signature
+                    updateQuestion(activeSection.id, question.id, { value: signatureImage });
+                  }
+                }}
+              >
                 <Edit size={20} />
-                <span>Add annotation</span>
-              </label>
+                <span>Tap to sign</span>
+              </div>
             ) : (
               <div className="mobile-annotation-preview">
                 <img
                   src={(question.value as string) || "/placeholder.svg"}
-                  alt="Annotation"
+                  alt="Signature"
                   className="mobile-annotation-image"
                 />
                 <button

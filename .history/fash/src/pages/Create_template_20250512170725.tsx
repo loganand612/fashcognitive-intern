@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import "./Create_template.css"
 import AccessManager from './components/AccessManager'
 
@@ -43,7 +43,6 @@ import {
   Flag,
 } from "lucide-react"
 import jsPDF from "jspdf"
-import SignaturePad from 'react-signature-canvas'
 
 // Types
 type ResponseType =
@@ -1520,8 +1519,7 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                             </div>
                           </div>
                         </div>
-                        {(question.responseType === "Media" || question.responseType === "Annotation") &&
-                          question.value && (
+                        {question.responseType === "Media" && question.value && (
                             <div className="report-question-media">
                               <img
                                 src={(question.value as string) || "/placeholder.svg"}
@@ -1530,6 +1528,62 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                               />
                             </div>
                           )}
+
+                        {question.responseType === "Annotation" && (
+                          <div className="report-question-signature">
+                            {question.value ? (
+                              <div className="signature-preview">
+                                <img
+                                  src={(question.value as string) || "/placeholder.svg"}
+                                  alt={question.text}
+                                  className="signature-image"
+                                />
+                              </div>
+                            ) : (
+                              <div className="signature-canvas-container">
+                                <canvas
+                                  className="signature-canvas"
+                                  width={500}
+                                  height={150}
+                                  onClick={(e) => {
+                                    // Create a simple signature when clicked
+                                    const canvas = e.currentTarget;
+                                    const ctx = canvas.getContext('2d');
+                                    if (ctx) {
+                                      // Clear canvas
+                                      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                                      // Set drawing style
+                                      ctx.strokeStyle = '#000';
+                                      ctx.lineWidth = 2;
+
+                                      // Draw a simple signature
+                                      ctx.beginPath();
+                                      ctx.moveTo(50, 100);
+                                      ctx.bezierCurveTo(150, 50, 250, 150, 350, 80);
+                                      ctx.stroke();
+
+                                      // Save the signature as an image
+                                      const signatureImage = canvas.toDataURL('image/png');
+
+                                      // Find the section and question to update
+                                      const sectionId = template.sections.find(s =>
+                                        s.questions.some(q => q.id === question.id)
+                                      )?.id;
+
+                                      if (sectionId) {
+                                        updateQuestion(sectionId, question.id, { value: signatureImage });
+                                      }
+                                    }
+                                  }}
+                                ></canvas>
+                                <div className="signature-controls">
+                                  <button className="clear-signature-button">Clear</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )),
                 )}
@@ -1969,9 +2023,18 @@ const CreateTemplate: React.FC = () => {
       case "Annotation":
         return (
           <div className="response-field annotation-field">
-            <div className="annotation-area">
-              <Edit size={20} />
-              <span>Add annotation</span>
+            <div className="signature-container">
+              <div className="signature-canvas-wrapper">
+                {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') ? (
+                  <div className="signature-preview">
+                    <img src={question.value} alt="Signature" className="signature-image" />
+                  </div>
+                ) : (
+                  <div className="annotation-placeholder-box">
+                    Click to sign in the report page
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )

@@ -34,7 +34,7 @@ const Register: React.FC = () => {
                 <div className="register-left">
                     <div className="logo-section">
                         <div className="welcome-text">
-                            <h1 className='tx1'>Welcome to<br />Streamlineer<span className="accent-dot">.</span></h1>
+                            <h1 className='tx1'>Welcome to<br />StreamlineerStreamlineer-LOGO<span className="accent-dot">.</span></h1>
                             <p className='tx2'>Create an account to get started with our intuitive platform for building powerful inspection templates.</p>
                         </div>
                     </div>

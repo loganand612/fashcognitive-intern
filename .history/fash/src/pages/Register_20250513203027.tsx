@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, User, Phone, Lock, Building2, Briefcase, Users, Factory } from 'lucide-react';
 import './Register.css';
+import streamlineerLogo from "./assets/streamlineer_logo.svg";
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
@@ -33,6 +34,7 @@ const Register: React.FC = () => {
             <div className="register-content">
                 <div className="register-left">
                     <div className="logo-section">
+                        <img src={streamlineerLogo} alt="Streamlineer Logo" className="company-logo" />
                         <div className="welcome-text">
                             <h1 className='tx1'>Welcome to<br />Streamlineer<span className="accent-dot">.</span></h1>
                             <p className='tx2'>Create an account to get started with our intuitive platform for building powerful inspection templates.</p>

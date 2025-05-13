@@ -358,7 +358,130 @@ function isGarmentDetailsContent(content: StandardSectionContent | GarmentDetail
 
 
 
+// Signature canvas functions
+const initializeSignatureCanvas = (canvas: HTMLCanvasElement | null, questionId: string, refs: { [key: string]: HTMLCanvasElement | null }, setRefs: React.Dispatch<React.SetStateAction<{ [key: string]: HTMLCanvasElement | null }>>) => {
+  if (!canvas) return
 
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // Set canvas dimensions
+  canvas.width = canvas.offsetWidth
+  canvas.height = canvas.offsetHeight
+
+  // Set canvas styles
+  ctx.lineWidth = 2
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = '#000000'
+
+  // Clear canvas
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  // Store canvas reference
+  setRefs(prev => ({ ...prev, [questionId]: canvas }))
+}
+
+const startDrawing = (
+  e: React.MouseEvent | React.TouchEvent,
+  questionId: string,
+  refs: { [key: string]: HTMLCanvasElement | null },
+  setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>,
+  setLastPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number } | null>>
+) => {
+  const canvas = refs[questionId]
+  if (!canvas) return
+
+  setIsDrawing(true)
+
+  const rect = canvas.getBoundingClientRect()
+  let clientX, clientY
+
+  if ('touches' in e) {
+    clientX = e.touches[0].clientX
+    clientY = e.touches[0].clientY
+  } else {
+    clientX = e.clientX
+    clientY = e.clientY
+  }
+
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+
+  setLastPosition({ x, y })
+}
+
+const draw = (
+  e: React.MouseEvent | React.TouchEvent,
+  questionId: string,
+  sectionId: string,
+  refs: { [key: string]: HTMLCanvasElement | null },
+  isDrawing: boolean,
+  lastPosition: { x: number, y: number } | null,
+  setLastPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number } | null>>,
+  updateQuestion: (sectionId: string, questionId: string, updates: Partial<Question>) => void
+) => {
+  if (!isDrawing) return
+
+  const canvas = refs[questionId]
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx || !lastPosition) return
+
+  const rect = canvas.getBoundingClientRect()
+  let clientX, clientY
+
+  if ('touches' in e) {
+    clientX = e.touches[0].clientX
+    clientY = e.touches[0].clientY
+    e.preventDefault() // Prevent scrolling on touch devices
+  } else {
+    clientX = e.clientX
+    clientY = e.clientY
+  }
+
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+
+  ctx.beginPath()
+  ctx.moveTo(lastPosition.x, lastPosition.y)
+  ctx.lineTo(x, y)
+  ctx.stroke()
+
+  setLastPosition({ x, y })
+
+  // Save the signature as an image
+  const signatureImage = canvas.toDataURL('image/png')
+  updateQuestion(sectionId, questionId, { value: signatureImage })
+}
+
+const stopDrawing = (
+  setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>,
+  setLastPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number } | null>>
+) => {
+  setIsDrawing(false)
+  setLastPosition(null)
+}
+
+const clearSignature = (
+  questionId: string,
+  sectionId: string,
+  refs: { [key: string]: HTMLCanvasElement | null },
+  updateQuestion: (sectionId: string, questionId: string, updates: Partial<Question>) => void
+) => {
+  const canvas = refs[questionId]
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  updateQuestion(sectionId, questionId, { value: null })
+}
 
 const renderQuestionResponse = (
   question: Question,
@@ -544,17 +667,145 @@ const renderQuestionResponse = (
       return (
         <div className="response-field annotation-field">
           <div className="signature-container">
-            <div className="signature-canvas-wrapper">
-              {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') ? (
-                <div className="signature-preview">
-                  <img src={question.value} alt="Signature" className="signature-image" />
-                </div>
-              ) : (
-                <div className="annotation-placeholder-box">
-                  Click to sign in the report page
-                </div>
-              )}
+            <canvas
+              ref={(canvas) => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance && instance.signatureCanvasRefs !== undefined) {
+                    initializeSignatureCanvas(
+                      canvas,
+                      question.id,
+                      instance.signatureCanvasRefs,
+                      instance.setSignatureCanvasRefs
+                    );
+                  }
+                }
+              }}
+              className="signature-canvas"
+              onMouseDown={(e) => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance) {
+                    startDrawing(
+                      e,
+                      question.id,
+                      instance.signatureCanvasRefs,
+                      instance.setIsDrawing,
+                      instance.setLastPosition
+                    );
+                  }
+                }
+              }}
+              onMouseMove={(e) => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance) {
+                    draw(
+                      e,
+                      question.id,
+                      sectionId,
+                      instance.signatureCanvasRefs,
+                      instance.isDrawing,
+                      instance.lastPosition,
+                      instance.setLastPosition,
+                      updateQuestion
+                    );
+                  }
+                }
+              }}
+              onMouseUp={() => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance) {
+                    stopDrawing(instance.setIsDrawing, instance.setLastPosition);
+                  }
+                }
+              }}
+              onMouseLeave={() => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance) {
+                    stopDrawing(instance.setIsDrawing, instance.setLastPosition);
+                  }
+                }
+              }}
+              onTouchStart={(e) => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance) {
+                    startDrawing(
+                      e,
+                      question.id,
+                      instance.signatureCanvasRefs,
+                      instance.setIsDrawing,
+                      instance.setLastPosition
+                    );
+                  }
+                }
+              }}
+              onTouchMove={(e) => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance) {
+                    draw(
+                      e,
+                      question.id,
+                      sectionId,
+                      instance.signatureCanvasRefs,
+                      instance.isDrawing,
+                      instance.lastPosition,
+                      instance.setLastPosition,
+                      updateQuestion
+                    );
+                  }
+                }
+              }}
+              onTouchEnd={() => {
+                const Garment_Template = document.querySelector('.garment-template-builder-page');
+                if (Garment_Template) {
+                  const instance = (Garment_Template as any).__reactInternalInstance;
+                  if (instance) {
+                    stopDrawing(instance.setIsDrawing, instance.setLastPosition);
+                  }
+                }
+              }}
+              width={300}
+              height={150}
+            />
+            <div className="signature-controls">
+              <button
+                className="clear-signature-button"
+                onClick={() => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      clearSignature(
+                        question.id,
+                        sectionId,
+                        instance.signatureCanvasRefs,
+                        updateQuestion
+                      );
+                    }
+                  }
+                }}
+                type="button"
+              >
+                Clear Signature
+              </button>
             </div>
+            {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') && (
+              <div className="signature-preview">
+                <img src={question.value} alt="Signature" className="signature-image" />
+              </div>
+            )}
           </div>
         </div>
       );
@@ -679,6 +930,9 @@ const Garment_Template: React.FC = () => {
     dueDate?: string;
   }>({})
   const [isExporting, setIsExporting] = useState<boolean>(false)
+  const [signatureCanvasRefs, setSignatureCanvasRefs] = useState<{ [questionId: string]: HTMLCanvasElement | null }>({})
+  const [isDrawing, setIsDrawing] = useState<boolean>(false)
+  const [lastPosition, setLastPosition] = useState<{ x: number, y: number } | null>(null)
 
   // Report data state - moved to top level
   const [reportData, setReportData] = useState<ReportData>(() => {
@@ -1212,7 +1466,107 @@ const Garment_Template: React.FC = () => {
     })
   }
 
+  // Signature canvas functions
+  const initializeSignatureCanvas = (canvas: HTMLCanvasElement | null, questionId: string) => {
+    if (!canvas) return
 
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Set canvas dimensions
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+
+    // Set canvas styles
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = '#000000'
+
+    // Clear canvas
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // Store canvas reference
+    setSignatureCanvasRefs(prev => ({ ...prev, [questionId]: canvas }))
+  }
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent, questionId: string) => {
+    const canvas = signatureCanvasRefs[questionId]
+    if (!canvas) return
+
+    setIsDrawing(true)
+
+    const rect = canvas.getBoundingClientRect()
+    let clientX, clientY
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+
+    setLastPosition({ x, y })
+  }
+
+  const draw = (e: React.MouseEvent | React.TouchEvent, questionId: string, sectionId: string) => {
+    if (!isDrawing) return
+
+    const canvas = signatureCanvasRefs[questionId]
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx || !lastPosition) return
+
+    const rect = canvas.getBoundingClientRect()
+    let clientX, clientY
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+      e.preventDefault() // Prevent scrolling on touch devices
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+
+    ctx.beginPath()
+    ctx.moveTo(lastPosition.x, lastPosition.y)
+    ctx.lineTo(x, y)
+    ctx.stroke()
+
+    setLastPosition({ x, y })
+
+    // Save the signature as an image
+    const signatureImage = canvas.toDataURL('image/png')
+    updateQuestion(sectionId, questionId, { value: signatureImage })
+  }
+
+  const stopDrawing = () => {
+    setIsDrawing(false)
+    setLastPosition(null)
+  }
+
+  const clearSignature = (questionId: string, sectionId: string) => {
+    const canvas = signatureCanvasRefs[questionId]
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    updateQuestion(sectionId, questionId, { value: null })
+  }
 
   const calculateTotalDefects = (field: string) => {
     return reportData.defects.reduce((total, defect) => {
@@ -1263,7 +1617,8 @@ const Garment_Template: React.FC = () => {
     }))
   }
 
-
+  // Report signature canvas functions
+  const [reportSignatureCanvasRefs, setReportSignatureCanvasRefs] = useState<{ [questionId: string]: HTMLCanvasElement | null }>({})
 
   // Print function using browser's native print capability
   const printReport = () => {
@@ -2144,76 +2499,55 @@ const Garment_Template: React.FC = () => {
         return (
           <div className="report-response-field">
             <div className="report-signature-container">
-              <div className="signature-canvas-wrapper">
-                <canvas
-                  ref={(canvas) => {
-                    if (!canvas) return;
-
-                    // Store canvas in a ref to avoid recreating it
-                    if ((canvas as any).__initialized) return;
-                    (canvas as any).__initialized = true;
-
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return;
-
-                    // Set canvas dimensions
-                    canvas.width = canvas.offsetWidth;
-                    canvas.height = canvas.offsetHeight;
-
-                    // Set canvas styles
-                    ctx.lineWidth = 2;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.strokeStyle = '#000000';
-
-                    // Clear canvas
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    // If there's already a saved signature, draw it
-                    if (value && typeof value === 'string' && value.startsWith('data:image/png')) {
-                      const img = new Image();
-                      img.onload = () => {
-                        ctx.drawImage(img, 0, 0);
-                      };
-                      img.src = value;
+              <canvas
+                ref={(canvas) => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance && instance.reportSignatureCanvasRefs !== undefined) {
+                      initializeSignatureCanvas(
+                        canvas,
+                        question.id,
+                        instance.reportSignatureCanvasRefs,
+                        instance.setReportSignatureCanvasRefs
+                      );
                     }
+                  }
+                }}
+                className="report-signature-canvas"
+                onMouseDown={(e) => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      startDrawing(
+                        e,
+                        question.id,
+                        instance.reportSignatureCanvasRefs,
+                        instance.setIsDrawing,
+                        instance.setLastPosition
+                      );
+                    }
+                  }
+                }}
+                onMouseMove={(e) => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      // Use a modified version of draw that updates questionAnswers instead
+                      if (!instance.isDrawing) return;
 
-                    // Set up drawing variables
-                    let isDrawing = false;
-                    let lastX = 0;
-                    let lastY = 0;
+                      const canvas = instance.reportSignatureCanvasRefs[question.id];
+                      if (!canvas) return;
 
-                    // Store canvas and context in local variables that are definitely not null
-                    const canvasElement = canvas;
-                    const context = ctx;
+                      const ctx = canvas.getContext('2d');
+                      if (!ctx || !instance.lastPosition) return;
 
-                    // Define drawing functions
-                    function startDrawing(e: MouseEvent | TouchEvent) {
-                      isDrawing = true;
-
-                      const rect = canvasElement.getBoundingClientRect();
+                      const rect = canvas.getBoundingClientRect();
                       let clientX, clientY;
 
-                      if (e instanceof TouchEvent) {
-                        clientX = e.touches[0].clientX;
-                        clientY = e.touches[0].clientY;
-                      } else {
-                        clientX = e.clientX;
-                        clientY = e.clientY;
-                      }
-
-                      lastX = clientX - rect.left;
-                      lastY = clientY - rect.top;
-                    }
-
-                    function draw(e: MouseEvent | TouchEvent) {
-                      if (!isDrawing) return;
-
-                      const rect = canvasElement.getBoundingClientRect();
-                      let clientX, clientY;
-
-                      if (e instanceof TouchEvent) {
+                      if ('touches' in e) {
                         clientX = e.touches[0].clientX;
                         clientY = e.touches[0].clientY;
                         e.preventDefault(); // Prevent scrolling on touch devices
@@ -2225,63 +2559,139 @@ const Garment_Template: React.FC = () => {
                       const x = clientX - rect.left;
                       const y = clientY - rect.top;
 
-                      context.beginPath();
-                      context.moveTo(lastX, lastY);
-                      context.lineTo(x, y);
-                      context.stroke();
+                      ctx.beginPath();
+                      ctx.moveTo(instance.lastPosition.x, instance.lastPosition.y);
+                      ctx.lineTo(x, y);
+                      ctx.stroke();
 
-                      lastX = x;
-                      lastY = y;
+                      instance.setLastPosition({ x, y });
+
+                      // Save the signature as an image
+                      const signatureImage = canvas.toDataURL('image/png');
+                      updateQuestionAnswer(question.id, signatureImage);
                     }
+                  }
+                }}
+                onMouseUp={() => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      stopDrawing(instance.setIsDrawing, instance.setLastPosition);
+                    }
+                  }
+                }}
+                onMouseLeave={() => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      stopDrawing(instance.setIsDrawing, instance.setLastPosition);
+                    }
+                  }
+                }}
+                onTouchStart={(e) => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      startDrawing(
+                        e,
+                        question.id,
+                        instance.reportSignatureCanvasRefs,
+                        instance.setIsDrawing,
+                        instance.setLastPosition
+                      );
+                    }
+                  }
+                }}
+                onTouchMove={(e) => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      // Use a modified version of draw that updates questionAnswers instead
+                      if (!instance.isDrawing) return;
 
-                    function endDrawing() {
-                      if (isDrawing) {
-                        // Only save the signature when the drawing is complete
-                        const signatureImage = canvasElement.toDataURL('image/png');
-                        updateQuestionAnswer(question.id, signatureImage);
-                        isDrawing = false;
+                      const canvas = instance.reportSignatureCanvasRefs[question.id];
+                      if (!canvas) return;
+
+                      const ctx = canvas.getContext('2d');
+                      if (!ctx || !instance.lastPosition) return;
+
+                      const rect = canvas.getBoundingClientRect();
+                      let clientX, clientY;
+
+                      if ('touches' in e) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                        e.preventDefault(); // Prevent scrolling on touch devices
+                      } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                      }
+
+                      const x = clientX - rect.left;
+                      const y = clientY - rect.top;
+
+                      ctx.beginPath();
+                      ctx.moveTo(instance.lastPosition.x, instance.lastPosition.y);
+                      ctx.lineTo(x, y);
+                      ctx.stroke();
+
+                      instance.setLastPosition({ x, y });
+
+                      // Save the signature as an image
+                      const signatureImage = canvas.toDataURL('image/png');
+                      updateQuestionAnswer(question.id, signatureImage);
+                    }
+                  }
+                }}
+                onTouchEnd={() => {
+                  const Garment_Template = document.querySelector('.garment-template-builder-page');
+                  if (Garment_Template) {
+                    const instance = (Garment_Template as any).__reactInternalInstance;
+                    if (instance) {
+                      stopDrawing(instance.setIsDrawing, instance.setLastPosition);
+                    }
+                  }
+                }}
+                width={300}
+                height={150}
+              />
+              <div className="report-signature-controls">
+                <button
+                  className="report-clear-signature-button"
+                  onClick={() => {
+                    const Garment_Template = document.querySelector('.garment-template-builder-page');
+                    if (Garment_Template) {
+                      const instance = (Garment_Template as any).__reactInternalInstance;
+                      if (instance) {
+                        // Clear the canvas
+                        const canvas = instance.reportSignatureCanvasRefs[question.id];
+                        if (!canvas) return;
+
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) return;
+
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        // Clear the value
+                        updateQuestionAnswer(question.id, null);
                       }
                     }
-
-                    // Add event listeners
-                    canvasElement.addEventListener('mousedown', startDrawing);
-                    canvasElement.addEventListener('mousemove', draw);
-                    canvasElement.addEventListener('mouseup', endDrawing);
-                    canvasElement.addEventListener('mouseleave', endDrawing);
-                    canvasElement.addEventListener('touchstart', startDrawing);
-                    canvasElement.addEventListener('touchmove', draw);
-                    canvasElement.addEventListener('touchend', endDrawing);
                   }}
-                  className="report-signature-canvas"
-                  width={300}
-                  height={150}
-                />
-                <div className="report-signature-controls">
-                  <button
-                    className="report-clear-signature-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-
-                      // Find the canvas element
-                      const canvasElement = e.currentTarget.closest('.signature-canvas-wrapper')?.querySelector('canvas') as HTMLCanvasElement;
-                      if (!canvasElement) return;
-
-                      const ctx = canvasElement.getContext('2d');
-                      if (!ctx) return;
-
-                      // Clear the canvas
-                      ctx.fillStyle = '#ffffff';
-                      ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
-
-                      // Clear the saved value
-                      updateQuestionAnswer(question.id, null);
-                    }}
-                    type="button"
-                  >
-                    Clear Signature
-                  </button>
-                </div>
+                  type="button"
+                >
+                  Clear Signature
+                </button>
               </div>
+              {value && typeof value === 'string' && value.startsWith('data:image/png') && (
+                <div className="report-signature-preview">
+                  <img src={value} alt="Signature" className="report-signature-image" />
+                </div>
+              )}
             </div>
           </div>
         );

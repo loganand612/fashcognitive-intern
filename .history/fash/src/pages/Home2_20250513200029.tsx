@@ -42,7 +42,6 @@ import TM from "./assets/TM.png"
 import RP from "./assets/RP.png"
 import NX from "./assets/NX.png"
 import HX from "./assets/HX.png"
-import AZ from "./assets/AZ.png"
 
 // Custom Image component to replace Next.js Image
 const Image = ({
@@ -832,7 +831,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-template-img-container Home2-animate-on-scroll ${templateVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src={HX}
+                src="/placeholder.svg?height=500&width=600&text=Template+Builder"
                 alt="Template Builder"
                 width={600}
                 height={500}
@@ -851,7 +850,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-mobile-img-container Home2-animate-on-scroll ${mobileVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src={AZ}
+                src="/placeholder.svg?height=500&width=600&text=Mobile+App"
                 alt="Mobile App"
                 width={600}
                 height={500}

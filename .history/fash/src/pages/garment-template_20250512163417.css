@@ -65,7 +65,7 @@
 
 .nav-center {
   position: absolute;
-  left: 45%; /* Changed from 50% to 45% to move tabs to the left */
+  left: 50%;
   transform: translateX(-50%);
   display: flex;
   justify-content: center;
@@ -2781,11 +2781,6 @@
   flex-direction: column;
   gap: 12px;
   width: 100%;
-}
-
-.signature-canvas-wrapper {
-  width: 100%;
-  margin-bottom: 10px;
 }
 
 .signature-canvas {

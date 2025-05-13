@@ -2244,13 +2244,13 @@ const Garment_Template: React.FC = () => {
                     }
 
                     // Add event listeners
-                    canvasElement.addEventListener('mousedown', startDrawing);
-                    canvasElement.addEventListener('mousemove', draw);
-                    canvasElement.addEventListener('mouseup', endDrawing);
-                    canvasElement.addEventListener('mouseleave', endDrawing);
-                    canvasElement.addEventListener('touchstart', startDrawing);
-                    canvasElement.addEventListener('touchmove', draw);
-                    canvasElement.addEventListener('touchend', endDrawing);
+                    canvas.addEventListener('mousedown', startDrawing);
+                    canvas.addEventListener('mousemove', draw);
+                    canvas.addEventListener('mouseup', endDrawing);
+                    canvas.addEventListener('mouseleave', endDrawing);
+                    canvas.addEventListener('touchstart', startDrawing);
+                    canvas.addEventListener('touchmove', draw);
+                    canvas.addEventListener('touchend', endDrawing);
                   }}
                   className="report-signature-canvas"
                   width={300}

@@ -358,7 +358,130 @@ function isGarmentDetailsContent(content: StandardSectionContent | GarmentDetail
 
 
 
+// Signature canvas functions
+const initializeSignatureCanvas = (canvas: HTMLCanvasElement | null, questionId: string, refs: { [key: string]: HTMLCanvasElement | null }, setRefs: React.Dispatch<React.SetStateAction<{ [key: string]: HTMLCanvasElement | null }>>) => {
+  if (!canvas) return
 
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // Set canvas dimensions
+  canvas.width = canvas.offsetWidth
+  canvas.height = canvas.offsetHeight
+
+  // Set canvas styles
+  ctx.lineWidth = 2
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = '#000000'
+
+  // Clear canvas
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  // Store canvas reference
+  setRefs(prev => ({ ...prev, [questionId]: canvas }))
+}
+
+const startDrawing = (
+  e: React.MouseEvent | React.TouchEvent,
+  questionId: string,
+  refs: { [key: string]: HTMLCanvasElement | null },
+  setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>,
+  setLastPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number } | null>>
+) => {
+  const canvas = refs[questionId]
+  if (!canvas) return
+
+  setIsDrawing(true)
+
+  const rect = canvas.getBoundingClientRect()
+  let clientX, clientY
+
+  if ('touches' in e) {
+    clientX = e.touches[0].clientX
+    clientY = e.touches[0].clientY
+  } else {
+    clientX = e.clientX
+    clientY = e.clientY
+  }
+
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+
+  setLastPosition({ x, y })
+}
+
+const draw = (
+  e: React.MouseEvent | React.TouchEvent,
+  questionId: string,
+  sectionId: string,
+  refs: { [key: string]: HTMLCanvasElement | null },
+  isDrawing: boolean,
+  lastPosition: { x: number, y: number } | null,
+  setLastPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number } | null>>,
+  updateQuestion: (sectionId: string, questionId: string, updates: Partial<Question>) => void
+) => {
+  if (!isDrawing) return
+
+  const canvas = refs[questionId]
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx || !lastPosition) return
+
+  const rect = canvas.getBoundingClientRect()
+  let clientX, clientY
+
+  if ('touches' in e) {
+    clientX = e.touches[0].clientX
+    clientY = e.touches[0].clientY
+    e.preventDefault() // Prevent scrolling on touch devices
+  } else {
+    clientX = e.clientX
+    clientY = e.clientY
+  }
+
+  const x = clientX - rect.left
+  const y = clientY - rect.top
+
+  ctx.beginPath()
+  ctx.moveTo(lastPosition.x, lastPosition.y)
+  ctx.lineTo(x, y)
+  ctx.stroke()
+
+  setLastPosition({ x, y })
+
+  // Save the signature as an image
+  const signatureImage = canvas.toDataURL('image/png')
+  updateQuestion(sectionId, questionId, { value: signatureImage })
+}
+
+const stopDrawing = (
+  setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>,
+  setLastPosition: React.Dispatch<React.SetStateAction<{ x: number, y: number } | null>>
+) => {
+  setIsDrawing(false)
+  setLastPosition(null)
+}
+
+const clearSignature = (
+  questionId: string,
+  sectionId: string,
+  refs: { [key: string]: HTMLCanvasElement | null },
+  updateQuestion: (sectionId: string, questionId: string, updates: Partial<Question>) => void
+) => {
+  const canvas = refs[questionId]
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  updateQuestion(sectionId, questionId, { value: null })
+}
 
 const renderQuestionResponse = (
   question: Question,
@@ -2149,10 +2272,6 @@ const Garment_Template: React.FC = () => {
                   ref={(canvas) => {
                     if (!canvas) return;
 
-                    // Store canvas in a ref to avoid recreating it
-                    if ((canvas as any).__initialized) return;
-                    (canvas as any).__initialized = true;
-
                     const ctx = canvas.getContext('2d');
                     if (!ctx) return;
 
@@ -2179,20 +2298,15 @@ const Garment_Template: React.FC = () => {
                       img.src = value;
                     }
 
-                    // Set up drawing variables
+                    // Set up drawing
                     let isDrawing = false;
                     let lastX = 0;
                     let lastY = 0;
 
-                    // Store canvas and context in local variables that are definitely not null
-                    const canvasElement = canvas;
-                    const context = ctx;
-
-                    // Define drawing functions
-                    function startDrawing(e: MouseEvent | TouchEvent) {
+                    const startDrawing = (e: MouseEvent | TouchEvent) => {
                       isDrawing = true;
 
-                      const rect = canvasElement.getBoundingClientRect();
+                      const rect = canvas.getBoundingClientRect();
                       let clientX, clientY;
 
                       if (e instanceof TouchEvent) {
@@ -2205,12 +2319,12 @@ const Garment_Template: React.FC = () => {
 
                       lastX = clientX - rect.left;
                       lastY = clientY - rect.top;
-                    }
+                    };
 
-                    function draw(e: MouseEvent | TouchEvent) {
+                    const draw = (e: MouseEvent | TouchEvent) => {
                       if (!isDrawing) return;
 
-                      const rect = canvasElement.getBoundingClientRect();
+                      const rect = canvas.getBoundingClientRect();
                       let clientX, clientY;
 
                       if (e instanceof TouchEvent) {
@@ -2225,32 +2339,31 @@ const Garment_Template: React.FC = () => {
                       const x = clientX - rect.left;
                       const y = clientY - rect.top;
 
-                      context.beginPath();
-                      context.moveTo(lastX, lastY);
-                      context.lineTo(x, y);
-                      context.stroke();
+                      ctx.beginPath();
+                      ctx.moveTo(lastX, lastY);
+                      ctx.lineTo(x, y);
+                      ctx.stroke();
 
                       lastX = x;
                       lastY = y;
-                    }
 
-                    function endDrawing() {
-                      if (isDrawing) {
-                        // Only save the signature when the drawing is complete
-                        const signatureImage = canvasElement.toDataURL('image/png');
-                        updateQuestionAnswer(question.id, signatureImage);
-                        isDrawing = false;
-                      }
-                    }
+                      // Save the signature as an image
+                      const signatureImage = canvas.toDataURL('image/png');
+                      updateQuestionAnswer(question.id, signatureImage);
+                    };
+
+                    const stopDrawing = () => {
+                      isDrawing = false;
+                    };
 
                     // Add event listeners
-                    canvasElement.addEventListener('mousedown', startDrawing);
-                    canvasElement.addEventListener('mousemove', draw);
-                    canvasElement.addEventListener('mouseup', endDrawing);
-                    canvasElement.addEventListener('mouseleave', endDrawing);
-                    canvasElement.addEventListener('touchstart', startDrawing);
-                    canvasElement.addEventListener('touchmove', draw);
-                    canvasElement.addEventListener('touchend', endDrawing);
+                    canvas.addEventListener('mousedown', startDrawing);
+                    canvas.addEventListener('mousemove', draw);
+                    canvas.addEventListener('mouseup', stopDrawing);
+                    canvas.addEventListener('mouseleave', stopDrawing);
+                    canvas.addEventListener('touchstart', startDrawing);
+                    canvas.addEventListener('touchmove', draw);
+                    canvas.addEventListener('touchend', stopDrawing);
                   }}
                   className="report-signature-canvas"
                   width={300}
@@ -2261,19 +2374,15 @@ const Garment_Template: React.FC = () => {
                     className="report-clear-signature-button"
                     onClick={(e) => {
                       e.preventDefault();
+                      const canvas = e.currentTarget.parentElement?.previousElementSibling as HTMLCanvasElement;
+                      if (!canvas) return;
 
-                      // Find the canvas element
-                      const canvasElement = e.currentTarget.closest('.signature-canvas-wrapper')?.querySelector('canvas') as HTMLCanvasElement;
-                      if (!canvasElement) return;
-
-                      const ctx = canvasElement.getContext('2d');
+                      const ctx = canvas.getContext('2d');
                       if (!ctx) return;
 
-                      // Clear the canvas
                       ctx.fillStyle = '#ffffff';
-                      ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                      // Clear the saved value
                       updateQuestionAnswer(question.id, null);
                     }}
                     type="button"

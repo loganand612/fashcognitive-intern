@@ -37,12 +37,6 @@ import Streamlineer_QC_2 from "./assets/Streamlineer_QC_2.png"
 import Streamlineer_QC_3 from "./assets/Streamlineer_QC_3.png"
 import Streamlineer_QC_4 from "./assets/Streamlineer_QC_4.png"
 import Streamlineer_QC_5 from "./assets/Streamlineer_QC_5.png"
-import DG from "./assets/DG.png"
-import TM from "./assets/TM.png"
-import RP from "./assets/RP.png"
-import NX from "./assets/NX.png"
-import HX from "./assets/HX.png"
-import AZ from "./assets/AZ.png"
 
 // Custom Image component to replace Next.js Image
 const Image = ({
@@ -81,11 +75,11 @@ const Home2: React.FC = () => {
 
   // Background images for header
   const bgImages = [
-    Streamlineer_QC_1,
-    Streamlineer_QC_2,
-    Streamlineer_QC_3,
-    Streamlineer_QC_4,
-    Streamlineer_QC_5,
+    "/placeholder.svg?height=600&width=600&text=Image1",
+    "/placeholder.svg?height=600&width=600&text=Image2",
+    "/placeholder.svg?height=600&width=600&text=Image3",
+    "/placeholder.svg?height=600&width=600&text=Image4",
+    "/placeholder.svg?height=600&width=600&text=Image5",
   ]
 
   // Tabs for features section
@@ -96,7 +90,7 @@ const Home2: React.FC = () => {
       contentTitle: "Intuitive Drag-and-Drop Template Builder",
       description:
         "Create any checklist or form you need. Utilize diverse question types (text, number, multiple-choice, signature, photo, GPS), add conditional logic, scoring, mandatory fields, and instructional media.",
-      image: DG,
+      image: "/placeholder.svg?height=400&width=600&text=Template+Builder",
     },
     {
       title: "Mobile Inspections",
@@ -104,7 +98,7 @@ const Home2: React.FC = () => {
       contentTitle: "Powerful Mobile Inspection App",
       description:
         "The easy-to-use app for iOS & Android ensures seamless inspections. Works flawlessly offline, allows rich data capture (annotated photos, notes), and provides access to relevant templates anytime.",
-      image: TM,
+      image: "/placeholder.svg?height=400&width=600&text=Mobile+App",
     },
     {
       title: "Instant Reporting",
@@ -112,7 +106,7 @@ const Home2: React.FC = () => {
       contentTitle: "Automated Inspection Reporting",
       description:
         "Forget manual report writing. Generate customizable PDF or web reports instantly after each inspection. Visualize data, track completion rates, and identify trends on dashboards.",
-      image: RP,
+      image: "/placeholder.svg?height=400&width=600&text=Reporting",
     },
     {
       title: "Findings & Actions",
@@ -120,7 +114,7 @@ const Home2: React.FC = () => {
       contentTitle: "Integrated Findings & Action Tracking",
       description:
         "Flag issues or non-conformances directly within an inspection. Assign corrective actions with deadlines and track their status to ensure prompt resolution, all linked back to the original inspection.",
-      image: NX,
+      image: "/placeholder.svg?height=400&width=600&text=Action+Tracking",
     },
   ]
 
@@ -253,7 +247,7 @@ const Home2: React.FC = () => {
     }, 3000)
 
     return () => clearInterval(interval)
-  }, [bgImages.length])
+  }, [])
 
   // Scroll effect for header
   useEffect(() => {
@@ -832,7 +826,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-template-img-container Home2-animate-on-scroll ${templateVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src={HX}
+                src="/placeholder.svg?height=500&width=600&text=Template+Builder"
                 alt="Template Builder"
                 width={600}
                 height={500}
@@ -851,7 +845,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-mobile-img-container Home2-animate-on-scroll ${mobileVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src={AZ}
+                src="/placeholder.svg?height=500&width=600&text=Mobile+App"
                 alt="Mobile App"
                 width={600}
                 height={500}

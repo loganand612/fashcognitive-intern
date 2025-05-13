@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import "./Create_template.css"
 import AccessManager from './components/AccessManager'
 
@@ -43,7 +43,6 @@ import {
   Flag,
 } from "lucide-react"
 import jsPDF from "jspdf"
-import SignaturePad from 'react-signature-canvas'
 
 // Types
 type ResponseType =
@@ -1969,9 +1968,18 @@ const CreateTemplate: React.FC = () => {
       case "Annotation":
         return (
           <div className="response-field annotation-field">
-            <div className="annotation-area">
-              <Edit size={20} />
-              <span>Add annotation</span>
+            <div className="signature-container">
+              <div className="signature-canvas-wrapper">
+                {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') ? (
+                  <div className="signature-preview">
+                    <img src={question.value} alt="Signature" className="signature-image" />
+                  </div>
+                ) : (
+                  <div className="annotation-placeholder-box">
+                    Click to sign in the report page
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )

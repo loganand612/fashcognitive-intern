@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import './Login.css';
+import streamlineerLogo from "./assets/streamlineer_logo.svg";
 
 const Login: React.FC = () => {
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -16,7 +17,7 @@ const Login: React.FC = () => {
                 <div className="login-left">
                     <div className="logo-section">
                         <div className="welcome-text">
-                            <h1 className='text1'>Welcome Back to<br />Streamlineer<span className="accent-dot">.</span></h1>
+                            <h1 className='text1'>Welcome Back to<br />StreamlineerStreamlineer-LOGO<span className="accent-dot">.</span></h1>
                             <p className='text2'>Build smarter checklists and conduct flawless inspections with our intuitive platform.</p>
                         </div>
                     </div>

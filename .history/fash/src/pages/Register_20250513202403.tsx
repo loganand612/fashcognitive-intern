@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, User, Phone, Lock, Building2, Briefcase, Users, Factory } from 'lucide-react';
 import './Register.css';
+import logs from "./assets/logs.png";
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
@@ -30,12 +31,18 @@ const Register: React.FC = () => {
 
     return (
         <div className="register-container">
+            {/* Custom cursor */}
+            <div ref={cursorRef} className={`custom-cursor ${cursorVariant}`}>
+                <MousePointer size={12} />
+            </div>
+
             <div className="register-content">
                 <div className="register-left">
                     <div className="logo-section">
+                        <img src={logs} alt="Fashcognitive Logo" className="company-logo" />
                         <div className="welcome-text">
-                            <h1 className='tx1'>Welcome to<br />Streamlineer<span className="accent-dot">.</span></h1>
-                            <p className='tx2'>Create an account to get started with our intuitive platform for building powerful inspection templates.</p>
+                            <h1 className='tx1'>Welcome to<br />Fashcognitive<span className="accent-dot">.</span></h1>
+                            <p className='tx2'>Create an account to get started with our AI-powered solutions for the apparel industry.</p>
                         </div>
                     </div>
                 </div>
@@ -54,6 +61,8 @@ const Register: React.FC = () => {
                                     required
                                     placeholder="First Name"
                                     onChange={handleChange}
+                                    onMouseEnter={enterButton}
+                                    onMouseLeave={leaveHover}
                                 />
                             </div>
 
@@ -66,6 +75,8 @@ const Register: React.FC = () => {
                                     required
                                     placeholder="Last Name"
                                     onChange={handleChange}
+                                    onMouseEnter={enterButton}
+                                    onMouseLeave={leaveHover}
                                 />
                             </div>
                         </div>
@@ -79,6 +90,8 @@ const Register: React.FC = () => {
                                 required
                                 placeholder="Email Address"
                                 onChange={handleChange}
+                                onMouseEnter={enterButton}
+                                onMouseLeave={leaveHover}
                             />
                         </div>
 
@@ -91,6 +104,8 @@ const Register: React.FC = () => {
                                 required
                                 placeholder="Password"
                                 onChange={handleChange}
+                                onMouseEnter={enterButton}
+                                onMouseLeave={leaveHover}
                             />
                         </div>
 
@@ -102,6 +117,8 @@ const Register: React.FC = () => {
                                 name="phone_no"
                                 placeholder="Phone Number (Optional)"
                                 onChange={handleChange}
+                                onMouseEnter={enterButton}
+                                onMouseLeave={leaveHover}
                             />
                         </div>
 
@@ -114,6 +131,8 @@ const Register: React.FC = () => {
                                 required
                                 placeholder="Company Name"
                                 onChange={handleChange}
+                                onMouseEnter={enterButton}
+                                onMouseLeave={leaveHover}
                             />
                         </div>
 
@@ -124,15 +143,13 @@ const Register: React.FC = () => {
                                 name="industry_type"
                                 onChange={handleChange}
                                 required
+                                onMouseEnter={enterButton}
+                                onMouseLeave={leaveHover}
                             >
                                 <option value="">Select Industry</option>
-                                <option value="Manufacturing">Manufacturing</option>
-                                <option value="Construction">Construction</option>
+                                <option value="Fashion">Fashion</option>
                                 <option value="Retail">Retail</option>
-                                <option value="Healthcare">Healthcare</option>
-                                <option value="Food & Beverage">Food & Beverage</option>
-                                <option value="Logistics">Logistics</option>
-                                <option value="Other">Other</option>
+                                <option value="Manufacturing">Manufacturing</option>
                             </select>
                         </div>
 
@@ -145,6 +162,8 @@ const Register: React.FC = () => {
                                 required
                                 placeholder="Job Title"
                                 onChange={handleChange}
+                                onMouseEnter={enterButton}
+                                onMouseLeave={leaveHover}
                             />
                         </div>
 
@@ -157,12 +176,16 @@ const Register: React.FC = () => {
                                 required
                                 placeholder="Company Size"
                                 onChange={handleChange}
+                                onMouseEnter={enterButton}
+                                onMouseLeave={leaveHover}
                             />
                         </div>
 
                         <button
                             type="submit"
                             className="submit-btn"
+                            onMouseEnter={enterButton}
+                            onMouseLeave={leaveHover}
                         >
                             Create Account
                         </button>
@@ -170,6 +193,8 @@ const Register: React.FC = () => {
                         <p className="login-link">
                             Already have an account? <a
                                 href="/login"
+                                onMouseEnter={enterLink}
+                                onMouseLeave={leaveHover}
                             >
                                 Sign in
                             </a>

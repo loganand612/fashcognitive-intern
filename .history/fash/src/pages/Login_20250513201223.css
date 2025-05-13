@@ -76,8 +76,8 @@
 }
 
 .company-logo {
-    width: 300px;
-    max-height: 100px;
+    width: 180px;
+    max-height: 180px;
     margin-bottom: 3rem;
     transition: var(--transition);
 }
@@ -167,13 +167,13 @@
 }
 
 .input-group input::placeholder {
-    color: var(--text-lighter);
+    color: #666;
 }
 
 .input-group input:focus {
-    border-color: var(--primary-color);
+    border-color: #1a1a1a;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(72, 149, 239, 0.2);
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
 }
 
 .password-toggle {
@@ -184,17 +184,16 @@
     background: none;
     border: none;
     padding: 0;
-    color: var(--primary-color);
+    color: #666;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: var(--transition);
+    transition: color 0.2s ease;
 }
 
 .password-toggle:hover {
-    color: var(--primary-hover);
-    transform: translateY(-50%) scale(1.1);
+    color: #1a1a1a;
 }
 
 .form-options {
@@ -204,108 +203,56 @@
 }
 
 .forgot-password {
-    color: var(--primary-color);
+    color: #1a1a1a;
     text-decoration: none;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    transition: var(--transition);
-    position: relative;
+    transition: color 0.2s ease;
 }
 
 .forgot-password:hover {
-    color: var(--primary-hover);
-}
-
-.forgot-password::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 1px;
-    bottom: -2px;
-    left: 0;
-    background-color: var(--primary-hover);
-    transition: var(--transition);
-}
-
-.forgot-password:hover::after {
-    width: 100%;
+    color: #333;
+    text-decoration: underline;
 }
 
 .submit-btn {
-    width: 100%;
-    max-width: 400px;
+    width: 100%; /* Make it take full width of its container */
+    max-width: 400px; /* Set a maximum width */
     padding: 1rem;
-    background: var(--gradient-primary);
+    background: #1a1a1a;
     color: white;
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: 8px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: var(--transition);
-    margin: 1.5rem auto 0;
-    display: block;
+    transition: all 0.2s ease;
+    margin: 1.5rem auto 0; /* Center the button */
+    display: block; /* Ensure it takes up full width */
     text-align: center;
-    position: relative;
-    overflow: hidden;
-    z-index: 1;
-    box-shadow: var(--shadow-md);
 }
 
-.submit-btn::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.1);
-    transition: width 0.3s ease;
-    z-index: -1;
-}
-
-.submit-btn:hover::before {
-    width: 100%;
-}
 
 .submit-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    background: #333;
+    transform: translateY(-1px);
 }
 
 .signup-link {
     text-align: center;
-    color: var(--text-light);
-    font-size: 1rem;
-    margin-top: 1.5rem;
+    color: #666;
+    font-size: 0.95rem;
 }
 
 .signup-link a {
-    color: var(--primary-color);
+    color: #1a1a1a;
     text-decoration: none;
     font-weight: 500;
     margin-left: 0.25rem;
-    transition: var(--transition);
-    position: relative;
 }
 
 .signup-link a:hover {
-    color: var(--primary-hover);
-}
-
-.signup-link a::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 1px;
-    bottom: -2px;
-    left: 0;
-    background-color: var(--primary-hover);
-    transition: var(--transition);
-}
-
-.signup-link a:hover::after {
-    width: 100%;
+    text-decoration: underline;
 }
 
 @media (max-width: 1024px) {
@@ -340,32 +287,4 @@
     .login-form h2 {
         font-size: 1.75rem;
     }
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-
-
-/* Accent dot for titles */
-.accent-dot {
-    color: var(--primary-color);
 }

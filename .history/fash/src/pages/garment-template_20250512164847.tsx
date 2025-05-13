@@ -2179,20 +2179,15 @@ const Garment_Template: React.FC = () => {
                       img.src = value;
                     }
 
-                    // Set up drawing variables
+                    // Set up drawing
                     let isDrawing = false;
                     let lastX = 0;
                     let lastY = 0;
 
-                    // Store canvas and context in local variables that are definitely not null
-                    const canvasElement = canvas;
-                    const context = ctx;
-
-                    // Define drawing functions
-                    function startDrawing(e: MouseEvent | TouchEvent) {
+                    const startDrawing = (e: MouseEvent | TouchEvent) => {
                       isDrawing = true;
 
-                      const rect = canvasElement.getBoundingClientRect();
+                      const rect = canvas.getBoundingClientRect();
                       let clientX, clientY;
 
                       if (e instanceof TouchEvent) {
@@ -2205,12 +2200,12 @@ const Garment_Template: React.FC = () => {
 
                       lastX = clientX - rect.left;
                       lastY = clientY - rect.top;
-                    }
+                    };
 
-                    function draw(e: MouseEvent | TouchEvent) {
+                    const draw = (e: MouseEvent | TouchEvent) => {
                       if (!isDrawing) return;
 
-                      const rect = canvasElement.getBoundingClientRect();
+                      const rect = canvas.getBoundingClientRect();
                       let clientX, clientY;
 
                       if (e instanceof TouchEvent) {
@@ -2225,32 +2220,90 @@ const Garment_Template: React.FC = () => {
                       const x = clientX - rect.left;
                       const y = clientY - rect.top;
 
-                      context.beginPath();
-                      context.moveTo(lastX, lastY);
-                      context.lineTo(x, y);
-                      context.stroke();
+                      ctx.beginPath();
+                      ctx.moveTo(lastX, lastY);
+                      ctx.lineTo(x, y);
+                      ctx.stroke();
 
                       lastX = x;
                       lastY = y;
-                    }
+                    };
 
-                    function endDrawing() {
+                    const endDrawing = () => {
                       if (isDrawing) {
                         // Only save the signature when the drawing is complete
-                        const signatureImage = canvasElement.toDataURL('image/png');
+                        const signatureImage = canvas.toDataURL('image/png');
                         updateQuestionAnswer(question.id, signatureImage);
                         isDrawing = false;
                       }
-                    }
+                    };
+
+                    // Create a local variable to store the canvas reference
+                    const canvasRef = canvas;
+
+                    // Set up drawing
+                    const startDrawing = (e: MouseEvent | TouchEvent) => {
+                      isDrawing = true;
+
+                      const rect = canvasRef.getBoundingClientRect();
+                      let clientX, clientY;
+
+                      if (e instanceof TouchEvent) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                      } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                      }
+
+                      lastX = clientX - rect.left;
+                      lastY = clientY - rect.top;
+                    };
+
+                    const draw = (e: MouseEvent | TouchEvent) => {
+                      if (!isDrawing) return;
+
+                      const rect = canvasRef.getBoundingClientRect();
+                      let clientX, clientY;
+
+                      if (e instanceof TouchEvent) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                        e.preventDefault(); // Prevent scrolling on touch devices
+                      } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                      }
+
+                      const x = clientX - rect.left;
+                      const y = clientY - rect.top;
+
+                      ctx.beginPath();
+                      ctx.moveTo(lastX, lastY);
+                      ctx.lineTo(x, y);
+                      ctx.stroke();
+
+                      lastX = x;
+                      lastY = y;
+                    };
+
+                    const endDrawing = () => {
+                      if (isDrawing) {
+                        // Only save the signature when the drawing is complete
+                        const signatureImage = canvasRef.toDataURL('image/png');
+                        updateQuestionAnswer(question.id, signatureImage);
+                        isDrawing = false;
+                      }
+                    };
 
                     // Add event listeners
-                    canvasElement.addEventListener('mousedown', startDrawing);
-                    canvasElement.addEventListener('mousemove', draw);
-                    canvasElement.addEventListener('mouseup', endDrawing);
-                    canvasElement.addEventListener('mouseleave', endDrawing);
-                    canvasElement.addEventListener('touchstart', startDrawing);
-                    canvasElement.addEventListener('touchmove', draw);
-                    canvasElement.addEventListener('touchend', endDrawing);
+                    canvasRef.addEventListener('mousedown', startDrawing);
+                    canvasRef.addEventListener('mousemove', draw);
+                    canvasRef.addEventListener('mouseup', endDrawing);
+                    canvasRef.addEventListener('mouseleave', endDrawing);
+                    canvasRef.addEventListener('touchstart', startDrawing);
+                    canvasRef.addEventListener('touchmove', draw);
+                    canvasRef.addEventListener('touchend', endDrawing);
                   }}
                   className="report-signature-canvas"
                   width={300}

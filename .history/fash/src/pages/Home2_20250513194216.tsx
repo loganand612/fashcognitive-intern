@@ -39,10 +39,6 @@ import Streamlineer_QC_4 from "./assets/Streamlineer_QC_4.png"
 import Streamlineer_QC_5 from "./assets/Streamlineer_QC_5.png"
 import DG from "./assets/DG.png"
 import TM from "./assets/TM.png"
-import RP from "./assets/RP.png"
-import NX from "./assets/NX.png"
-import HX from "./assets/HX.png"
-import AZ from "./assets/AZ.png"
 
 // Custom Image component to replace Next.js Image
 const Image = ({
@@ -112,7 +108,7 @@ const Home2: React.FC = () => {
       contentTitle: "Automated Inspection Reporting",
       description:
         "Forget manual report writing. Generate customizable PDF or web reports instantly after each inspection. Visualize data, track completion rates, and identify trends on dashboards.",
-      image: RP,
+      image: "/placeholder.svg?height=400&width=600&text=Reporting",
     },
     {
       title: "Findings & Actions",
@@ -120,7 +116,7 @@ const Home2: React.FC = () => {
       contentTitle: "Integrated Findings & Action Tracking",
       description:
         "Flag issues or non-conformances directly within an inspection. Assign corrective actions with deadlines and track their status to ensure prompt resolution, all linked back to the original inspection.",
-      image: NX,
+      image: "/placeholder.svg?height=400&width=600&text=Action+Tracking",
     },
   ]
 
@@ -832,7 +828,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-template-img-container Home2-animate-on-scroll ${templateVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src={HX}
+                src="/placeholder.svg?height=500&width=600&text=Template+Builder"
                 alt="Template Builder"
                 width={600}
                 height={500}
@@ -851,7 +847,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-mobile-img-container Home2-animate-on-scroll ${mobileVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src={AZ}
+                src="/placeholder.svg?height=500&width=600&text=Mobile+App"
                 alt="Mobile App"
                 width={600}
                 height={500}
