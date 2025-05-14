@@ -1,5 +1,5 @@
 "use client"
-import { Link } from "react-router-dom";
+
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import {
@@ -29,7 +29,20 @@ import {
   Award,
   Sparkles,
 } from "lucide-react"
-import "./Home2.css"
+import "../pages/Home2.css"
+
+// Import Streamlineer QC images
+import Streamlineer_QC_1 from "../assets/img/Streamlineer_QC_1.png"
+import Streamlineer_QC_2 from "../assets/img/Streamlineer_QC_2.png"
+import Streamlineer_QC_3 from "../assets/img/Streamlineer_QC_3.png"
+import Streamlineer_QC_4 from "../assets/img/Streamlineer_QC_4.png"
+import Streamlineer_QC_5 from "../assets/img/Streamlineer_QC_5.png"
+import DG from "../assets/img/DG.png"
+import TM from "../assets/img/TM.png"
+import RP from "../assets/img/RP.png"
+import NX from "../assets/img/NX.png"
+import HX from "../assets/img/HX.png"
+import AZ from "../assets/img/AZ.png"
 
 // Custom Image component to replace Next.js Image
 const Image = ({
@@ -68,11 +81,11 @@ const Home2: React.FC = () => {
 
   // Background images for header
   const bgImages = [
-    "/placeholder.svg?height=600&width=600&text=Image1",
-    "/placeholder.svg?height=600&width=600&text=Image2",
-    "/placeholder.svg?height=600&width=600&text=Image3",
-    "/placeholder.svg?height=600&width=600&text=Image4",
-    "/placeholder.svg?height=600&width=600&text=Image5",
+    Streamlineer_QC_1,
+    Streamlineer_QC_2,
+    Streamlineer_QC_3,
+    Streamlineer_QC_4,
+    Streamlineer_QC_5,
   ]
 
   // Tabs for features section
@@ -83,7 +96,7 @@ const Home2: React.FC = () => {
       contentTitle: "Intuitive Drag-and-Drop Template Builder",
       description:
         "Create any checklist or form you need. Utilize diverse question types (text, number, multiple-choice, signature, photo, GPS), add conditional logic, scoring, mandatory fields, and instructional media.",
-      image: "/placeholder.svg?height=400&width=600&text=Template+Builder",
+      image: DG,
     },
     {
       title: "Mobile Inspections",
@@ -91,7 +104,7 @@ const Home2: React.FC = () => {
       contentTitle: "Powerful Mobile Inspection App",
       description:
         "The easy-to-use app for iOS & Android ensures seamless inspections. Works flawlessly offline, allows rich data capture (annotated photos, notes), and provides access to relevant templates anytime.",
-      image: "/placeholder.svg?height=400&width=600&text=Mobile+App",
+      image: TM,
     },
     {
       title: "Instant Reporting",
@@ -99,7 +112,7 @@ const Home2: React.FC = () => {
       contentTitle: "Automated Inspection Reporting",
       description:
         "Forget manual report writing. Generate customizable PDF or web reports instantly after each inspection. Visualize data, track completion rates, and identify trends on dashboards.",
-      image: "/placeholder.svg?height=400&width=600&text=Reporting",
+      image: RP,
     },
     {
       title: "Findings & Actions",
@@ -107,7 +120,7 @@ const Home2: React.FC = () => {
       contentTitle: "Integrated Findings & Action Tracking",
       description:
         "Flag issues or non-conformances directly within an inspection. Assign corrective actions with deadlines and track their status to ensure prompt resolution, all linked back to the original inspection.",
-      image: "/placeholder.svg?height=400&width=600&text=Action+Tracking",
+      image: NX,
     },
   ]
 
@@ -131,33 +144,7 @@ const Home2: React.FC = () => {
     { icon: <BarChart3 size={24} />, title: "Inventory & Stock Checks" },
   ]
 
-  // Testimonials
-  const testimonials = [
-    {
-      quote:
-        "Creating and updating our complex safety checklists used to take days. With StreamLineer, we can build and deploy new templates in under an hour. It's incredibly intuitive.",
-      name: "John Davis",
-      role: "EHS Manager",
-      company: "Construction Group Ltd.",
-      avatar: "/placeholder.svg?height=60&width=60&text=JD",
-    },
-    {
-      quote:
-        "Our inspectors love the mobile app. It guides them through the process, works offline perfectly, and the instant reports have drastically cut down admin time back in the office.",
-      name: "Maria Garcia",
-      role: "Quality Assurance Lead",
-      company: "Food Processing Co.",
-      avatar: "/placeholder.svg?height=60&width=60&text=MG",
-    },
-    {
-      quote:
-        "The template builder is so flexible that we've been able to digitize every single inspection process in our organization. The ROI has been incredible.",
-      name: "Robert Chen",
-      role: "Operations Director",
-      company: "Global Manufacturing Inc.",
-      avatar: "/placeholder.svg?height=60&width=60&text=RC",
-    },
-  ]
+
 
   // FAQs
   const faqs = [
@@ -240,7 +227,7 @@ const Home2: React.FC = () => {
     }, 3000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [bgImages.length])
 
   // Scroll effect for header
   useEffect(() => {
@@ -305,7 +292,6 @@ const Home2: React.FC = () => {
   const [templateRef, templateVisible] = useOnScreen({ threshold: 0.1 })
   const [mobileRef, mobileVisible] = useOnScreen({ threshold: 0.1 })
   const [industriesRef, industriesVisible] = useOnScreen({ threshold: 0.1 })
-  const [testimonialsRef, testimonialsVisible] = useOnScreen({ threshold: 0.1 })
   const [ctaRef, ctaVisible] = useOnScreen({ threshold: 0.1 })
 
   // Custom cursor state management
@@ -510,23 +496,12 @@ const Home2: React.FC = () => {
             </ul>
 
             <div className="Home2-nav-buttons">
-              <Link 
-                to="/login" 
-                className="Home2-btn Home2-btn-outline" 
-                onMouseEnter={enterButton} 
-                onMouseLeave={leaveHover}
-              >
+              <a href="login" className="Home2-btn Home2-btn-outline" onMouseEnter={enterButton} onMouseLeave={leaveHover}>
                 Log In
-              </Link>
-
-              <Link 
-                to="/register" 
-                className="Home2-btn Home2-btn-primary" 
-                onMouseEnter={enterButton} 
-                onMouseLeave={leaveHover}
-              >
+              </a>
+              <a href="register" className="Home2-btn Home2-btn-primary" onMouseEnter={enterButton} onMouseLeave={leaveHover}>
                 Start Free
-              </Link>
+              </a>
             </div>
           </nav>
         </div>
@@ -552,14 +527,14 @@ const Home2: React.FC = () => {
                 reports.
               </p>
               <div className="Home2-hero-buttons">
-                <Link
-                  to="/register"
+                <a
+                  href="register"
                   className="Home2-btn Home2-btn-primary Home2-btn-lg Home2-btn-hover-effect"
                   onMouseEnter={enterButton}
                   onMouseLeave={leaveHover}
                 >
                   Start Building Templates Free
-                </Link>
+                </a>
                 <a
                   href="#demo"
                   className="Home2-btn Home2-btn-outline Home2-btn-lg Home2-btn-hover-effect"
@@ -830,7 +805,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-template-img-container Home2-animate-on-scroll ${templateVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src="/placeholder.svg?height=500&width=600&text=Template+Builder"
+                src={HX}
                 alt="Template Builder"
                 width={600}
                 height={500}
@@ -849,7 +824,7 @@ const Home2: React.FC = () => {
               className={`Home2-feature-image Home2-mobile-img-container Home2-animate-on-scroll ${mobileVisible ? "Home2-animate-in" : ""}`}
             >
               <Image
-                src="/placeholder.svg?height=500&width=600&text=Mobile+App"
+                src={AZ}
                 alt="Mobile App"
                 width={600}
                 height={500}
@@ -923,56 +898,7 @@ const Home2: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="Home2-testimonials-section" ref={testimonialsRef}>
-        <div className="Home2-container">
-          <h2 className="Home2-section-title">Trusted for Critical Inspections Globally</h2>
 
-          <div className="Home2-logos-row">
-            {[1, 2, 3, 4, 5].map((logo) => (
-              <div key={logo} className="Home2-logo-item Home2-animate-on-scroll" style={{ animationDelay: `${logo * 0.1}s` }}>
-                <Image
-                  src={`/placeholder.svg?height=60&width=120&text=LOGO${logo}`}
-                  alt={`Client Logo ${logo}`}
-                  width={120}
-                  height={60}
-                  className="Home2-client-logo"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="Home2-testimonials-slider">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="Home2-testimonial-card Home2-animate-on-scroll"
-                style={{ animationDelay: `${index * 0.2}s` }}
-              >
-                <div className="Home2-testimonial-content">
-                  <div className="Home2-quote-mark">"</div>
-                  <p className="Home2-testimonial-quote">{testimonial.quote}</p>
-                  <div className="Home2-testimonial-author">
-                    <Image
-                      src={testimonial.avatar || "/placeholder.svg"}
-                      alt={testimonial.name}
-                      width={60}
-                      height={60}
-                      className="Home2-author-avatar"
-                    />
-                    <div className="Home2-author-info">
-                      <h4 className="Home2-author-name">{testimonial.name}</h4>
-                      <p className="Home2-author-role">
-                        {testimonial.role}, {testimonial.company}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section */}
       <section className="Home2-faq-section">
@@ -1025,14 +951,14 @@ const Home2: React.FC = () => {
               efficient mobile inspections using StreamLineer.
             </p>
             <div className="Home2-cta-buttons">
-              <Link
-                to="/register"
+              <a
+                href="register"
                 className="Home2-btn Home2-btn-primary Home2-btn-lg Home2-btn-hover-effect"
                 onMouseEnter={enterButton}
                 onMouseLeave={leaveHover}
               >
                 Start Building Templates Free
-              </Link>
+              </a>
               <a
                 href="#request-demo"
                 className="Home2-btn Home2-btn-outline Home2-btn-lg Home2-btn-hover-effect"
