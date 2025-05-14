@@ -1,16 +1,14 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import "../assets/login.css";
-import logs from "../assets/img/logs.png";
-import { fetchCSRFToken } from "../utils/csrf";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-
+import './login.css';
+import { fetchCSRFToken } from '../utils/csrf'; // Make sure this path is correct
 
 const Login: React.FC = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [passwordVisible, setPasswordVisible] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const togglePasswordVisibility = () => {
@@ -52,10 +50,9 @@ const Login: React.FC = () => {
             <div className="login-content">
                 <div className="login-left">
                     <div className="logo-section">
-                        <img src={logs} alt="Fashcognitive Logo" className="company-logo" />
                         <div className="welcome-text">
-                            <h1 className="text1">Welcome Back to<br />Fashcognitive</h1>
-                            <p className="text2">Manage your assets and operations, all in one place with our AI-powered solutions.</p>
+                            <h1 className='text1'>Welcome Back to<br />Streamlineer<span className="accent-dot">.</span></h1>
+                            <p className='text2'>Build smarter checklists and conduct flawless inspections with our intuitive platform.</p>
                         </div>
                     </div>
                 </div>
