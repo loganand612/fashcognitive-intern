@@ -94,7 +94,7 @@ const TemplateView = () => {
     <div className="tp-app-container">
       {/* Top Navigation */}
       <nav className="dashboard-navbar">
-        <div className="dashboard-navbar-brand">STREAMLINEER</div>
+        <div className="dashboard-navbar-brand">FASHCOGNITIVE</div>
         <div className="dashboard-navbar-actions">
           <button className="dashboard-nav-button">
             <User className="dashboard-nav-icon" />

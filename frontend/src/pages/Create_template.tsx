@@ -2961,7 +2961,7 @@ const CreateTemplate = () => {
     <div className="template-builder">
       <div className="top-navigation">
         <div className="nav-left">
-          <div className="company-name">STREAMLINEER</div>
+          <div className="company-name">FASHCOGNITIVE</div>
           <button className="back-button" onClick={handleBack}>
             <ArrowLeft size={16} />
             <span>back</span>

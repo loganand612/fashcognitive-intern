@@ -144,33 +144,7 @@ const Home2: React.FC = () => {
     { icon: <BarChart3 size={24} />, title: "Inventory & Stock Checks" },
   ]
 
-  // Testimonials
-  const testimonials = [
-    {
-      quote:
-        "Creating and updating our complex safety checklists used to take days. With StreamLineer, we can build and deploy new templates in under an hour. It's incredibly intuitive.",
-      name: "John Davis",
-      role: "EHS Manager",
-      company: "Construction Group Ltd.",
-      avatar: "/placeholder.svg?height=60&width=60&text=JD",
-    },
-    {
-      quote:
-        "Our inspectors love the mobile app. It guides them through the process, works offline perfectly, and the instant reports have drastically cut down admin time back in the office.",
-      name: "Maria Garcia",
-      role: "Quality Assurance Lead",
-      company: "Food Processing Co.",
-      avatar: "/placeholder.svg?height=60&width=60&text=MG",
-    },
-    {
-      quote:
-        "The template builder is so flexible that we've been able to digitize every single inspection process in our organization. The ROI has been incredible.",
-      name: "Robert Chen",
-      role: "Operations Director",
-      company: "Global Manufacturing Inc.",
-      avatar: "/placeholder.svg?height=60&width=60&text=RC",
-    },
-  ]
+
 
   // FAQs
   const faqs = [
@@ -318,7 +292,6 @@ const Home2: React.FC = () => {
   const [templateRef, templateVisible] = useOnScreen({ threshold: 0.1 })
   const [mobileRef, mobileVisible] = useOnScreen({ threshold: 0.1 })
   const [industriesRef, industriesVisible] = useOnScreen({ threshold: 0.1 })
-  const [testimonialsRef, testimonialsVisible] = useOnScreen({ threshold: 0.1 })
   const [ctaRef, ctaVisible] = useOnScreen({ threshold: 0.1 })
 
   // Custom cursor state management
@@ -925,56 +898,7 @@ const Home2: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="Home2-testimonials-section" ref={testimonialsRef}>
-        <div className="Home2-container">
-          <h2 className="Home2-section-title">Trusted for Critical Inspections Globally</h2>
 
-          <div className="Home2-logos-row">
-            {[1, 2, 3, 4, 5].map((logo) => (
-              <div key={logo} className="Home2-logo-item Home2-animate-on-scroll" style={{ animationDelay: `${logo * 0.1}s` }}>
-                <Image
-                  src={`/placeholder.svg?height=60&width=120&text=LOGO${logo}`}
-                  alt={`Client Logo ${logo}`}
-                  width={120}
-                  height={60}
-                  className="Home2-client-logo"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="Home2-testimonials-slider">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="Home2-testimonial-card Home2-animate-on-scroll"
-                style={{ animationDelay: `${index * 0.2}s` }}
-              >
-                <div className="Home2-testimonial-content">
-                  <div className="Home2-quote-mark">"</div>
-                  <p className="Home2-testimonial-quote">{testimonial.quote}</p>
-                  <div className="Home2-testimonial-author">
-                    <Image
-                      src={testimonial.avatar || "/placeholder.svg"}
-                      alt={testimonial.name}
-                      width={60}
-                      height={60}
-                      className="Home2-author-avatar"
-                    />
-                    <div className="Home2-author-info">
-                      <h4 className="Home2-author-name">{testimonial.name}</h4>
-                      <p className="Home2-author-role">
-                        {testimonial.role}, {testimonial.company}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section */}
       <section className="Home2-faq-section">

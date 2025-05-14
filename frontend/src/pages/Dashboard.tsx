@@ -18,8 +18,36 @@ import {
 } from 'lucide-react';
 import ConnectionsPanel, { Connection } from './components/ConnectionsPanel';
 
+interface Template {
+  id: number;
+  title: string;
+  lastModified?: string;
+  access?: string;
+  createdBy: string;
+  type?: string;
+  status?: string;
+  date?: string;
+}
+
 const Dashboard: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Get the logged-in user from localStorage
+  const loggedInUser = localStorage.getItem("username");
+
+  // API endpoints to try
+  const endpointsToTry = [
+    "/api/templates/",
+    "/templates_api/",
+    "/templates/",
+    "/api/v1/templates/",
+    "/api/user/templates/",
+    "/dashboard/templates/",
+    "/api/users/templates/",
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,6 +74,106 @@ const Dashboard: React.FC = () => {
       window.removeEventListener('scroll', animateOnScroll);
     };
   }, []);
+
+  // Fetch templates from API
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoading(true);
+      setError("");
+
+      for (const endpoint of endpointsToTry) {
+        try {
+          const fullUrl = `http://127.0.0.1:8000${endpoint}`;
+          const response = await fetch(fullUrl);
+
+          if (response.ok) {
+            try {
+              console.log("Logged in user:", loggedInUser);
+
+              const data = await response.json();
+              console.log("Full response data:", data);
+              console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
+
+              // Filter templates by the logged-in user
+              const userTemplates = data.filter((template: Template) => template.createdBy === loggedInUser);
+
+              // Add type and status for display in the dashboard
+              const formattedTemplates = userTemplates.map((template: Template) => ({
+                ...template,
+                type: "Template",
+                status: "Completed",
+                date: template.lastModified || new Date().toISOString().split('T')[0]
+              }));
+
+              // Sort templates by date (most recent first) and take only the 3 most recent
+              const sortedTemplates = [...formattedTemplates].sort((a, b) => {
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
+                return dateB - dateA;
+              }).slice(0, 3);
+
+              setTemplates(sortedTemplates);
+              setLoading(false);
+              return;
+            } catch (err) {
+              console.error("Error parsing JSON:", err);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching from endpoint:", endpoint, err);
+        }
+      }
+
+      // If we couldn't fetch from any endpoint, use demo data (only 3 most recent)
+      setError("Could not connect to any templates API endpoint");
+
+      // Demo data with 3 recent templates
+      const demoTemplates = [
+        {
+          id: 1,
+          title: "Safety Inspection Form (Demo)",
+          lastModified: "2024-03-01",
+          access: "All users",
+          createdBy: "demoUser",
+          type: "Template",
+          status: "Completed",
+          date: "2024-03-01"
+        },
+        {
+          id: 2,
+          title: "Weekly Equipment Check (Demo)",
+          lastModified: "2024-02-28",
+          access: "Team managers",
+          createdBy: "demoUser",
+          type: "Template",
+          status: "In Progress",
+          date: "2024-02-28"
+        },
+        {
+          id: 3,
+          title: "Monthly Fire Safety Audit (Demo)",
+          lastModified: "2024-02-27",
+          access: "Safety officers",
+          createdBy: "demoUser",
+          type: "Template",
+          status: "Completed",
+          date: "2024-02-27"
+        },
+      ];
+
+      // Sort by date (most recent first)
+      const sortedDemoTemplates = [...demoTemplates].sort((a, b) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      setTemplates(sortedDemoTemplates);
+      setLoading(false);
+    };
+
+    fetchTemplates();
+  }, [loggedInUser]);
 
   const [connections, setConnections] = useState<Connection[]>([{
     id: '1', name: 'Grace Miller', email: 'grace.miller@example.com', initials: 'GM', status: 'active'
@@ -119,16 +247,12 @@ const Dashboard: React.FC = () => {
   ];
 
   const summaryCards = [
-    { icon: FileText, count: '24', label: 'Templates Created' },
+    { icon: FileText, count: templates.length.toString(), label: 'Templates Created' },
     { icon: ClipboardCheck, count: '18/25', label: 'Inspections', sublabel: 'Completed/Total' },
     { icon: AlertCircle, count: '3', label: 'Open Issues' }
   ];
 
-  const recentActivity = [
-    { id: 1, title: 'Safety Inspection Template', type: 'Template', date: '2024-03-01', status: 'Completed' },
-    { id: 2, title: 'Monthly Equipment Check', type: 'Inspection', date: '2024-02-28', status: 'In Progress' },
-    { id: 3, title: 'Emergency Protocol', type: 'Template', date: '2024-02-27', status: 'Completed' }
-  ];
+  // We'll use the templates fetched from the API instead of hardcoded data
 
   return (
     <div className="dashboard-container">
@@ -229,22 +353,40 @@ const Dashboard: React.FC = () => {
         </div>
 
         <section className="dashboard-recent-activity dashboard-animate-on-scroll">
-          <h2 className="dashboard-section-title">Recent Activity</h2>
+          <h2 className="dashboard-section-title">Recent Templates</h2>
+
+          {loading && (
+            <div className="dashboard-loading">Loading recent templates...</div>
+          )}
+
+          {error && (
+            <div className="dashboard-error-message">
+              {error}
+              <p>Showing demo data for display purposes.</p>
+            </div>
+          )}
+
           <div className="dashboard-activity-list">
-            {recentActivity.map((item) => (
-              <div key={item.id} className="dashboard-activity-item">
-                <div className="dashboard-activity-info">
-                  <h3 className="dashboard-activity-title">{item.title}</h3>
-                  <div className="dashboard-activity-meta">
-                    <span className="dashboard-meta-type">{item.type}</span>
-                    <span className="dashboard-meta-date">{item.date}</span>
-                  </div>
-                </div>
-                <span className={`dashboard-status-badge ${item.status.toLowerCase()}`}>
-                  {item.status}
-                </span>
+            {templates.length === 0 && !loading ? (
+              <div className="dashboard-no-activity">
+                <p>No recent templates found. Create a template to get started.</p>
               </div>
-            ))}
+            ) : (
+              templates.map((template) => (
+                <div key={template.id} className="dashboard-activity-item">
+                  <div className="dashboard-activity-info">
+                    <h3 className="dashboard-activity-title">{template.title}</h3>
+                    <div className="dashboard-activity-meta">
+                      <span className="dashboard-meta-type">{template.type}</span>
+                      <span className="dashboard-meta-date">{template.date}</span>
+                    </div>
+                  </div>
+                  <span className={`dashboard-status-badge ${template.status?.toLowerCase() || 'completed'}`}>
+                    {template.status || 'Completed'}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </main>
