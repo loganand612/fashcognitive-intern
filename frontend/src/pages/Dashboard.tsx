@@ -133,7 +133,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="dashboard-container">
       <nav className={`dashboard-navbar ${isScrolled ? 'scrolled' : ''}`}>
-        <div className="dashboard-navbar-brand">FASHCOGNITIVE</div>
+        <div className="dashboard-navbar-brand">STREAMLINEER</div>
         <div className="dashboard-navbar-actions">
           <button className="dashboard-nav-button">
             <User className="dashboard-nav-icon" />

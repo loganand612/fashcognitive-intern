@@ -3364,7 +3364,7 @@ const Garment_Template: React.FC = () => {
     <div className="garment-template-builder-page">
       <div className="top-navigation">
         <div className="nav-left">
-          <div className="company-name">FASHCOGNITIVE</div>
+          <div className="company-name">STREAMLINEER</div>
           <button className="back-button" onClick={handleBack}>
             <ArrowLeft size={16} />
             <span>back</span>

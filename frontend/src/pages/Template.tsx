@@ -195,7 +195,7 @@ const TemplatePage: React.FC = () => {
   return (
     <div className="tp-app-container">
       <nav className="tp-navbar">
-        <div className="tp-navbar-brand">FASHCOGNITIVE</div>
+        <div className="tp-navbar-brand">STREAMLINEER</div>
         <div className="tp-navbar-actions">
           <button className="tp-nav-button">
             <User className="tp-nav-icon" />
