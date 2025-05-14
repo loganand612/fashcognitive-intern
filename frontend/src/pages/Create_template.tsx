@@ -42,13 +42,13 @@ import {
   CheckCircle,
 } from "lucide-react"
 import { jsPDF } from "jspdf"
-import AccessManager from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessManager"
-import { fetchCSRFToken } from "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/utils/csrf"
-import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/assets/Create_template.css"
-import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/TemplateBuilderLayout.css"
-import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/FixTransitions.css"
-import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/ReportPageFix.css"
-import "/Users/thilak/PythonFiles/Intern/safety_culture/fashcognitive-intern/frontend/src/pages/components/AccessPageFix.css"
+import AccessManager from "../pages/components/AccessManager"
+import { fetchCSRFToken } from "../utils/csrf"
+import "../assets/Create_template.css"
+import "../pages/components/TemplateBuilderLayout.css"
+import "../pages/components/FixTransitions.css"
+import "../pages/components/ReportPageFix.css"
+import "../pages/components/AccessPageFix.css"
 
 // U
 // Utility functions
@@ -1281,8 +1281,8 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
   )
 
   return (
-    <div className="report-container">
-      <div className="report-header">
+    <div className="report-container" style={{ width: "100%" }}>
+      <div className="report-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2>Report Preview</h2>
         <button className="generate-pdf-button" onClick={generatePDF}>
           <Download className="download-icon" />
@@ -1586,8 +1586,8 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
         </div>
       </div>
 
-      <div className="report-footer">
-        <div className="report-footer-buttons">
+      <div className="report-footer" style={{ display: "flex", justifyContent: "center" }}>
+        <div className="report-footer-buttons" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
           <button className="report-footer-button">
             <FileText className="report-footer-icon" />
             Web preview
@@ -3054,10 +3054,10 @@ const CreateTemplate = () => {
         )}
         {activeTab === 2 && (
           <div className="report-page-container">
-            <div style={{ width: "100%", maxWidth: "1200px" }}>
+            <div style={{ width: "100%", maxWidth: "1200px", display: "flex", flexDirection: "column", alignItems: "center" }}>
               {!isLoading && template?.title && <Report template={template} />}
             </div>
-            <div className="report-footer">
+            <div className="report-footer" style={{ display: "flex", justifyContent: "center" }}>
               <button className="next-button" onClick={() => setActiveTab(3)}>
                 Next: Access
                 <ArrowRight size={16} />

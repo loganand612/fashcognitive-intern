@@ -76,7 +76,7 @@ interface Question {
 }
 
 // Garment-specific types
-type AQLLevel = "1.0" | "1.5" | "2.5" | "4.0" | "6.5"
+type AQLLevel = "1.5" | "2.5" | "4.0" | "6.5"
 type InspectionLevel = "I" | "II" | "III" | "S1" | "S2" | "S3" | "S4"
 type SamplingPlan = "Single" | "Double" | "Multiple"
 type Severity = "Normal" | "Tightened" | "Reduced"
@@ -175,7 +175,7 @@ interface DefectData {
 // This function will be defined inside the component
 
 // Constants
-const AQL_LEVELS: AQLLevel[] = ["1.0", "1.5", "2.5", "4.0", "6.5"]
+const AQL_LEVELS: AQLLevel[] = ["1.5", "2.5", "4.0", "6.5"]
 const INSPECTION_LEVELS: InspectionLevel[] = ["I", "II", "III", "S1", "S2", "S3", "S4"]
 const SAMPLING_PLANS: SamplingPlan[] = ["Single", "Double", "Multiple"]
 const SEVERITIES: Severity[] = ["Normal", "Tightened", "Reduced"]
