@@ -6,6 +6,7 @@ import { useParams } from "react-router-dom";
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
+import SimpleLogicRules, { EditLogicButton } from "./components/SimpleLogicRules"
 import {
   ChevronDown,
   ChevronUp,
@@ -49,6 +50,7 @@ import "../pages/components/TemplateBuilderLayout.css"
 import "../pages/components/FixTransitions.css"
 import "../pages/components/ReportPageFix.css"
 import "../pages/components/AccessPageFix.css"
+import "./LogicRules.css"
 
 // U
 // Utility functions
@@ -214,6 +216,26 @@ interface Template {
 // Utility type guard
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((v: unknown) => typeof v === "string")
+
+// Helper function to get all questions except the current one
+const getAllQuestionsExcept = (questionId: string) => {
+  // This function will be used inside the component where template is defined
+  // We'll move the implementation there
+  return [];
+}
+
+// Helper function to get options for a question based on its type
+const getOptionsForQuestion = (question: Question) => {
+  if (question.options && question.options.length > 0) {
+    return question.options;
+  }
+
+  if (question.responseType === "Yes/No") {
+    return ["Yes", "No", "N/A"];
+  }
+
+  return [];
+}
 
 // Helper function to check if a trigger should be shown based on the question's logic rules
 const shouldShowTrigger = (question: Question, triggerType: TriggerAction): boolean => {
@@ -2000,6 +2022,15 @@ const CreateTemplate = () => {
     setDropTarget(null)
   }
 
+  // Helper function to get all questions except the current one
+  const getAllQuestionsExcept = (questionId: string) => {
+    return template.sections.flatMap((s) =>
+      s.questions
+        .filter(q => q.id !== questionId)
+        .map((q) => ({ id: q.id, text: q.text }))
+    );
+  }
+
   // Rendering Helpers
   const renderResponseTypeIcon = (type: ResponseType) => {
     switch (type) {
@@ -2244,10 +2275,19 @@ const CreateTemplate = () => {
           {renderQuestionResponse(question, sectionId)}
         </div>
         <div className="question-footer">
-          <EnhancedAddLogicButton
-            hasRules={question.logicRules?.length ? true : false}
-            onClick={() => setShowLogicPanel(showLogicPanel === question.id ? null : question.id)}
-          />
+          <div style={{ position: 'relative' }}>
+            <EditLogicButton
+              hasRules={question.logicRules?.length ? true : false}
+              onClick={() => setShowLogicPanel(showLogicPanel === question.id ? null : question.id)}
+            />
+            {showLogicPanel === question.id && (
+              <SimpleLogicRules
+                rules={question.logicRules || []}
+                onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
+                onClose={() => setShowLogicPanel(null)}
+              />
+            )}
+          </div>
           <label className="required-checkbox">
             <input
               type="checkbox"
@@ -2267,16 +2307,6 @@ const CreateTemplate = () => {
           <button className="delete-question" onClick={() => deleteQuestion(sectionId, question.id)}>
             <Trash2 size={16} />
           </button>
-          {showLogicPanel === question.id && (
-            <EnhancedLogicRulesContainer
-              questionType={question.responseType}
-              rules={question.logicRules || []}
-              options={question.options || []}
-              onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
-              questions={template.sections.flatMap((s) => s.questions.map((q) => ({ id: q.id, text: q.text })))}
-              onClose={() => setShowLogicPanel(null)}
-            />
-          )}
         </div>
       </div>
     )
@@ -2961,7 +2991,7 @@ const CreateTemplate = () => {
     <div className="template-builder">
       <div className="top-navigation">
         <div className="nav-left">
-          <div className="company-name">FASHCOGNITIVE</div>
+          <div className="company-name">STREAMLINEER</div>
           <button className="back-button" onClick={handleBack}>
             <ArrowLeft size={16} />
             <span>back</span>
