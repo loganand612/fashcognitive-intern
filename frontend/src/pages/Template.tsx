@@ -44,9 +44,19 @@ interface DebugInfo {
   responseData?: any
 }
 
+interface DialogPosition {
+  top: number
+  left: number
+}
+
 const TemplatePage: React.FC = () => {
   const navigate = useNavigate()
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const startFromScratchRef = useRef<HTMLDivElement>(null)
+  const startFromScratchDialogRef = useRef<HTMLDivElement>(null)
+
+  const [showStartFromScratchDialog, setShowStartFromScratchDialog] = useState(false)
+  const [startFromScratchDialogPosition, setStartFromScratchDialogPosition] = useState<DialogPosition>({ top: 0, left: 0 })
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/dashboard" },
@@ -89,11 +99,41 @@ const TemplatePage: React.FC = () => {
     setShowCreateDropdown(!showCreateDropdown)
   }
 
+  // Calculate position and toggle the start from scratch dialog
+  const toggleStartFromScratchDialog = () => {
+    if (startFromScratchRef.current) {
+      const rect = startFromScratchRef.current.getBoundingClientRect()
+
+      // Position the dialog below the button
+      const newPosition = {
+        top: rect.bottom + 10, // 10px below the button
+        left: rect.left + (rect.width / 2) - 125 // Center the 250px wide dialog under the button
+      }
+      console.log("Button position:", rect)
+      console.log("Dialog position:", newPosition)
+
+      setStartFromScratchDialogPosition(newPosition)
+      setShowStartFromScratchDialog(!showStartFromScratchDialog)
+    } else {
+      console.error("Start from scratch button ref not available")
+    }
+  }
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowCreateDropdown(false)
+      }
+
+      if (
+        showStartFromScratchDialog &&
+        startFromScratchDialogRef.current &&
+        startFromScratchRef.current &&
+        !startFromScratchDialogRef.current.contains(event.target as Node) &&
+        !startFromScratchRef.current.contains(event.target as Node)
+      ) {
+        setShowStartFromScratchDialog(false)
       }
     }
 
@@ -101,7 +141,25 @@ const TemplatePage: React.FC = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [])
+  }, [showStartFromScratchDialog])
+
+  // Update dialog position if window is resized
+  useEffect(() => {
+    const handleResize = () => {
+      if (showStartFromScratchDialog && startFromScratchRef.current) {
+        const rect = startFromScratchRef.current.getBoundingClientRect()
+        setStartFromScratchDialogPosition({
+          top: rect.bottom + 10,
+          left: rect.left + (rect.width / 2) - 125
+        })
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [showStartFromScratchDialog])
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -274,8 +332,9 @@ const TemplatePage: React.FC = () => {
             <div className="tp-creation-options">
               <div
                 className="tp-option-card"
-                onClick={toggleCreateDropdown}
+                onClick={toggleStartFromScratchDialog}
                 style={{ cursor: 'pointer' }}
+                ref={startFromScratchRef}
               >
                 <div className="tp-option-icon"><Plus size={24} /></div>
                 <h3>Start from scratch</h3>
@@ -381,6 +440,38 @@ const TemplatePage: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {/* Start from scratch dialog - rendered at the document level for better positioning */}
+      {showStartFromScratchDialog && (
+        <div
+          className="tp-start-scratch-dialog"
+          ref={startFromScratchDialogRef}
+          style={{
+            position: 'fixed',
+            top: `${startFromScratchDialogPosition.top}px`,
+            left: `${startFromScratchDialogPosition.left}px`,
+            zIndex: 2000,
+            width: '250px',
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #e9ecef',
+            overflow: 'hidden',
+            animation: 'fadeInUp 0.3s forwards'
+          }}
+        >
+          <div style={{ padding: '8px 0' }}>
+            <a href="/create_templates" className="tp-dropdown-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem' }}>
+              <FileText size={16} />
+              Standard Template
+            </a>
+            <a href="/garment-template" className="tp-dropdown-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem' }}>
+              <FileText size={16} />
+              Garment Template
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
