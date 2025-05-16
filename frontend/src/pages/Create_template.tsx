@@ -6,6 +6,7 @@ import { useParams } from "react-router-dom";
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
+import SimpleLogicRules from "./components/SimpleLogicRules"
 import {
   ChevronDown,
   ChevronUp,
@@ -49,6 +50,7 @@ import "../pages/components/TemplateBuilderLayout.css"
 import "../pages/components/FixTransitions.css"
 import "../pages/components/ReportPageFix.css"
 import "../pages/components/AccessPageFix.css"
+import "./LogicRules.css"
 
 // U
 // Utility functions
@@ -214,6 +216,26 @@ interface Template {
 // Utility type guard
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((v: unknown) => typeof v === "string")
+
+// Helper function to get all questions except the current one
+const getAllQuestionsExcept = (questionId: string) => {
+  // This function will be used inside the component where template is defined
+  // We'll move the implementation there
+  return [];
+}
+
+// Helper function to get options for a question based on its type
+const getOptionsForQuestion = (question: Question) => {
+  if (question.options && question.options.length > 0) {
+    return question.options;
+  }
+
+  if (question.responseType === "Yes/No") {
+    return ["Yes", "No", "N/A"];
+  }
+
+  return [];
+}
 
 // Helper function to check if a trigger should be shown based on the question's logic rules
 const shouldShowTrigger = (question: Question, triggerType: TriggerAction): boolean => {
@@ -554,7 +576,9 @@ const EnhancedLogicTriggerSelector: React.FC<{
   className?: string
 }> = ({ selectedTrigger, onTriggerSelect, onConfigChange, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const triggers: { value: TriggerAction; label: string; icon: React.ReactNode; description: string }[] = [
     {
@@ -589,6 +613,42 @@ const EnhancedLogicTriggerSelector: React.FC<{
     },
   ]
 
+  // Position the dropdown when it opens
+  const updateDropdownPosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const windowWidth = window.innerWidth
+      const windowHeight = window.innerHeight
+
+      // Calculate left position, ensuring it doesn't go off-screen
+      let leftPos = rect.left
+      if (leftPos + 260 > windowWidth) {
+        leftPos = Math.max(0, windowWidth - 270)
+      }
+
+      // Calculate top position, ensuring it doesn't go off-screen
+      let topPos = rect.bottom
+      const dropdownHeight = 300 // Approximate max height of dropdown
+      if (topPos + dropdownHeight > windowHeight) {
+        // Position above the button if there's not enough space below
+        if (rect.top > dropdownHeight) {
+          topPos = rect.top - dropdownHeight
+        }
+      }
+
+      setDropdownPosition({
+        top: topPos,
+        left: leftPos
+      })
+    }
+  }
+
+  // Handle opening the dropdown
+  const handleOpenDropdown = () => {
+    updateDropdownPosition()
+    setIsOpen(true)
+  }
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -600,12 +660,36 @@ const EnhancedLogicTriggerSelector: React.FC<{
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  // Update position when window is resized or scrolled
+  useEffect(() => {
+    if (isOpen) {
+      const handleResize = () => {
+        updateDropdownPosition()
+      }
+      const handleScroll = () => {
+        updateDropdownPosition()
+      }
+
+      window.addEventListener('resize', handleResize)
+      window.addEventListener('scroll', handleScroll, true) // Capture phase to detect all scrolls
+
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        window.removeEventListener('scroll', handleScroll, true)
+      }
+    }
+  }, [isOpen])
+
   const selectedTriggerInfo = selectedTrigger ? triggers.find((t) => t.value === selectedTrigger) : null
 
   return (
     <div className={`enhanced-logic-trigger-selector ${className}`} ref={dropdownRef}>
       {!selectedTrigger ? (
-        <button className="enhanced-trigger-button" onClick={() => setIsOpen(!isOpen)}>
+        <button
+          className="enhanced-trigger-button"
+          onClick={handleOpenDropdown}
+          ref={buttonRef}
+        >
           <Plus className="trigger-plus-icon" />
           <span>Add trigger</span>
         </button>
@@ -626,7 +710,26 @@ const EnhancedLogicTriggerSelector: React.FC<{
       )}
 
       {isOpen && !selectedTrigger && (
-        <div className="enhanced-trigger-dropdown">
+        <>
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              zIndex: 1055
+            }}
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className="enhanced-trigger-dropdown"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`
+            }}
+          >
           {triggers.map((trigger) => (
             <div
               key={trigger.value}
@@ -643,7 +746,8 @@ const EnhancedLogicTriggerSelector: React.FC<{
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   )
@@ -886,7 +990,7 @@ const EnhancedLogicRulesContainer: React.FC<{
 
 const EnhancedAddLogicButton: React.FC<{
   hasRules: boolean
-  onClick: () => void
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
   className?: string
 }> = ({ hasRules, onClick, className = "" }) => {
   return (
@@ -1716,6 +1820,7 @@ const CreateTemplate = () => {
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
   const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
+  const [logicButtonPosition, setLogicButtonPosition] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Add a class to the document body when mobile preview is hidden
@@ -2000,6 +2105,15 @@ const CreateTemplate = () => {
     setDropTarget(null)
   }
 
+  // Helper function to get all questions except the current one
+  const getAllQuestionsExcept = (questionId: string) => {
+    return template.sections.flatMap((s) =>
+      s.questions
+        .filter(q => q.id !== questionId)
+        .map((q) => ({ id: q.id, text: q.text }))
+    );
+  }
+
   // Rendering Helpers
   const renderResponseTypeIcon = (type: ResponseType) => {
     switch (type) {
@@ -2244,39 +2358,53 @@ const CreateTemplate = () => {
           {renderQuestionResponse(question, sectionId)}
         </div>
         <div className="question-footer">
-          <EnhancedAddLogicButton
-            hasRules={question.logicRules?.length ? true : false}
-            onClick={() => setShowLogicPanel(showLogicPanel === question.id ? null : question.id)}
-          />
-          <label className="required-checkbox">
-            <input
-              type="checkbox"
-              checked={question.required}
-              onChange={(e) => updateQuestion(sectionId, question.id, { required: e.target.checked })}
+          <div style={{ position: 'relative' }}>
+            <EnhancedAddLogicButton
+              hasRules={question.logicRules?.length ? true : false}
+              onClick={(e) => {
+                const buttonRect = e.currentTarget.getBoundingClientRect();
+                setLogicButtonPosition({
+                  top: buttonRect.top,
+                  left: buttonRect.left,
+                  width: buttonRect.width,
+                  height: buttonRect.height
+                });
+                setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
+              }}
             />
-            <span>Required</span>
-          </label>
-          <label className="required-checkbox">
-            <input
-              type="checkbox"
-              checked={question.flagged}
-              onChange={(e) => updateQuestion(sectionId, question.id, { flagged: e.target.checked })}
-            />
-            <span>Flag</span>
-          </label>
+            {showLogicPanel === question.id && (
+              <SimpleLogicRules
+                rules={question.logicRules || []}
+                onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
+                onClose={() => setShowLogicPanel(null)}
+                buttonPosition={logicButtonPosition || undefined}
+              />
+            )}
+          </div>
+          {/* Only show Required and Flag checkboxes when logic panel is not open */}
+          {showLogicPanel !== question.id && (
+            <>
+              <label className="required-checkbox">
+                <input
+                  type="checkbox"
+                  checked={question.required}
+                  onChange={(e) => updateQuestion(sectionId, question.id, { required: e.target.checked })}
+                />
+                <span>Required</span>
+              </label>
+              <label className="required-checkbox">
+                <input
+                  type="checkbox"
+                  checked={question.flagged}
+                  onChange={(e) => updateQuestion(sectionId, question.id, { flagged: e.target.checked })}
+                />
+                <span>Flag</span>
+              </label>
+            </>
+          )}
           <button className="delete-question" onClick={() => deleteQuestion(sectionId, question.id)}>
             <Trash2 size={16} />
           </button>
-          {showLogicPanel === question.id && (
-            <EnhancedLogicRulesContainer
-              questionType={question.responseType}
-              rules={question.logicRules || []}
-              options={question.options || []}
-              onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
-              questions={template.sections.flatMap((s) => s.questions.map((q) => ({ id: q.id, text: q.text })))}
-              onClose={() => setShowLogicPanel(null)}
-            />
-          )}
         </div>
       </div>
     )
@@ -2961,7 +3089,7 @@ const CreateTemplate = () => {
     <div className="template-builder">
       <div className="top-navigation">
         <div className="nav-left">
-          <div className="company-name">FASHCOGNITIVE</div>
+          <div className="company-name">STREAMLINEER</div>
           <button className="back-button" onClick={handleBack}>
             <ArrowLeft size={16} />
             <span>back</span>
