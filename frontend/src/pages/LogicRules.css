@@ -6,25 +6,28 @@
   margin-top: 16px;
   background-color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  position: absolute;
-  top: 100%;
+  position: fixed;
+  top: 0;
   left: 0;
-  width: 100%;
+  width: 90%;
   min-width: 320px;
   max-width: 380px;
-  z-index: 1000;
+  z-index: 1050;
   animation: fadeIn 0.2s ease-out;
   overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
@@ -66,8 +69,10 @@
   gap: 12px;
   margin: 0;
   padding: 16px 20px;
-  max-height: 400px;
+  flex: 1;
   overflow-y: auto;
+  min-height: 100px;
+  max-height: calc(80vh - 120px); /* Subtract header and footer heights */
 }
 
 .Logic-Rules-content::-webkit-scrollbar {
@@ -270,12 +275,40 @@
   width: 300px;
   background-color: white;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   animation: fadeIn 0.2s ease-out;
-  max-height: 400px;
+  max-height: 300px;
   overflow-y: auto;
+  z-index: 1100;
+  position: fixed;
+}
+
+@media (max-width: 768px) {
+  .Logic-Rules-trigger-menu-external {
+    width: 90vw;
+    max-width: 300px;
+    max-height: 50vh;
+  }
+}
+
+.Logic-Rules-trigger-menu-external::-webkit-scrollbar {
+  width: 6px;
+}
+
+.Logic-Rules-trigger-menu-external::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.Logic-Rules-trigger-menu-external::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.Logic-Rules-trigger-menu-external::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .Logic-Rules-trigger-option {
@@ -327,32 +360,7 @@
   border-top: 1px solid #e0e0e0;
 }
 
-.Logic-Rules-checkbox-group {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.Logic-Rules-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.Logic-Rules-checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: #6366f1;
-  cursor: pointer;
-}
-
-.Logic-Rules-checkbox label {
-  font-size: 13px;
-  color: #333;
-  cursor: pointer;
-  font-weight: 400;
-}
+/* Checkbox group styles removed */
 
 .Logic-Rules-add-rule {
   display: flex;

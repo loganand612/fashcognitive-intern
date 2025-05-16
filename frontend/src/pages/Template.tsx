@@ -272,7 +272,11 @@ const TemplatePage: React.FC = () => {
             </div>
 
             <div className="tp-creation-options">
-              <div className="tp-option-card">
+              <div
+                className="tp-option-card"
+                onClick={toggleCreateDropdown}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="tp-option-icon"><Plus size={24} /></div>
                 <h3>Start from scratch</h3>
                 <p>Get started with a blank template.</p>

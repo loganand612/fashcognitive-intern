@@ -1079,6 +1079,56 @@
 
 /* Logic Rules Styles are now in LogicRules.css */
 
+/* Trigger Menu Styles */
+.Logic-Rules-trigger-menu-external {
+  background-color: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 300px;
+  z-index: 1100;
+  overflow: hidden;
+}
+
+.Logic-Rules-trigger-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.Logic-Rules-trigger-option:last-child {
+  border-bottom: none;
+}
+
+.Logic-Rules-trigger-option:hover {
+  background-color: #f5f5f5;
+}
+
+.trigger-icon {
+  color: var(--color-text-secondary);
+}
+
+.trigger-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trigger-option-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.trigger-option-description {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 /* Enhanced Logic Components Styles */
 
 /* Enhanced Logic Rules Container */
@@ -1605,18 +1655,44 @@
 }
 
 .enhanced-trigger-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 8px;
+  position: fixed;
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  z-index: 10;
+  z-index: 1060; /* Higher than other dialogs */
   width: 260px;
   animation: fadeIn 0.2s ease-out;
-  overflow: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for the dropdown */
+.enhanced-trigger-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.enhanced-trigger-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.enhanced-trigger-dropdown::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.enhanced-trigger-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+@media (max-width: 768px) {
+  .enhanced-trigger-dropdown {
+    width: 90vw;
+    max-width: 260px;
+    max-height: 50vh;
+  }
 }
 
 .enhanced-trigger-option {

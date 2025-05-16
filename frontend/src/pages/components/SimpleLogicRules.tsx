@@ -54,26 +54,60 @@ interface SimpleLogicRulesProps {
   onClose: () => void;
   rules: LogicRule[];
   onRulesChange: (rules: LogicRule[]) => void;
+  buttonPosition?: { top: number; left: number; width: number; height: number };
 }
 
-const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onRulesChange }) => {
-  const [required, setRequired] = useState(false);
-  const [flag, setFlag] = useState(false);
+const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onRulesChange, buttonPosition }) => {
   const [activeTriggerIndex, setActiveTriggerIndex] = useState<number | null>(null);
   const triggerMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (triggerMenuRef.current && !triggerMenuRef.current.contains(event.target as Node)) {
-        setActiveTriggerIndex(null);
+      // Close the trigger menu if clicking outside of it
+      if (
+        activeTriggerIndex !== null &&
+        triggerMenuRef.current &&
+        !triggerMenuRef.current.contains(event.target as Node)
+      ) {
+        // Check if the click was on the trigger button itself
+        const triggerButton = triggerButtonRefs.current[activeTriggerIndex];
+        if (!triggerButton || !triggerButton.contains(event.target as Node)) {
+          setActiveTriggerIndex(null);
+        }
+      }
+    };
+
+    // Handle window resize to reposition the menu if needed
+    const handleResize = () => {
+      if (activeTriggerIndex !== null) {
+        const buttonElement = triggerButtonRefs.current[activeTriggerIndex];
+        if (buttonElement) {
+          const buttonRect = buttonElement.getBoundingClientRect();
+          const availableSpaceRight = window.innerWidth - buttonRect.right;
+          const availableSpaceBelow = window.innerHeight - buttonRect.bottom;
+
+          let top = availableSpaceBelow > 300 ? buttonRect.bottom + 5 : buttonRect.top - 300 - 5;
+          let left = availableSpaceRight > 300 ? buttonRect.left : Math.max(10, buttonRect.right - 300);
+
+          // Make sure the menu doesn't go off the screen
+          top = Math.max(10, Math.min(top, window.innerHeight - 310));
+          left = Math.max(10, Math.min(left, window.innerWidth - 310));
+
+          setTriggerMenuPosition({ top, left });
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleResize);
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      // Clean up refs when component unmounts
+      triggerButtonRefs.current = [];
     };
-  }, []);
+  }, [activeTriggerIndex]);
 
   const handleAddRule = () => {
     const newRule: LogicRule = {
@@ -103,8 +137,13 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
     onRulesChange(newRules);
   };
 
-  const handleAddTrigger = (index: number) => {
-    setActiveTriggerIndex(index);
+  const handleAddTrigger = (index: number | null) => {
+    // If the index is already active, toggle it off
+    if (activeTriggerIndex === index) {
+      setActiveTriggerIndex(null);
+    } else {
+      setActiveTriggerIndex(index);
+    }
   };
 
   const handleSelectTrigger = (index: number, trigger: TriggerAction) => {
@@ -115,18 +154,72 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
   };
 
   // Store the position of the trigger button for positioning the menu
-  const [triggerButtonRect, setTriggerButtonRect] = useState<DOMRect | null>(null);
+  const [triggerMenuPosition, setTriggerMenuPosition] = useState<{top: number, left: number} | null>(null);
+  const triggerButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Function to handle the trigger button click and store its position
+  // Function to close the trigger menu
+  const closeTriggerMenu = () => {
+    setActiveTriggerIndex(null);
+    setTriggerMenuPosition(null);
+  };
+
+  // Function to handle the trigger button click
   const handleTriggerButtonClick = (index: number, event: React.MouseEvent<HTMLButtonElement>) => {
-    const buttonRect = event.currentTarget.getBoundingClientRect();
-    setTriggerButtonRect(buttonRect);
+    // Prevent event propagation to avoid closing the menu immediately
+    event.stopPropagation();
+
+    // Get the button element that was clicked
+    const buttonElement = triggerButtonRefs.current[index];
+
+    if (buttonElement) {
+      // Get the button's position and dimensions
+      const buttonRect = buttonElement.getBoundingClientRect();
+
+      // Calculate the available space to the right and below
+      const availableSpaceRight = window.innerWidth - buttonRect.right;
+      const availableSpaceBelow = window.innerHeight - buttonRect.bottom;
+
+      // Determine the best position for the menu
+      // If there's enough space below, position it there, otherwise position it above
+      let top = availableSpaceBelow > 300 ? buttonRect.bottom + 5 : buttonRect.top - 300 - 5;
+
+      // If there's enough space to the right, position it there, otherwise position it to the left
+      let left = availableSpaceRight > 300 ? buttonRect.left : Math.max(10, buttonRect.right - 300);
+
+      // Make sure the menu doesn't go off the screen
+      top = Math.max(10, Math.min(top, window.innerHeight - 310));
+      left = Math.max(10, Math.min(left, window.innerWidth - 310));
+
+      setTriggerMenuPosition({ top, left });
+    }
+
+    // Set the active trigger index
     handleAddTrigger(index);
   };
 
   return (
     <>
-      <div className="Logic-Rules">
+      <div
+        className="Logic-Rules-backdrop"
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1040
+        }}
+      />
+      <div
+        className="Logic-Rules"
+        style={{
+          top: buttonPosition ? `${buttonPosition.top + buttonPosition.height + 10}px` : '50%',
+          left: buttonPosition ? `${buttonPosition.left}px` : '50%',
+          transform: buttonPosition ? 'none' : 'translate(-50%, -50%)'
+        }}
+      >
         <div className="Logic-Rules-header">
           <div className="Logic-Rules-title">Logic Rules</div>
           <button className="Logic-Rules-close" onClick={onClose}>
@@ -180,38 +273,88 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
                       {rule.trigger === "display_message" && "Display message"}
                     </div>
                   ) : (
-                    <button
-                      className="Logic-Rules-add-trigger"
-                      onClick={(e) => handleTriggerButtonClick(index, e)}
-                    >
-                      <Plus size={16} /> Add trigger
-                    </button>
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        className="Logic-Rules-add-trigger"
+                        onClick={(e) => handleTriggerButtonClick(index, e)}
+                        ref={(el) => { triggerButtonRefs.current[index] = el; }}
+                      >
+                        <Plus size={16} /> Add trigger
+                      </button>
+
+                      {activeTriggerIndex === index && (
+                        <div
+                          className="Logic-Rules-trigger-menu-external"
+                          ref={triggerMenuRef}
+                          style={{
+                            position: 'fixed',
+                            top: `${triggerMenuPosition?.top || 0}px`,
+                            left: `${triggerMenuPosition?.left || 0}px`,
+                            zIndex: 1100
+                          }}
+                        >
+                          <div
+                            className="Logic-Rules-trigger-option"
+                            onClick={() => handleSelectTrigger(index, "require_action")}
+                          >
+                            <FileText size={16} className="trigger-icon" />
+                            <div className="trigger-option-content">
+                              <div className="trigger-option-title">Require action</div>
+                              <div className="trigger-option-description">Require the user to take an action</div>
+                            </div>
+                          </div>
+
+                          <div
+                            className="Logic-Rules-trigger-option"
+                            onClick={() => handleSelectTrigger(index, "require_evidence")}
+                          >
+                            <Upload size={16} className="trigger-icon" />
+                            <div className="trigger-option-content">
+                              <div className="trigger-option-title">Require evidence</div>
+                              <div className="trigger-option-description">Require the user to upload evidence</div>
+                            </div>
+                          </div>
+
+                          <div
+                            className="Logic-Rules-trigger-option"
+                            onClick={() => handleSelectTrigger(index, "notify")}
+                          >
+                            <Bell size={16} className="trigger-icon" />
+                            <div className="trigger-option-content">
+                              <div className="trigger-option-title">Notify</div>
+                              <div className="trigger-option-description">Send a notification</div>
+                            </div>
+                          </div>
+
+                          <div
+                            className="Logic-Rules-trigger-option"
+                            onClick={() => handleSelectTrigger(index, "ask_questions")}
+                          >
+                            <MessageSquare size={16} className="trigger-icon" />
+                            <div className="trigger-option-content">
+                              <div className="trigger-option-title">Ask questions</div>
+                              <div className="trigger-option-description">Ask follow-up questions</div>
+                            </div>
+                          </div>
+
+                          <div
+                            className="Logic-Rules-trigger-option"
+                            onClick={() => handleSelectTrigger(index, "display_message")}
+                          >
+                            <MessageSquare size={16} className="trigger-icon" />
+                            <div className="trigger-option-content">
+                              <div className="trigger-option-title">Display message</div>
+                              <div className="trigger-option-description">Show a message to the user</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
             ))
           )}
-
-          <div className="Logic-Rules-checkbox-group">
-            <div className="Logic-Rules-checkbox">
-              <input
-                type="checkbox"
-                id="required-checkbox"
-                checked={required}
-                onChange={() => setRequired(!required)}
-              />
-              <label htmlFor="required-checkbox">Required</label>
-            </div>
-            <div className="Logic-Rules-checkbox">
-              <input
-                type="checkbox"
-                id="flag-checkbox"
-                checked={flag}
-                onChange={() => setFlag(!flag)}
-              />
-              <label htmlFor="flag-checkbox">Flag</label>
-            </div>
-          </div>
         </div>
         <div className="Logic-Rules-actions">
           <button className="Logic-Rules-add-rule" onClick={handleAddRule}>
@@ -222,75 +365,6 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
           </button>
         </div>
       </div>
-
-      {/* Render the trigger menu outside the main container */}
-      {activeTriggerIndex !== null && triggerButtonRect && (
-        <div
-          className="Logic-Rules-trigger-menu-external"
-          ref={triggerMenuRef}
-          style={{
-            position: 'fixed',
-            top: `${triggerButtonRect.top}px`,
-            left: `${triggerButtonRect.left + triggerButtonRect.width + 5}px`,
-            zIndex: 1100
-          }}
-        >
-          <div
-            className="Logic-Rules-trigger-option"
-            onClick={() => handleSelectTrigger(activeTriggerIndex, "require_action")}
-          >
-            <FileText size={16} className="trigger-icon" />
-            <div className="trigger-option-content">
-              <div className="trigger-option-title">Require action</div>
-              <div className="trigger-option-description">Require the user to take an action</div>
-            </div>
-          </div>
-
-          <div
-            className="Logic-Rules-trigger-option"
-            onClick={() => handleSelectTrigger(activeTriggerIndex, "require_evidence")}
-          >
-            <Upload size={16} className="trigger-icon" />
-            <div className="trigger-option-content">
-              <div className="trigger-option-title">Require evidence</div>
-              <div className="trigger-option-description">Require the user to upload evidence</div>
-            </div>
-          </div>
-
-          <div
-            className="Logic-Rules-trigger-option"
-            onClick={() => handleSelectTrigger(activeTriggerIndex, "notify")}
-          >
-            <Bell size={16} className="trigger-icon" />
-            <div className="trigger-option-content">
-              <div className="trigger-option-title">Notify</div>
-              <div className="trigger-option-description">Send a notification</div>
-            </div>
-          </div>
-
-          <div
-            className="Logic-Rules-trigger-option"
-            onClick={() => handleSelectTrigger(activeTriggerIndex, "ask_questions")}
-          >
-            <MessageSquare size={16} className="trigger-icon" />
-            <div className="trigger-option-content">
-              <div className="trigger-option-title">Ask questions</div>
-              <div className="trigger-option-description">Ask follow-up questions</div>
-            </div>
-          </div>
-
-          <div
-            className="Logic-Rules-trigger-option"
-            onClick={() => handleSelectTrigger(activeTriggerIndex, "display_message")}
-          >
-            <MessageSquare size={16} className="trigger-icon" />
-            <div className="trigger-option-content">
-              <div className="trigger-option-title">Display message</div>
-              <div className="trigger-option-description">Show a message to the user</div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
