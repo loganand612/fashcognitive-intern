@@ -2445,11 +2445,12 @@ const CreateTemplate = () => {
               className="section-title"
               value={section.title}
               onChange={(e) => updateSection(section.id, { title: e.target.value })}
-              readOnly={isTitlePage}
+              
             />
             {!isTitlePage && (
               <button className="edit-section-title">
                 <Edit size={16} />
+                
               </button>
             )}
           </div>
@@ -2472,7 +2473,7 @@ const CreateTemplate = () => {
             {section.description && (
               <div className="section-description">
                 {section.description}
-                {isTitlePage && <p>customize the Title Page below</p>}
+                {isTitlePage }
               </div>
             )}
             <div className="questions-container">

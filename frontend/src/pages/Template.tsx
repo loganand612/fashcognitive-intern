@@ -9,6 +9,8 @@ import {
   Search,
   FileText,
   User,
+  Eye,
+  MoreHorizontal,
   X,
   Home,
   Bell,
@@ -368,9 +370,16 @@ const TemplatePage: React.FC = () => {
                         </div>
                       </td>
                       <td>
+
                         <div className="tp-action-buttons">
-                          <button className="tp-start-inspection">Start inspection</button>
-                          <button className="tp-view-button" onClick={() => navigate(`/template/${template.id}`)}>View</button>
+                          <button className="tp-view-button" onClick={() => navigate(`/template/${template.id}`)}> <Eye size={16} /> View</button>
+
+                          <button className="tp-start-inspection">
+                            Start inspection
+                          </button>
+                          <button className="tp-more-options">
+                            <MoreHorizontal size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>
