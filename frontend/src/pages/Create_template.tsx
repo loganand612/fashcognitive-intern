@@ -627,7 +627,8 @@ const EnhancedLogicTriggerSelector: React.FC<{
       }
 
       // Calculate top position, ensuring it doesn't go off-screen
-      let topPos = rect.bottom
+      // Position the dialog higher up by subtracting 50px from rect.bottom (increased from 30px)
+      let topPos = rect.bottom - 50
       const dropdownHeight = 300 // Approximate max height of dropdown
       if (topPos + dropdownHeight > windowHeight) {
         // Position above the button if there's not enough space below
@@ -712,15 +713,7 @@ const EnhancedLogicTriggerSelector: React.FC<{
       {isOpen && !selectedTrigger && (
         <>
           <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              zIndex: 1055
-            }}
+            className="trigger-dropdown-overlay"
             onClick={() => setIsOpen(false)}
           />
           <div
@@ -1823,6 +1816,42 @@ const CreateTemplate = () => {
   const [logicButtonPosition, setLogicButtonPosition] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Update logic panel position on scroll or resize
+  useEffect(() => {
+    const updateLogicPanelPosition = () => {
+      if (showLogicPanel && logicButtonPosition) {
+        const questionElement = document.getElementById(`question-${showLogicPanel}`);
+        if (questionElement) {
+          const logicButton = questionElement.querySelector('.enhanced-add-logic-button');
+          if (logicButton) {
+            const buttonRect = logicButton.getBoundingClientRect();
+            const containerRect = logicButton.closest('.logic-button-container')?.getBoundingClientRect();
+
+            setLogicButtonPosition({
+              // Position the logic panel higher up by subtracting 40px (increased from 20px)
+              top: (containerRect ? 0 : buttonRect.top) + buttonRect.height - 40,
+              left: containerRect ? 0 : buttonRect.left,
+              width: buttonRect.width,
+              height: buttonRect.height
+            });
+          }
+        }
+      }
+    };
+
+    // Update position on scroll and resize
+    window.addEventListener('scroll', updateLogicPanelPosition);
+    window.addEventListener('resize', updateLogicPanelPosition);
+
+    // Initial position update
+    updateLogicPanelPosition();
+
+    return () => {
+      window.removeEventListener('scroll', updateLogicPanelPosition);
+      window.removeEventListener('resize', updateLogicPanelPosition);
+    };
+  }, [showLogicPanel, logicButtonPosition]);
+
   // Add a class to the document body when mobile preview is hidden
   useEffect(() => {
     if (showMobilePreview) {
@@ -2317,6 +2346,7 @@ const CreateTemplate = () => {
     return (
       <div
         key={question.id}
+        id={`question-${question.id}`}
         ref={(el) => {
           questionRefs.current[question.id] = el
         }}
@@ -2358,17 +2388,26 @@ const CreateTemplate = () => {
           {renderQuestionResponse(question, sectionId)}
         </div>
         <div className="question-footer">
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} className="logic-button-container">
             <EnhancedAddLogicButton
               hasRules={question.logicRules?.length ? true : false}
               onClick={(e) => {
+                // Get the button's position and dimensions
                 const buttonRect = e.currentTarget.getBoundingClientRect();
-                setLogicButtonPosition({
-                  top: buttonRect.top,
-                  left: buttonRect.left,
+
+                // Get the container's position for relative positioning
+                const containerRect = e.currentTarget.closest('.logic-button-container')?.getBoundingClientRect();
+
+                // Calculate the position for the logic panel
+                // Position it higher up by subtracting 20px from the original position
+                const position = {
+                  top: (containerRect ? 0 : buttonRect.top) + buttonRect.height - 20,
+                  left: containerRect ? 0 : buttonRect.left,
                   width: buttonRect.width,
                   height: buttonRect.height
-                });
+                };
+
+                setLogicButtonPosition(position);
                 setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
               }}
             />

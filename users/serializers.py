@@ -41,6 +41,11 @@ class QuestionSerializer(serializers.ModelSerializer):
             'response_type',
             'required',
             'order',
+            'logic_rules',
+            'flagged',
+            'multiple_selection',
+            'min_value',
+            'max_value',
         ]
 
 
