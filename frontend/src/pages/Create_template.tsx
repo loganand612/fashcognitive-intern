@@ -237,9 +237,42 @@ const getOptionsForQuestion = (question: Question) => {
   return [];
 }
 
+// Helper function to check if a response type should have a trigger button
+const shouldHaveTriggerButton = (responseType: ResponseType): boolean => {
+  // Only the first 6 response types should have trigger buttons
+  const triggerEnabledTypes: ResponseType[] = [
+    "Text",
+    "Number",
+    "Checkbox",
+    "Yes/No",
+    "Multiple choice",
+    "Slider"
+  ]
+  return triggerEnabledTypes.includes(responseType)
+}
+
 // Helper function to check if a trigger should be shown based on the question's logic rules
 const shouldShowTrigger = (question: Question, triggerType: TriggerAction): boolean => {
-  if (!question.logicRules || question.logicRules.length === 0 || !question.value) return false
+  // Log the question and trigger type for debugging
+  console.log(`Checking trigger ${triggerType} for question:`, {
+    id: question.id,
+    text: question.text,
+    value: question.value,
+    responseType: question.responseType,
+    logicRules: question.logicRules
+  });
+
+  // If there are no logic rules, don't show any triggers
+  if (!question.logicRules || question.logicRules.length === 0) {
+    console.log("No logic rules found, returning false");
+    return false;
+  }
+
+  // Only evaluate rules if the question has a value
+  if (question.value === null || question.value === undefined) {
+    console.log("Question has no value, returning false");
+    return false;
+  }
 
   for (const rule of question.logicRules) {
     if (rule.trigger !== triggerType) continue
@@ -248,42 +281,70 @@ const shouldShowTrigger = (question: Question, triggerType: TriggerAction): bool
     const value = question.value
     let conditionMet = false
 
+    // Convert values to appropriate types for comparison
+    let compareValue = value;
+    let ruleValue = rule.value;
+
+    // For number fields, ensure we're comparing numbers
+    if (question.responseType === "Number" || question.responseType === "Slider") {
+      compareValue = typeof value === "string" ? parseFloat(value) : (typeof value === "number" ? value : 0);
+      ruleValue = typeof rule.value === "string" ? parseFloat(rule.value) : (typeof rule.value === "number" ? rule.value : 0);
+    }
+
+    // Debug
+    console.log("Comparing:", {
+      compareValue,
+      ruleValue,
+      condition: rule.condition,
+      originalValue: value,
+      originalRuleValue: rule.value,
+      responseType: question.responseType
+    });
+
     switch (rule.condition) {
       case "is":
-        conditionMet = value === rule.value
+        conditionMet = String(compareValue) === String(ruleValue)
         break
       case "is not":
-        conditionMet = value !== rule.value
+        conditionMet = String(compareValue) !== String(ruleValue)
         break
       case "contains":
-        conditionMet = typeof value === "string" && typeof rule.value === "string" && value.includes(rule.value)
+        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && compareValue.includes(ruleValue)
         break
       case "not contains":
-        conditionMet = typeof value === "string" && typeof rule.value === "string" && !value.includes(rule.value)
+        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && !compareValue.includes(ruleValue)
         break
       case "starts with":
-        conditionMet = typeof value === "string" && typeof rule.value === "string" && value.startsWith(rule.value)
+        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && compareValue.startsWith(ruleValue)
         break
       case "ends with":
-        conditionMet = typeof value === "string" && typeof rule.value === "string" && value.endsWith(rule.value)
+        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && compareValue.endsWith(ruleValue)
         break
       case "greater than":
-        conditionMet = typeof value === "number" && typeof rule.value === "number" && value > rule.value
+        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue > ruleValue
         break
       case "less than":
-        conditionMet = typeof value === "number" && typeof rule.value === "number" && value < rule.value
+        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue < ruleValue
         break
       case "equal to":
-        conditionMet = value === rule.value
+        // For numbers, convert both to numbers and compare
+        if (question.responseType === "Number" || question.responseType === "Slider") {
+          const numValue = Number(compareValue);
+          const numRuleValue = Number(ruleValue);
+          conditionMet = !isNaN(numValue) && !isNaN(numRuleValue) && numValue === numRuleValue;
+          console.log("Number comparison:", { numValue, numRuleValue, conditionMet });
+        } else {
+          conditionMet = String(compareValue) === String(ruleValue);
+        }
         break
       case "not equal to":
-        conditionMet = value !== rule.value
+        conditionMet = compareValue != ruleValue // Use loose equality for number comparison
         break
       case "greater than or equal to":
-        conditionMet = typeof value === "number" && typeof rule.value === "number" && value >= rule.value
+        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue >= ruleValue
         break
       case "less than or equal to":
-        conditionMet = typeof value === "number" && typeof rule.value === "number" && value <= rule.value
+        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue <= ruleValue
         break
       case "between":
         conditionMet =
@@ -302,11 +363,25 @@ const shouldShowTrigger = (question: Question, triggerType: TriggerAction): bool
     }
 
     if (conditionMet) {
-      return true
+      console.log(`Condition met for trigger ${triggerType}:`, {
+        condition: rule.condition,
+        compareValue,
+        ruleValue,
+        conditionMet
+      });
+      return true;
+    } else {
+      console.log(`Condition NOT met for trigger ${triggerType}:`, {
+        condition: rule.condition,
+        compareValue,
+        ruleValue,
+        conditionMet
+      });
     }
   }
 
-  return false
+  console.log(`No matching conditions found for trigger ${triggerType}, returning false`);
+  return false;
 }
 
 // Helper function to get condition icon
@@ -2388,38 +2463,41 @@ const CreateTemplate = () => {
           {renderQuestionResponse(question, sectionId)}
         </div>
         <div className="question-footer">
-          <div style={{ position: 'relative' }} className="logic-button-container">
-            <EnhancedAddLogicButton
-              hasRules={question.logicRules?.length ? true : false}
-              onClick={(e) => {
-                // Get the button's position and dimensions
-                const buttonRect = e.currentTarget.getBoundingClientRect();
+          {shouldHaveTriggerButton(question.responseType) && (
+            <div style={{ position: 'relative' }} className="logic-button-container">
+              <EnhancedAddLogicButton
+                hasRules={question.logicRules?.length ? true : false}
+                onClick={(e) => {
+                  // Get the button's position and dimensions
+                  const buttonRect = e.currentTarget.getBoundingClientRect();
 
-                // Get the container's position for relative positioning
-                const containerRect = e.currentTarget.closest('.logic-button-container')?.getBoundingClientRect();
+                  // Get the container's position for relative positioning
+                  const containerRect = e.currentTarget.closest('.logic-button-container')?.getBoundingClientRect();
 
-                // Calculate the position for the logic panel
-                // Position it higher up by subtracting 20px from the original position
-                const position = {
-                  top: (containerRect ? 0 : buttonRect.top) + buttonRect.height - 20,
-                  left: containerRect ? 0 : buttonRect.left,
-                  width: buttonRect.width,
-                  height: buttonRect.height
-                };
+                  // Calculate the position for the logic panel
+                  // Position it higher up by subtracting 20px from the original position
+                  const position = {
+                    top: (containerRect ? 0 : buttonRect.top) + buttonRect.height - 20,
+                    left: containerRect ? 0 : buttonRect.left,
+                    width: buttonRect.width,
+                    height: buttonRect.height
+                  };
 
-                setLogicButtonPosition(position);
-                setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
-              }}
-            />
-            {showLogicPanel === question.id && (
-              <SimpleLogicRules
-                rules={question.logicRules || []}
-                onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
-                onClose={() => setShowLogicPanel(null)}
-                buttonPosition={logicButtonPosition || undefined}
+                  setLogicButtonPosition(position);
+                  setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
+                }}
               />
-            )}
-          </div>
+              {showLogicPanel === question.id && (
+                <SimpleLogicRules
+                  rules={question.logicRules || []}
+                  onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
+                  onClose={() => setShowLogicPanel(null)}
+                  buttonPosition={logicButtonPosition || undefined}
+                  questionType={question.responseType}
+                />
+              )}
+            </div>
+          )}
           {/* Only show Required and Flag checkboxes when logic panel is not open */}
           {showLogicPanel !== question.id && (
             <>
@@ -2606,6 +2684,7 @@ const CreateTemplate = () => {
 
   // Render trigger UI components based on the trigger type
   const renderTriggerUI = (question: Question, activeSection: Section) => {
+    // Only show triggers based on condition evaluation
     if (shouldShowTrigger(question, "require_evidence")) {
       return (
         <div className="mobile-trigger-container">
@@ -2621,13 +2700,44 @@ const CreateTemplate = () => {
               id={`evidence-upload-${question.id}`}
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
-                  const reader = new FileReader()
-                  reader.onload = (event) => {
+                  const file = e.target.files[0];
+                  console.log("Evidence file selected:", file.name, file.type, file.size);
+
+                  // Create a temporary URL for immediate display
+                  const tempUrl = URL.createObjectURL(file);
+                  // Set a temporary value to show something immediately
+                  updateQuestion(activeSection.id, question.id, { conditionalProof: tempUrl });
+
+                  // Force a re-render of the component to show the temporary image
+                  setTemplate(prevTemplate => ({ ...prevTemplate }));
+
+                  const reader = new FileReader();
+                  reader.onload = async (event) => {
                     if (event.target?.result) {
-                      updateQuestion(activeSection.id, question.id, { conditionalProof: event.target.result as string })
+                      try {
+                        console.log("Evidence file loaded, resizing image...");
+                        // Resize the image to ensure it loads properly
+                        const resizedImage = await resizeImage(event.target.result as string);
+                        console.log("Evidence image resized successfully");
+                        // Update with the properly resized image
+                        updateQuestion(activeSection.id, question.id, { conditionalProof: resizedImage });
+
+                        // Force a re-render of the component to show the resized image
+                        setTemplate(prevTemplate => ({ ...prevTemplate }));
+                      } catch (error) {
+                        console.error("Error resizing evidence image:", error);
+                        // Fallback to original image if resize fails
+                        updateQuestion(activeSection.id, question.id, { conditionalProof: event.target.result as string });
+
+                        // Force a re-render of the component to show the original image
+                        setTemplate(prevTemplate => ({ ...prevTemplate }));
+                      }
                     }
-                  }
-                  reader.readAsDataURL(e.target.files[0])
+                  };
+                  reader.onerror = (error) => {
+                    console.error("FileReader error for evidence:", error);
+                  };
+                  reader.readAsDataURL(file);
                 }
               }}
             />
@@ -2639,9 +2749,15 @@ const CreateTemplate = () => {
             ) : (
               <div className="mobile-media-preview">
                 <img
+                  key={`evidence-${question.id}-${Date.now()}`} // Force re-render on update
                   src={question.conditionalProof || "/placeholder.svg"}
                   alt="Evidence"
                   className="mobile-media-image"
+                  onError={(e) => {
+                    console.error("Evidence image failed to load:", e);
+                    // Set a fallback image if the original fails to load
+                    e.currentTarget.src = "/placeholder.svg";
+                  }}
                 />
                 <button
                   className="mobile-media-remove"
@@ -2846,48 +2962,87 @@ const CreateTemplate = () => {
         )
       case "Media":
         return (
-          <label className="mobile-media-upload">
-            <input
-              type="file"
-              accept="image/*,video/*"
-              className="sr-only"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  const reader = new FileReader()
-                  reader.onload = (event) => {
-                    if (event.target?.result) {
-                      updateQuestion(activeSection.id, question.id, { value: event.target.result as string })
-                    }
+          <div className="mobile-media-container">
+            <label className="mobile-media-upload">
+              <input
+                type="file"
+                accept="image/*,video/*"
+                className="sr-only"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    console.log("File selected:", file.name, file.type, file.size);
+
+                    // Create a temporary URL for immediate display
+                    const tempUrl = URL.createObjectURL(file);
+                    // Set a temporary value to show something immediately
+                    updateQuestion(activeSection.id, question.id, { value: tempUrl });
+
+                    // Force a re-render of the component to show the temporary image
+                    setTemplate(prevTemplate => ({ ...prevTemplate }));
+
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                      if (event.target?.result) {
+                        try {
+                          console.log("File loaded, resizing image...");
+                          // Resize the image to ensure it loads properly
+                          const resizedImage = await resizeImage(event.target.result as string);
+                          console.log("Image resized successfully");
+                          // Update with the properly resized image
+                          updateQuestion(activeSection.id, question.id, { value: resizedImage });
+
+                          // Force a re-render of the component to show the resized image
+                          setTemplate(prevTemplate => ({ ...prevTemplate }));
+                        } catch (error) {
+                          console.error("Error resizing image:", error);
+                          // Fallback to original image if resize fails
+                          updateQuestion(activeSection.id, question.id, { value: event.target.result as string });
+
+                          // Force a re-render of the component to show the original image
+                          setTemplate(prevTemplate => ({ ...prevTemplate }));
+                        }
+                      }
+                    };
+                    reader.onerror = (error) => {
+                      console.error("FileReader error:", error);
+                    };
+                    reader.readAsDataURL(file);
                   }
-                  reader.readAsDataURL(e.target.files[0])
-                }
-              }}
-            />
-            {!question.value ? (
-              <>
-                <ImageIcon size={20} />
-                <span>Upload media (photo or video)</span>
-              </>
-            ) : (
-              <div className="mobile-media-preview">
-                <img
-                  src={(question.value as string) || "/placeholder.svg"}
-                  alt="Uploaded media"
-                  className="mobile-media-image"
-                />
-                <button
-                  className="mobile-media-remove"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    updateQuestion(activeSection.id, question.id, { value: null })
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-          </label>
+                }}
+              />
+              {!question.value ? (
+                <div className="mobile-media-placeholder">
+                  <ImageIcon size={20} />
+                  <span>Upload media (photo or video)</span>
+                </div>
+              ) : (
+                <div className="mobile-media-preview">
+                  <img
+                    key={`img-${question.id}-${Date.now()}`} // Force re-render on update
+                    src={(question.value as string) || "/placeholder.svg"}
+                    alt="Uploaded media"
+                    className="mobile-media-image"
+                    onError={(e) => {
+                      console.error("Image failed to load:", e);
+                      // Set a fallback image if the original fails to load
+                      e.currentTarget.src = "/placeholder.svg";
+                    }}
+                  />
+                  <button
+                    className="mobile-media-remove"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      updateQuestion(activeSection.id, question.id, { value: null });
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+            </label>
+          </div>
         )
       case "Annotation":
         return (
@@ -2899,13 +3054,44 @@ const CreateTemplate = () => {
               id={`annotation-${question.id}`}
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
-                  const reader = new FileReader()
-                  reader.onload = (event) => {
+                  const file = e.target.files[0];
+                  console.log("Annotation file selected:", file.name, file.type, file.size);
+
+                  // Create a temporary URL for immediate display
+                  const tempUrl = URL.createObjectURL(file);
+                  // Set a temporary value to show something immediately
+                  updateQuestion(activeSection.id, question.id, { value: tempUrl });
+
+                  // Force a re-render of the component to show the temporary image
+                  setTemplate(prevTemplate => ({ ...prevTemplate }));
+
+                  const reader = new FileReader();
+                  reader.onload = async (event) => {
                     if (event.target?.result) {
-                      updateQuestion(activeSection.id, question.id, { value: event.target.result as string })
+                      try {
+                        console.log("Annotation file loaded, resizing image...");
+                        // Resize the image to ensure it loads properly
+                        const resizedImage = await resizeImage(event.target.result as string);
+                        console.log("Annotation image resized successfully");
+                        // Update with the properly resized image
+                        updateQuestion(activeSection.id, question.id, { value: resizedImage });
+
+                        // Force a re-render of the component to show the resized image
+                        setTemplate(prevTemplate => ({ ...prevTemplate }));
+                      } catch (error) {
+                        console.error("Error resizing annotation image:", error);
+                        // Fallback to original image if resize fails
+                        updateQuestion(activeSection.id, question.id, { value: event.target.result as string });
+
+                        // Force a re-render of the component to show the original image
+                        setTemplate(prevTemplate => ({ ...prevTemplate }));
+                      }
                     }
-                  }
-                  reader.readAsDataURL(e.target.files[0])
+                  };
+                  reader.onerror = (error) => {
+                    console.error("FileReader error for annotation:", error);
+                  };
+                  reader.readAsDataURL(file);
                 }
               }}
             />
@@ -2917,13 +3103,23 @@ const CreateTemplate = () => {
             ) : (
               <div className="mobile-annotation-preview">
                 <img
+                  key={`annotation-${question.id}-${Date.now()}`} // Force re-render on update
                   src={(question.value as string) || "/placeholder.svg"}
                   alt="Annotation"
                   className="mobile-annotation-image"
+                  onError={(e) => {
+                    console.error("Annotation image failed to load:", e);
+                    // Set a fallback image if the original fails to load
+                    e.currentTarget.src = "/placeholder.svg";
+                  }}
                 />
                 <button
                   className="mobile-annotation-remove"
-                  onClick={() => updateQuestion(activeSection.id, question.id, { value: null })}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    updateQuestion(activeSection.id, question.id, { value: null });
+                  }}
                 >
                   <X size={16} />
                 </button>
@@ -3101,7 +3297,7 @@ const CreateTemplate = () => {
                     </div>
                     <div className="mobile-question-response">
                       {renderMobileQuestionResponse(question, activeSection)}
-                      {renderTriggerUI(question, activeSection)}
+                      {shouldHaveTriggerButton(question.responseType) && renderTriggerUI(question, activeSection)}
                     </div>
                   </div>
                 ))}

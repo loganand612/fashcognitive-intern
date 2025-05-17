@@ -55,9 +55,10 @@ interface SimpleLogicRulesProps {
   rules: LogicRule[];
   onRulesChange: (rules: LogicRule[]) => void;
   buttonPosition?: { top: number; left: number; width: number; height: number };
+  questionType?: ResponseType; // Add question type to customize logic conditions
 }
 
-const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onRulesChange, buttonPosition }) => {
+const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onRulesChange, buttonPosition, questionType = "Text" }) => {
   const [activeTriggerIndex, setActiveTriggerIndex] = useState<number | null>(null);
   const triggerMenuRef = useRef<HTMLDivElement>(null);
 
@@ -139,10 +140,41 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
     };
   }, [activeTriggerIndex]);
 
+  // Get available conditions based on question type
+  const getAvailableConditions = (type: ResponseType): LogicCondition[] => {
+    switch (type) {
+      case "Text":
+        return ["is", "is not", "contains", "not contains", "starts with", "ends with", "matches (regex)"];
+      case "Number":
+      case "Slider":
+        return [
+          "less than",
+          "less than or equal to",
+          "equal to",
+          "not equal to",
+          "greater than or equal to",
+          "greater than",
+          "between",
+          "not between",
+        ];
+      case "Checkbox":
+      case "Yes/No":
+        return ["is", "is not"];
+      case "Multiple choice":
+        return ["is", "is not", "is one of", "is not one of"];
+      default:
+        return ["is", "is not"];
+    }
+  };
+
   const handleAddRule = () => {
+    // Set default condition based on question type
+    const defaultCondition: LogicCondition =
+      questionType === "Number" || questionType === "Slider" ? "equal to" : "is";
+
     const newRule: LogicRule = {
       id: `rule_${Math.random().toString(36).substring(2, 9)}`,
-      condition: "is",
+      condition: defaultCondition,
       value: null,
       trigger: null
     };
@@ -219,7 +251,7 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
       let top = buttonRect.top; // Align with the button vertically
 
       // If there's not enough space to the right of the dialog, position it below the button
-      if (availableSpaceRight < 330) { // 330 = menu width (320) + offset (10)
+      if (availableSpaceRight < 510) { // 510 = menu width (500) + offset (10)
         left = Math.max(10, buttonRect.left);
         top = buttonRect.bottom - 40; // Position it higher by using -40 instead of -20
       }
@@ -230,7 +262,7 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
       }
 
       // Make sure the menu doesn't go off the screen
-      left = Math.min(left, window.innerWidth - 330);
+      left = Math.min(left, window.innerWidth - 510);
 
       setTriggerMenuPosition({ top, left });
     }
@@ -282,18 +314,49 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
                     value={rule.condition}
                     onChange={(e) => handleConditionChange(index, e.target.value as LogicCondition)}
                   >
-                    <option value="is">is</option>
-                    <option value="is not">is not</option>
-                    <option value="contains">contains</option>
-                    <option value="not contains">not contains</option>
+                    {getAvailableConditions(questionType).map(condition => (
+                      <option key={condition} value={condition}>{condition}</option>
+                    ))}
                   </select>
-                  <input
-                    type="text"
-                    className="Logic-Rules-input"
-                    placeholder="Enter value"
-                    value={rule.value as string || ''}
-                    onChange={(e) => handleValueChange(index, e.target.value)}
-                  />
+                  {/* Render different input types based on question type */}
+                  {questionType === "Number" || questionType === "Slider" ? (
+                    <input
+                      type="number"
+                      className="Logic-Rules-input"
+                      placeholder="Enter value"
+                      value={rule.value as number || ''}
+                      onChange={(e) => handleValueChange(index, e.target.value)}
+                    />
+                  ) : questionType === "Yes/No" ? (
+                    <select
+                      className="Logic-Rules-input"
+                      value={rule.value as string || ''}
+                      onChange={(e) => handleValueChange(index, e.target.value)}
+                    >
+                      <option value="">Select value</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                      <option value="N/A">N/A</option>
+                    </select>
+                  ) : questionType === "Checkbox" ? (
+                    <select
+                      className="Logic-Rules-input"
+                      value={rule.value as string || ''}
+                      onChange={(e) => handleValueChange(index, e.target.value)}
+                    >
+                      <option value="">Select value</option>
+                      <option value="true">Checked</option>
+                      <option value="false">Unchecked</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      className="Logic-Rules-input"
+                      placeholder="Enter value"
+                      value={rule.value as string || ''}
+                      onChange={(e) => handleValueChange(index, e.target.value)}
+                    />
+                  )}
                   <button className="Logic-Rules-delete" onClick={() => handleDeleteRule(index)}>
                     <X size={16} />
                   </button>
