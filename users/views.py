@@ -262,6 +262,9 @@ class TemplateCreateView(APIView):
                             question.response_type = response_type
                             question.required = question_data.get("required", question.required)
                             question.order = question_data.get("order", question.order)
+                            question.logic_rules = question_data.get("logicRules", question.logic_rules)
+                            question.flagged = question_data.get("flagged", question.flagged)
+                            question.multiple_selection = question_data.get("multipleSelection", question.multiple_selection)
                             question.save()
                         else:
                             print(f"❌ Question with id {question_id} not found in section {section.id}")
@@ -274,6 +277,9 @@ class TemplateCreateView(APIView):
                             response_type=response_type,
                             required=question_data.get("required", False),
                             order=question_data.get("order", 0),
+                            logic_rules=question_data.get("logicRules"),
+                            flagged=question_data.get("flagged", False),
+                            multiple_selection=question_data.get("multipleSelection", False),
                         )
 
             return Response({"message": "Template saved successfully!"}, status=status.HTTP_201_CREATED)
@@ -378,6 +384,9 @@ class TemplateDetailView(RetrieveAPIView):
                                     question.response_type = response_type
                                     question.required = question_data.get("required", question.required)
                                     question.order = question_data.get("order", question.order)
+                                    question.logic_rules = question_data.get("logicRules", question.logic_rules)
+                                    question.flagged = question_data.get("flagged", question.flagged)
+                                    question.multiple_selection = question_data.get("multipleSelection", question.multiple_selection)
                                     question.save()
                                 else:
                                     Question.objects.create(
@@ -386,6 +395,9 @@ class TemplateDetailView(RetrieveAPIView):
                                         response_type=response_type,
                                         required=question_data.get("required", False),
                                         order=question_data.get("order", 0),
+                                        logic_rules=question_data.get("logicRules"),
+                                        flagged=question_data.get("flagged", False),
+                                        multiple_selection=question_data.get("multipleSelection", False),
                                     )
                             else:
                                 Question.objects.create(
@@ -394,6 +406,9 @@ class TemplateDetailView(RetrieveAPIView):
                                     response_type=response_type,
                                     required=question_data.get("required", False),
                                     order=question_data.get("order", 0),
+                                    logic_rules=question_data.get("logicRules"),
+                                    flagged=question_data.get("flagged", False),
+                                    multiple_selection=question_data.get("multipleSelection", False),
                                 )
                 except Exception as e:
                     print(f"Error processing sections: {e}")
@@ -537,6 +552,9 @@ class GarmentTemplateCreateView(APIView):
                             response_type=question_data.get("responseType"),
                             required=question_data.get("required", False),
                             order=q_index,
+                            logic_rules=question_data.get("logicRules"),
+                            flagged=question_data.get("flagged", False),
+                            multiple_selection=question_data.get("multipleSelection", False),
                         )
                         for o_index, option in enumerate(question_data.get("options", [])):
                             QuestionOption.objects.create(

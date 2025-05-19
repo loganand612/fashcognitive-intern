@@ -1,19 +1,27 @@
 /* Logic Rules Styles */
-.Logic-Rules {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 0;
-  margin-top: 16px;
-  background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.Logic-Rules-backdrop {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.5);
+  z-index: 1040;
+}
+
+.Logic-Rules {
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  margin-top: -10px; /* Reduced from 16px to move it higher up */
+  background-color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.1);
+  position: absolute; /* Changed from fixed to absolute */
   width: 90%;
   min-width: 320px;
-  max-width: 380px;
-  z-index: 1050;
-  animation: fadeIn 0.2s ease-out;
+  max-width: 520px;
+  z-index: 1100;
+  animation: fadeIn 0.3s ease-out;
   overflow: hidden;
   max-height: 90vh;
   display: flex;
@@ -23,7 +31,7 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-15px);
   }
   to {
     opacity: 1;
@@ -36,94 +44,100 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0;
-  padding: 16px 20px;
-  background-color: white;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 20px 24px;
+  background-color: #f5f7ff;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .Logic-Rules-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
+  font-size: 20px;
+  font-weight: 700;
+  color: #6366f1;
+  margin: 0;
 }
 
 .Logic-Rules-close {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.8);
   border: none;
-  padding: 4px;
+  padding: 8px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: #6366f1;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .Logic-Rules-close:hover {
-  color: #333;
+  background-color: white;
+  color: #4f46e5;
+  transform: rotate(90deg);
 }
 
 .Logic-Rules-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   margin: 0;
-  padding: 16px 20px;
+  padding: 24px;
   flex: 1;
   overflow-y: auto;
   min-height: 100px;
-  max-height: calc(80vh - 120px); /* Subtract header and footer heights */
+  max-height: calc(80vh - 140px); /* Subtract header and footer heights */
 }
 
 .Logic-Rules-content::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .Logic-Rules-content::-webkit-scrollbar-track {
-  background: #f5f5f5;
-  border-radius: 3px;
+  background: #f5f7ff;
+  border-radius: 4px;
 }
 
 .Logic-Rules-content::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
 }
 
 .Logic-Rules-content::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: rgba(99, 102, 241, 0.5);
 }
 
 .edit-logic-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  background-color: #f8f8f8;
+  border-radius: 6px;
+  background-color: white;
   color: #333;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .edit-logic-button:hover {
-  background-color: #f0f0f0;
+  background-color: #f5f5f5;
   border-color: #ccc;
 }
 
 .edit-logic-button.has-rules {
   background-color: #f0f7f4;
-  border-color: #10b981;
-  color: #10b981;
+  border-color: #6366f1;
+  color: #6366f1;
   position: relative;
 }
 
 .edit-logic-button.has-rules:hover {
   background-color: #e6f7f1;
-  border-color: #0d9668;
+  border-color: #4f46e5;
 }
 
 .rules-badge {
@@ -145,150 +159,180 @@
 }
 
 .Logic-Rules-if {
-  font-weight: 400;
-  color: #333;
-  font-size: 14px;
-  margin-bottom: 8px;
+  font-weight: 700;
+  color: #6366f1;
+  font-size: 16px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .Logic-Rules-condition {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
+  background-color: #f9faff;
+  padding: 16px;
+  border-radius: 10px;
+  border-left: 4px solid #6366f1;
 }
 
 .Logic-Rules-delete {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.8);
   border: none;
   color: #666;
   cursor: pointer;
-  padding: 4px;
+  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .Logic-Rules-delete:hover {
   color: #ef4444;
+  background-color: white;
+  transform: rotate(90deg);
 }
 
 .Logic-Rules-condition-operator {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border: none;
-  background-color: transparent;
-  font-size: 14px;
-  color: #666;
+  background-color: rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+  font-size: 16px;
+  color: #6366f1;
 }
 
 .Logic-Rules-condition-dropdown {
-  padding: 6px 10px;
+  padding: 10px 16px;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   background-color: white;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   transition: all 0.2s ease;
-  min-width: 80px;
+  min-width: 100px;
   color: #333;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 24px;
+  background-position: right 12px center;
+  padding-right: 32px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .Logic-Rules-condition-dropdown:hover {
-  border-color: #999;
+  border-color: #6366f1;
+  background-color: #f9faff;
 }
 
 .Logic-Rules-input {
-  padding: 6px 10px;
+  padding: 10px 16px;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   width: 100%;
-  font-size: 13px;
+  font-size: 14px;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .Logic-Rules-input:focus {
   outline: none;
-  border-color: #999;
+  border-color: #6366f1;
+  background-color: #f9faff;
 }
 
 .Logic-Rules-then {
-  font-weight: 400;
-  color: #333;
-  font-size: 14px;
-  margin-bottom: 8px;
+  font-weight: 700;
+  color: #6366f1;
+  font-size: 16px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .Logic-Rules-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
   position: relative;
+  background-color: #f9faff;
+  padding: 16px;
+  border-radius: 10px;
+  border-left: 4px solid #6366f1;
+}
+
+.trigger-container {
+  position: relative;
+  width: 100%;
 }
 
 .Logic-Rules-add-trigger {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px dashed #6366f1;
+  border-radius: 6px;
   background-color: white;
-  color: #666;
-  font-size: 13px;
-  font-weight: 400;
+  color: #6366f1;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .Logic-Rules-add-trigger:hover {
-  background-color: #f5f5f5;
-  border-color: #999;
+  background-color: rgba(99, 102, 241, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .Logic-Rules-selected-trigger {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  background-color: #f5f5f5;
-  color: #333;
-  font-size: 13px;
-  font-weight: 400;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #6366f1;
+  border-radius: 6px;
+  background-color: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .Logic-Rules-trigger-menu-external {
-  width: 300px;
+  width: 320px;
   background-color: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(99, 102, 241, 0.1);
   overflow: hidden;
   animation: fadeIn 0.2s ease-out;
   max-height: 300px;
   overflow-y: auto;
-  z-index: 1100;
-  position: fixed;
+  z-index: 1300; /* Higher than the main dialog */
+  position: fixed; /* Fixed to viewport */
+  transform: translateY(-30px); /* Move the menu up by 30px */
 }
 
 @media (max-width: 768px) {
   .Logic-Rules-trigger-menu-external {
     width: 90vw;
-    max-width: 300px;
+    max-width: 320px;
     max-height: 50vh;
   }
 }
@@ -298,27 +342,27 @@
 }
 
 .Logic-Rules-trigger-menu-external::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f5f7ff;
   border-radius: 3px;
 }
 
 .Logic-Rules-trigger-menu-external::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: rgba(99, 102, 241, 0.3);
   border-radius: 3px;
 }
 
 .Logic-Rules-trigger-menu-external::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(99, 102, 241, 0.5);
 }
 
 .Logic-Rules-trigger-option {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
 }
 
 .Logic-Rules-trigger-option:last-child {
@@ -326,12 +370,20 @@
 }
 
 .Logic-Rules-trigger-option:hover {
-  background-color: #f5f5f5;
+  background-color: #f5f7ff;
+  transform: translateX(2px);
 }
 
 .trigger-icon {
-  color: #666;
-  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+  color: #6366f1;
+  flex-shrink: 0;
 }
 
 .trigger-option-content {
@@ -340,71 +392,76 @@
 
 .trigger-option-title {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #333;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .trigger-option-description {
   font-size: 12px;
   color: #666;
+  line-height: 1.4;
 }
 
 .Logic-Rules-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background-color: #f9f9f9;
+  padding: 16px 24px;
+  background-color: #f9faff;
   margin-top: 0;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(99, 102, 241, 0.1);
 }
-
-/* Checkbox group styles removed */
 
 .Logic-Rules-add-rule {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 10px 16px;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   background-color: white;
   color: #333;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .Logic-Rules-add-rule:hover {
   background-color: #f5f5f5;
   border-color: #999;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .Logic-Rules-done {
-  padding: 6px 12px;
+  padding: 10px 20px;
   background-color: #6366f1;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   color: white;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .Logic-Rules-done:hover {
   background-color: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .Logic-Rules-empty {
-  padding: 20px;
+  padding: 40px 24px;
   text-align: center;
-  background-color: #f9f9f9;
-  border: 1px dashed #e0e0e0;
-  border-radius: 4px;
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 12px;
+  background-color: #f5f7ff;
+  border: 2px dashed rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  color: #6366f1;
+  font-size: 16px;
+  margin: 0 0 16px 0;
 }

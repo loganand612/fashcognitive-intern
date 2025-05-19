@@ -19,11 +19,11 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'phone', 'company_name', 'industry_type', 'job_title', 'company_size']
 
     def __str__(self):
-        return self.email 
+        return self.email
     class Meta:
         verbose_name = "Custom User"
         verbose_name_plural = "Custom Users"
-        
+
 
 class Template(models.Model):
     TEMPLATE_TYPE_CHOICES = [
@@ -32,22 +32,22 @@ class Template(models.Model):
     ]
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)  
+    title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    logo = models.ImageField(upload_to='logos/', null=True, blank=True) 
+    logo = models.ImageField(upload_to='logos/', null=True, blank=True)
     template_type = models.CharField(max_length=20,choices=TEMPLATE_TYPE_CHOICES,default='standard')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_published = models.DateTimeField(blank=True, null=True)
-    
+
     def __str__(self):
         return self.title
-    
+
     def publish(self):
         """Mark the template as published"""
         self.last_published = timezone.now()
         self.save()
-    
+
     class Meta:
         db_table = 'templates'
         indexes = [
@@ -64,7 +64,7 @@ class Section(models.Model):
     is_collapsed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     # Garment-specific fields
     is_garment_section = models.BooleanField(default=False)
     aql_level = models.CharField(max_length=10, blank=True, null=True)
@@ -79,7 +79,7 @@ class Section(models.Model):
 
     def __str__(self):
         return f"{self.template.title} - {self.title}"
-    
+
     class Meta:
         db_table = 'sections'
         ordering = ['order']
@@ -115,6 +115,10 @@ class Question(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     min_value = models.IntegerField(default=0, blank=True, null=True)
     max_value = models.IntegerField(default=100, blank=True, null=True)
+    # Add field for storing logic rules and triggers as JSON
+    logic_rules = models.JSONField(blank=True, null=True)
+    flagged = models.BooleanField(default=False)
+    multiple_selection = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.section.title} - {self.text}"
@@ -136,10 +140,10 @@ class QuestionOption(models.Model):
     order = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         return self.text
-    
+
     class Meta:
         db_table = 'question_options'
         ordering = ['order']
@@ -153,22 +157,22 @@ class MediaAttachment(models.Model):
     IMAGE = 'image'
     VIDEO = 'video'
     DOCUMENT = 'document'
-    
+
     FILE_TYPE_CHOICES = [
         (IMAGE, 'Image'),
         (VIDEO, 'Video'),
         (DOCUMENT, 'Document'),
     ]
-    
+
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='media_attachments')
     file = models.FileField(upload_to='template_media/')
     file_type = models.CharField(max_length=20, choices=FILE_TYPE_CHOICES, default=IMAGE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         return f"Media for {self.question.text}"
-    
+
     class Meta:
         db_table = 'media_attachments'
         indexes = [
@@ -180,25 +184,25 @@ class MediaAttachment(models.Model):
 class Response(models.Model):
     """Model to store actual responses to questions when templates are filled out"""
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='responses')
-    
+
     # Different types of responses stored in separate fields
     text_response = models.TextField(blank=True, null=True)
     number_response = models.FloatField(blank=True, null=True)
     boolean_response = models.BooleanField(blank=True, null=True)
     choice_response = models.ForeignKey(QuestionOption, on_delete=models.SET_NULL, blank=True, null=True, related_name='responses')
     date_response = models.DateTimeField(blank=True, null=True)
-    
+
     # For storing references to other entities
     site_id = models.CharField(max_length=255, blank=True, null=True)
     person_id = models.CharField(max_length=255, blank=True, null=True)
     location_id = models.CharField(max_length=255, blank=True, null=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         return f"Response to {self.question.text}"
-    
+
     class Meta:
         db_table = 'responses'
         indexes = [
@@ -218,10 +222,10 @@ class Inspection(models.Model):
     status = models.CharField(max_length=50, default='draft')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         return self.title
-    
+
     class Meta:
         db_table = 'inspections'
         indexes = [
@@ -235,7 +239,7 @@ class InspectionResponse(models.Model):
     """Links responses to a specific inspection"""
     inspection = models.ForeignKey(Inspection, on_delete=models.CASCADE, related_name='inspection_responses')
     response = models.ForeignKey(Response, on_delete=models.CASCADE, related_name='inspection_responses')
-    
+
     class Meta:
         db_table = 'inspection_responses'
         unique_together = ('inspection', 'response')

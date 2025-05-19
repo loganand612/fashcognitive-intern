@@ -937,6 +937,12 @@
   position: relative;
 }
 
+/* Logic Button Container */
+.logic-button-container {
+  position: relative;
+  z-index: 50;
+}
+
 /* Updated Add Logic Button */
 .add-logic-button {
   display: flex;
@@ -1139,7 +1145,7 @@
   width: 100%;
   min-width: 320px;
   max-width: 520px;
-  margin-top: 16px;
+  margin-top: -30px; /* Reduced from -10px to move it higher up */
   padding: 0;
   background-color: white;
   border: none;
@@ -1654,6 +1660,17 @@
   height: 18px;
 }
 
+/* Overlay for trigger dropdown */
+.trigger-dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.5); /* Light transparent background instead of black */
+  z-index: 1055;
+}
+
 .enhanced-trigger-dropdown {
   position: fixed;
   background-color: var(--color-background);
@@ -1666,6 +1683,7 @@
   max-height: 300px;
   overflow-y: auto;
   overflow-x: hidden;
+  transform: translateY(-50px); /* Move the dropdown up by 50px (increased from 30px) */
 }
 
 /* Custom scrollbar for the dropdown */
@@ -1748,21 +1766,22 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
   background-color: white;
-  color: var(--color-text);
+  color: #333;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   z-index: 10;
 }
 
 .enhanced-add-logic-button:hover {
   background-color: #f5f5f5;
-  border-color: var(--color-text);
+  border-color: #ccc;
 }
 
 .enhanced-add-logic-button:active {
@@ -1771,30 +1790,35 @@
 
 .enhanced-add-logic-button.has-rules {
   background-color: #f0f7f4;
-  border-color: #10b981;
-  color: #10b981;
+  border-color: #6366f1;
+  color: #6366f1;
   position: relative;
 }
 
 .enhanced-add-logic-button.has-rules:hover {
   background-color: #e6f7f1;
-  border-color: #0d9668;
+  border-color: #4f46e5;
 }
 
 .enhanced-add-logic-button.has-rules:active {
   background-color: #dcf2ea;
 }
 
-.enhanced-add-logic-button.has-rules::after {
-  content: "";
+.enhanced-add-logic-button .rules-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 8px;
-  height: 8px;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
   background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
   border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   border: 1px solid white;
 }
 
@@ -2986,15 +3010,202 @@
   color: #333;
 }
 
-/* Access tab */
+/* Access Page Styles - Matching garment-template.css */
+.access-page-container {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.access-main-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--color-text);
+  letter-spacing: -0.5px;
+}
+
+.access-main-description {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+  max-width: 800px;
+}
+
+.access-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
 .access-tab {
-  padding: 40px 0;
-  background-color: var(--color-background);
-  height: 100%;
-  overflow-y: auto;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  padding: 24px;
+  margin-bottom: 0;
+}
+
+.session-section, .permissions-section {
+  margin-bottom: 0;
+}
+
+.session-section h2, .permissions-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  color: var(--color-primary);
+}
+
+.session-section p, .permissions-section p {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.date-fields {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.date-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.date-field label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.date-input-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.date-input {
+  width: 100%;
+  padding: 12px 40px 12px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  height: 44px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.date-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.date-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.date-helper-text {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.required-indicator {
+  color: #ff0000;
+}
+
+.access-footer {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  width: 100%;
-  max-width: 1200px;
+  margin-top: 32px;
+}
+
+.publish-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  min-width: 200px;
+  justify-content: center;
+}
+
+.publish-button:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.publish-icon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 1200px) {
+  .access-page-container {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .access-page-container {
+    padding: 16px;
+  }
+
+  .date-fields {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .access-tab {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .access-page-container {
+    padding: 12px;
+  }
+
+  .access-main-title {
+    font-size: 24px;
+  }
+
+  .publish-button {
+    width: 100%;
+    justify-content: center;
+  }
 }

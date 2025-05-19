@@ -595,6 +595,42 @@
   animation: fadeInUp 0.3s forwards;
 }
 
+/* Start from scratch dialog */
+.tp-start-scratch-dialog {
+  animation: fadeInUp 0.3s forwards;
+  transform-origin: top center;
+}
+
+.tp-start-scratch-dialog::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid white;
+  z-index: 2001;
+}
+
+.tp-start-scratch-dialog .tp-dropdown-menu {
+  width: 250px;
+  background: var(--bg-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.tp-start-scratch-dialog .tp-dropdown-item:hover {
+  background-color: rgba(72, 149, 239, 0.05);
+  color: var(--primary-color);
+  transform: translateX(5px);
+}
+
 .tp-dropdown-item {
   display: flex;
   align-items: center;
