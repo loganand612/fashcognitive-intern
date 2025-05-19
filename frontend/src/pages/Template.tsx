@@ -29,6 +29,7 @@ interface Template {
   lastModified?: string
   access?: string
   createdBy: string
+  isShared?: boolean
 }
 
 interface EndpointResult {
@@ -85,6 +86,7 @@ const TemplatePage: React.FC = () => {
   )
 
   const endpointsToTry = [
+    "/api/users/templates-with-shared/",
     "/api/templates/",
     "/templates_api/",
     "/templates/",
@@ -163,12 +165,34 @@ const TemplatePage: React.FC = () => {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const handleLogout = () => {
-    // Clear authentication tokens or user data
-    localStorage.removeItem('authToken'); // Example: Remove token from localStorage
+  const handleLogout = async () => {
+    try {
+      // Clear localStorage data
+      localStorage.removeItem('username');
+      localStorage.removeItem('user_role');
 
-    // Redirect to login page
-    window.location.href = '/login';
+      // Call the backend logout endpoint to clear the session
+      const response = await fetch('http://localhost:8000/api/users/logout/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('Logout successful');
+      } else {
+        console.error('Logout failed:', response.status);
+      }
+
+      // Redirect to login page regardless of response
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still redirect to login even if there's an error
+      window.location.href = '/login';
+    }
   };
 
   const toggleDropdown = () => {
@@ -208,7 +232,9 @@ const TemplatePage: React.FC = () => {
       for (const endpoint of endpointsToTry) {
         try {
           const fullUrl = `http://127.0.0.1:8000${endpoint}`
-          const response = await fetch(fullUrl)
+          const response = await fetch(fullUrl, {
+            credentials: 'include' // Include cookies for authentication
+          })
           results[endpoint] = {
             status: response.status,
             ok: response.ok,
@@ -220,13 +246,29 @@ const TemplatePage: React.FC = () => {
 
               const data = await response.json()
               console.log("Full response data:", data);
-              console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
-              setTemplates(data.filter((template: Template) => template.createdBy === loggedInUser))
+
+              // Check if the response has the new format with owned_templates and shared_templates
+              if (data.owned_templates && data.shared_templates) {
+                console.log("Using new API format with owned and shared templates");
+                // Combine owned and shared templates
+                const ownedTemplates = data.owned_templates;
+                const sharedTemplates = data.shared_templates.map((template: Template) => ({
+                  ...template,
+                  isShared: true // Add a flag to identify shared templates
+                }));
+
+                setTemplates([...ownedTemplates, ...sharedTemplates]);
+              } else {
+                // Use the old format
+                console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
+                setTemplates(data.filter((template: Template) => template.createdBy === loggedInUser));
+              }
 
               setDebugInfo({ endpoints: results, successEndpoint: fullUrl, responseData: data })
               setLoading(false)
               return
-            } catch {
+            } catch (error) {
+              console.error("Error parsing JSON:", error);
               results[endpoint].parseError = "Could not parse JSON"
             }
           }
@@ -253,7 +295,7 @@ const TemplatePage: React.FC = () => {
   return (
     <div className="tp-app-container">
       <nav className="tp-navbar">
-        <div className="tp-navbar-brand">FASHCOGNITIVE</div>
+        <div className="tp-navbar-brand">STREAMLINEER</div>
         <div className="tp-navbar-actions">
           <button className="tp-nav-button">
             <User className="tp-nav-icon" />
@@ -415,8 +457,17 @@ const TemplatePage: React.FC = () => {
                       <td className="tp-checkbox-column"><input type="checkbox" /></td>
                       <td>
                         <div className="tp-template-cell">
-                          <div className="tp-template-icon"><FileText size={20} /></div>
-                          <span>{template.title}</span>
+                          <div className="tp-template-icon">
+                            <FileText size={20} />
+                          </div>
+                          <span>
+                            {template.title}
+                            {template.isShared && (
+                              <span className="tp-shared-badge" title="Shared with you">
+                                (Shared)
+                              </span>
+                            )}
+                          </span>
                         </div>
                       </td>
                       <td>{template.lastModified || "Not available"}</td>
@@ -428,7 +479,12 @@ const TemplatePage: React.FC = () => {
                       </td>
                       <td>
                         <div className="tp-action-buttons">
-                          <button className="tp-start-inspection">Start inspection</button>
+                          <button
+                            className="tp-start-inspection"
+                            onClick={() => navigate(`/inspection?templateId=${template.id}`)}
+                          >
+                            Start inspection
+                          </button>
                           <button className="tp-view-button" onClick={() => navigate(`/template/${template.id}`)}>View</button>
                         </div>
                       </td>

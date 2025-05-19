@@ -41,9 +41,11 @@ import {
   Building,
   Flag,
   CheckCircle,
+  ClipboardCheck,
 } from "lucide-react"
 import { jsPDF } from "jspdf"
 import AccessManager from "../pages/components/AccessManager"
+import TemplateAssignmentManager from "../pages/components/TemplateAssignmentManager"
 import { fetchCSRFToken } from "../utils/csrf"
 import "../assets/Create_template.css"
 import "../pages/components/TemplateBuilderLayout.css"
@@ -3493,6 +3495,24 @@ const CreateTemplate = () => {
                       console.log("Updated permissions:", users)
                       // Here you would update the template with the new permissions
                       // setTemplate({ ...template, permissions: users });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="access-tab">
+                <div className="permissions-section">
+                  <h2>
+                    <ClipboardCheck size={20} className="section-icon" />
+                    Template Assignments
+                  </h2>
+                  <p>Assign this template to inspectors who will complete the inspections.</p>
+
+                  <TemplateAssignmentManager
+                    templateId={template.id}
+                    templateTitle={template.title || "Untitled Template"}
+                    onAssignmentUpdated={() => {
+                      console.log("Template assignments updated")
                     }}
                   />
                 </div>
