@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from .serializers import UserRegistrationSerializer, TemplateSerializer
 from django.contrib.auth.decorators import login_required
@@ -55,7 +55,17 @@ def login_user(request):
             login(request, user)
             print(f"✅ Login successful for user: {user.email}")  # <- Print Email
             print(f"✅ User ID: {user.id}")  # <- Print ID
-            return Response({"message": "Login successful", "redirect": "/create_templates"}, status=status.HTTP_200_OK)
+            print(f"✅ User Role: {user.user_role}")  # <- Print Role
+            return Response({
+                "message": "Login successful",
+                "redirect": "/create_templates",
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                    "user_role": user.user_role
+                }
+            }, status=status.HTTP_200_OK)
         else:
             print(f"❌ Login failed for email: {email}")  # <- Print failure case
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -435,9 +445,29 @@ def auth_status(request):
         "user": {
             "id": request.user.id,
             "username": request.user.username,
-            "email": request.user.email
+            "email": request.user.email,
+            "user_role": request.user.user_role
         }
     })
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def current_user(request):
+    """Return the current user's information"""
+    return Response({
+        "id": request.user.id,
+        "username": request.user.username,
+        "email": request.user.email,
+        "first_name": request.user.first_name,
+        "last_name": request.user.last_name,
+        "user_role": request.user.user_role
+    })
+
+# Add logout view
+@api_view(["POST"])
+def logout_user(request):
+    logout(request)
+    return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

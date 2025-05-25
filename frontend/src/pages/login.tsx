@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import './login.css';
-import { fetchCSRFToken } from '../utils/csrf'; // Make sure this path is correct
+import { postData } from '../utils/api';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -19,29 +19,38 @@ const Login: React.FC = () => {
         e.preventDefault();
 
         try {
-            const csrfToken = await fetchCSRFToken();
+            // Our API utility will handle CSRF token automatically
+            const responseData = await postData("users/login/", { email, password });
+            console.log("Login successful!", responseData);
 
-            const loginResponse = await fetch("http://localhost:8000/api/users/login/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken,
-                },
-                body: JSON.stringify({ email, password }),
-                credentials: "include",
-            });
+            // Store user information in localStorage
+            localStorage.setItem("username", email);
 
-            if (!loginResponse.ok) {
-                const errorData = await loginResponse.json();
-                throw new Error(errorData.error || "Login failed");
+            // Store user role if available
+            if (responseData.user && responseData.user.user_role) {
+                localStorage.setItem("user_role", responseData.user.user_role);
+                console.log("User role stored:", responseData.user.user_role);
             }
 
-            console.log("Login successful!");
-            localStorage.setItem("username", email);
+            // Verify authentication immediately after login
+            try {
+                const authStatus = await postData("users/auth-status/", {});
+                console.log("Authentication verified:", authStatus);
+            } catch (authError) {
+                console.warn("Auth verification warning:", authError);
+                // Continue anyway since we just logged in
+            }
+
             navigate("/dashboard");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Login error:", error);
-            setError("Login failed. Please check your credentials and try again.");
+
+            // Extract error message from the response if available
+            const errorMessage = error.response?.data?.error ||
+                                error.message ||
+                                "Login failed. Please check your credentials and try again.";
+
+            setError(errorMessage);
         }
     };
 

@@ -3,10 +3,11 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer } from 'lucide-react'
+import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, ClipboardCheck } from 'lucide-react'
 import "./garment-template.css"
 import "./print-styles.css"
 import AccessManager from "./components/AccessManager"
+import TemplateAssignmentManager from "./components/TemplateAssignmentManager"
 import { getAqlCodeLetter, getSamplePlan } from "../utils/aqlHelpers"
 import { InspectionLevel as AqlInspectionLevel } from "../utils/aqlTables";
 
@@ -3250,6 +3251,24 @@ const Garment_Template: React.FC = () => {
                   console.log("Updated permissions:", users);
                   // Here you would update the template with the new permissions
                   // setTemplate({ ...template, permissions: users });
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="access-tab">
+            <div className="permissions-section">
+              <h2>
+                <ClipboardCheck size={20} className="section-icon" />
+                Template Assignments
+              </h2>
+              <p>Assign this template to inspectors who will complete the inspections.</p>
+
+              <TemplateAssignmentManager
+                templateId={template.id}
+                templateTitle={template.title || "Untitled Template"}
+                onAssignmentUpdated={() => {
+                  console.log("Template assignments updated")
                 }}
               />
             </div>

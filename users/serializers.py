@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Template, Section, Question
+from .models import (
+    Template, Section, Question, TemplateAccess,
+    PermissionType, GranularPermission, PermissionAuditLog,
+    TemplateAssignment, Inspection, Response, InspectionResponse
+)
 from django.core.files.base import ContentFile
 import base64
 from rest_framework.views import APIView
@@ -21,7 +25,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'username', 'email', 'first_name', 'last_name', 'phone',
-            'password', 'company_name', 'industry_type', 'job_title', 'company_size'
+            'password', 'company_name', 'industry_type', 'job_title', 'company_size',
+            'user_role'
         ]
 
     def create(self, validated_data):
@@ -264,7 +269,288 @@ class TemplateSerializer(serializers.ModelSerializer):
         return obj.updated_at.strftime("%B %d, %Y") if hasattr(obj, 'updated_at') and obj.updated_at else "Unknown"
 
     def get_access(self, obj):
-        return obj.access if hasattr(obj, 'access') else "All users"
+        # Check if there are any access permissions for this template
+        if hasattr(obj, 'access_permissions'):
+            # Count the number of users with access
+            access_count = obj.access_permissions.count()
+            if access_count == 0:
+                return "Only you"
+            elif access_count == 1:
+                return "You and 1 other"
+            else:
+                return f"You and {access_count} others"
+        return "All users"  # Fallback for backward compatibility
 
     def get_createdBy(self, obj):
         return obj.user.email if hasattr(obj, 'user') and obj.user else "Unknown"
+
+
+class UserBasicSerializer(serializers.ModelSerializer):
+    """Simplified user serializer for template access permissions"""
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Full user serializer for user management"""
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'phone', 'company_name', 'industry_type', 'job_title',
+            'company_size', 'user_role', 'date_joined', 'last_login'
+        ]
+
+
+class TemplateAccessSerializer(serializers.ModelSerializer):
+    """Serializer for template access permissions"""
+    user_email = serializers.SerializerMethodField()
+    user_name = serializers.SerializerMethodField()
+    granted_by_name = serializers.SerializerMethodField()
+    granular_permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TemplateAccess
+        fields = [
+            'id',
+            'template',
+            'user',
+            'user_email',
+            'user_name',
+            'permission_level',
+            'status',
+            'created_at',
+            'updated_at',
+            'last_accessed',
+            'granted_by',
+            'granted_by_name',
+            'granular_permissions'
+        ]
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None
+
+    def get_user_name(self, obj):
+        if obj.user:
+            if obj.user.first_name and obj.user.last_name:
+                return f"{obj.user.first_name} {obj.user.last_name}"
+            return obj.user.username
+        return None
+
+    def get_granted_by_name(self, obj):
+        if obj.granted_by:
+            if obj.granted_by.first_name and obj.granted_by.last_name:
+                return f"{obj.granted_by.first_name} {obj.granted_by.last_name}"
+            return obj.granted_by.username
+        return None
+
+    def get_granular_permissions(self, obj):
+        """Get list of granular permissions for this access"""
+        try:
+            permissions = obj.granular_permissions.all()
+            return [
+                {
+                    'id': perm.id,
+                    'permission_type_id': perm.permission_type.id,
+                    'permission_name': perm.permission_type.name,
+                    'permission_codename': perm.permission_type.codename,
+                    'granted_at': perm.granted_at,
+                    'granted_by': perm.granted_by.email if perm.granted_by else None
+                }
+                for perm in permissions
+            ]
+        except Exception:
+            return []
+
+
+class PermissionTypeSerializer(serializers.ModelSerializer):
+    """Serializer for permission types"""
+
+    class Meta:
+        model = PermissionType
+        fields = ['id', 'name', 'codename', 'description']
+
+
+class GranularPermissionSerializer(serializers.ModelSerializer):
+    """Serializer for granular permissions"""
+    permission_name = serializers.SerializerMethodField()
+    permission_codename = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
+    template_id = serializers.SerializerMethodField()
+    granted_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GranularPermission
+        fields = [
+            'id',
+            'template_access',
+            'permission_type',
+            'permission_name',
+            'permission_codename',
+            'granted_at',
+            'granted_by',
+            'granted_by_name',
+            'user_email',
+            'template_id'
+        ]
+
+    def get_permission_name(self, obj):
+        return obj.permission_type.name if obj.permission_type else None
+
+    def get_permission_codename(self, obj):
+        return obj.permission_type.codename if obj.permission_type else None
+
+    def get_user_email(self, obj):
+        return obj.template_access.user.email if obj.template_access and obj.template_access.user else None
+
+    def get_template_id(self, obj):
+        return obj.template_access.template.id if obj.template_access and obj.template_access.template else None
+
+    def get_granted_by_name(self, obj):
+        if obj.granted_by:
+            if obj.granted_by.first_name and obj.granted_by.last_name:
+                return f"{obj.granted_by.first_name} {obj.granted_by.last_name}"
+            return obj.granted_by.username
+        return None
+
+
+class PermissionAuditLogSerializer(serializers.ModelSerializer):
+    """Serializer for permission audit logs"""
+    user_email = serializers.SerializerMethodField()
+    performed_by_email = serializers.SerializerMethodField()
+    template_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PermissionAuditLog
+        fields = [
+            'id',
+            'user',
+            'user_email',
+            'template',
+            'template_title',
+            'action',
+            'timestamp',
+            'performed_by',
+            'performed_by_email',
+            'old_permission',
+            'new_permission',
+            'ip_address',
+            'additional_data'
+        ]
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None
+
+    def get_performed_by_email(self, obj):
+        return obj.performed_by.email if obj.performed_by else None
+
+    def get_template_title(self, obj):
+        return obj.template.title if obj.template else None
+
+
+class TemplateAssignmentSerializer(serializers.ModelSerializer):
+    """Serializer for template assignments"""
+    inspector_email = serializers.SerializerMethodField()
+    inspector_name = serializers.SerializerMethodField()
+    assigned_by_email = serializers.SerializerMethodField()
+    assigned_by_name = serializers.SerializerMethodField()
+    template_title = serializers.SerializerMethodField()
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TemplateAssignment
+        fields = [
+            'id',
+            'template',
+            'template_title',
+            'inspector',
+            'inspector_email',
+            'inspector_name',
+            'assigned_by',
+            'assigned_by_email',
+            'assigned_by_name',
+            'status',
+            'status_display',
+            'assigned_at',
+            'started_at',
+            'completed_at',
+            'revoked_at',
+            'expired_at',
+            'due_date',
+            'notes'
+        ]
+
+    def get_inspector_email(self, obj):
+        return obj.inspector.email if obj.inspector else None
+
+    def get_inspector_name(self, obj):
+        if obj.inspector:
+            if obj.inspector.first_name and obj.inspector.last_name:
+                return f"{obj.inspector.first_name} {obj.inspector.last_name}"
+            return obj.inspector.username
+        return None
+
+    def get_assigned_by_email(self, obj):
+        return obj.assigned_by.email if obj.assigned_by else None
+
+    def get_assigned_by_name(self, obj):
+        if obj.assigned_by:
+            if obj.assigned_by.first_name and obj.assigned_by.last_name:
+                return f"{obj.assigned_by.first_name} {obj.assigned_by.last_name}"
+            return obj.assigned_by.username
+        return None
+
+    def get_template_title(self, obj):
+        return obj.template.title if obj.template else None
+
+    def get_status_display(self, obj):
+        return dict(TemplateAssignment.STATUS_CHOICES).get(obj.status, obj.status)
+
+
+class InspectionSerializer(serializers.ModelSerializer):
+    """Serializer for inspections"""
+    template_title = serializers.SerializerMethodField()
+    responses = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Inspection
+        fields = [
+            'id',
+            'template',
+            'template_title',
+            'title',
+            'conducted_by',
+            'conducted_at',
+            'location',
+            'site',
+            'status',
+            'created_at',
+            'updated_at',
+            'responses'
+        ]
+
+    def get_template_title(self, obj):
+        return obj.template.title if obj.template else None
+
+    def get_responses(self, obj):
+        """Get all responses for this inspection"""
+        try:
+            inspection_responses = obj.inspection_responses.all()
+            return [
+                {
+                    'id': ir.response.id,
+                    'question_id': ir.response.question.id,
+                    'question_text': ir.response.question.text,
+                    'response_type': ir.response.question.response_type,
+                    'text_response': ir.response.text_response,
+                    'number_response': ir.response.number_response,
+                    'boolean_response': ir.response.boolean_response,
+                    'date_response': ir.response.date_response,
+                    'choice_response': ir.response.choice_response.text if ir.response.choice_response else None,
+                }
+                for ir in inspection_responses
+            ]
+        except Exception as e:
+            print(f"Error getting responses: {e}")
+            return []
