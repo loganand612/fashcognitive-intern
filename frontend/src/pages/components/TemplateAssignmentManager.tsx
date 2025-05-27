@@ -343,6 +343,8 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
           </div>
         )}
 
+
+
         {error && (
           <div className="error-message">
             <AlertCircle size={16} />

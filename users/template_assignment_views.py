@@ -55,7 +55,22 @@ class TemplateAssignmentListView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        template = get_object_or_404(Template, id=template_id)
+        # Handle template ID - check if it's numeric (database ID) or string (frontend ID)
+        try:
+            if str(template_id).isdigit():
+                template = get_object_or_404(Template, id=template_id)
+            else:
+                # Frontend-generated ID - template doesn't exist in database yet
+                return Response(
+                    {"detail": "Template must be saved before it can be assigned. Please save the template first."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except ValueError:
+            return Response(
+                {"detail": "Invalid template ID format."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         inspector = get_object_or_404(CustomUser, id=inspector_id)
 
         # Verify inspector has the inspector role

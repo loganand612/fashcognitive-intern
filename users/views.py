@@ -127,7 +127,15 @@ def templates_api(request):
                         order=question_data.get("order", 0),
                     )
 
-            return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Template created successfully!",
+                "id": template.id,
+                "template": {
+                    "id": template.id,
+                    "title": template.title,
+                    "description": template.description
+                }
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             print(f"Internal Server Error: {e}")  # Useful for server logs
@@ -305,7 +313,15 @@ class TemplateCreateView(APIView):
                             multiple_selection=question_data.get("multipleSelection", False),
                         )
 
-            return Response({"message": "Template saved successfully!"}, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Template saved successfully!",
+                "id": template.id,
+                "template": {
+                    "id": template.id,
+                    "title": template.title,
+                    "description": template.description
+                }
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             print(f"❌ Exception Traceback:\n{e}")
@@ -437,7 +453,15 @@ class TemplateDetailView(RetrieveAPIView):
                     print(f"Error processing sections: {e}")
                     return Response({"error": f"Error processing sections: {str(e)}"}, status=400)
 
-            return Response({"message": "Template updated successfully!"}, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Template updated successfully!",
+                "id": template.id,
+                "template": {
+                    "id": template.id,
+                    "title": template.title,
+                    "description": template.description
+                }
+            }, status=status.HTTP_200_OK)
 
         except Exception as e:
             print(f"❌ Exception in PATCH: {e}")

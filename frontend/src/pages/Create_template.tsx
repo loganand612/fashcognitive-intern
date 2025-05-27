@@ -50,6 +50,7 @@ import {
   Building,
   Flag,
   ClipboardCheck,
+  Save,
 } from "lucide-react"
 import jsPDF from "jspdf"
 
@@ -2083,7 +2084,10 @@ const CreateTemplate: React.FC = () => {
 
   // Backend API functions
   const handleSave = async () => {
-    const isNew = !id;
+    // Check if template is new: no URL id AND template.id is not a numeric database ID
+    const hasNumericId = String(template.id).match(/^\d+$/);
+    const isNew = !id && !hasNumericId;
+    const templateDbId = hasNumericId ? template.id : id;
 
     if (!template.title) {
       alert("Please enter a template title");
@@ -2116,7 +2120,7 @@ const CreateTemplate: React.FC = () => {
 
       const url = isNew
         ? "http://localhost:8000/api/users/create_templates/"
-        : `http://localhost:8000/api/users/templates/${id}/`;
+        : `http://localhost:8000/api/users/templates/${templateDbId}/`;
 
       const method = isNew ? "POST" : "PATCH";
 
@@ -2132,6 +2136,23 @@ const CreateTemplate: React.FC = () => {
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json();
         throw new Error(errorData.error || "Failed to save template");
+      }
+
+      // Get the response data to update the template ID
+      const responseData = await saveResponse.json();
+
+      // Update the template with the database ID if it's a new template
+      if (isNew && responseData.id) {
+        setTemplate((prev) => ({
+          ...prev,
+          id: responseData.id.toString(), // Convert to string to match frontend interface
+          lastSaved: new Date(),
+        }));
+      } else {
+        setTemplate((prev) => ({
+          ...prev,
+          lastSaved: new Date(),
+        }));
       }
 
       alert("Template saved successfully!");
@@ -2164,13 +2185,21 @@ const CreateTemplate: React.FC = () => {
       }
 
       // 4. Add sections data
-      const isNew = !id;
+      const hasNumericId = String(template.id).match(/^\d+$/);
+      const isNew = !id && !hasNumericId;
+      const templateDbId = hasNumericId ? template.id : id;
       const cleanedTemplate = cleanTemplateForSave(template, isNew)
       formData.append("sections", JSON.stringify(cleanedTemplate.sections))
 
       // 5. Make the API request with the fresh CSRF token
-      const publishResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
-        method: "POST",
+      const url = isNew
+        ? "http://localhost:8000/api/users/create_templates/"
+        : `http://localhost:8000/api/users/templates/${templateDbId}/`;
+
+      const method = isNew ? "POST" : "PATCH";
+
+      const publishResponse = await fetch(url, {
+        method,
         headers: {
           "X-CSRFToken": csrfToken,
         },
@@ -2183,12 +2212,24 @@ const CreateTemplate: React.FC = () => {
         throw new Error(errorData.error || "Failed to publish template")
       }
 
-      // Success handling
-      setTemplate((prev) => ({
-        ...prev,
-        lastSaved: new Date(),
-        lastPublished: new Date(),
-      }))
+      // Get the response data to update the template ID
+      const publishResponseData = await publishResponse.json();
+
+      // Success handling - update template with database ID if it's new
+      if (isNew && publishResponseData.id) {
+        setTemplate((prev) => ({
+          ...prev,
+          id: publishResponseData.id.toString(), // Convert to string to match frontend interface
+          lastSaved: new Date(),
+          lastPublished: new Date(),
+        }));
+      } else {
+        setTemplate((prev) => ({
+          ...prev,
+          lastSaved: new Date(),
+          lastPublished: new Date(),
+        }));
+      }
 
       console.log("Template published successfully!")
       alert("Template published and saved successfully!")
@@ -3768,7 +3809,14 @@ const CreateTemplate: React.FC = () => {
           </div>
         </div>
         <div className="nav-right">
-          {/* Save button removed */}
+          <button
+            className="save-button"
+            onClick={handleSave}
+            disabled={!template.title}
+          >
+            <Save size={16} />
+            Save
+          </button>
         </div>
       </div>
 

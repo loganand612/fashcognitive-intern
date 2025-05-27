@@ -1725,12 +1725,15 @@ const Garment_Template: React.FC = () => {
       formData.append("sections", JSON.stringify(sectionsData));
 
       // Determine if this is a new template or an edit
-      const isNew = !id;
+      // Check if template is new: no URL id AND template.id is not a numeric database ID
+      const hasNumericId = String(template.id).match(/^\d+$/);
+      const isNew = !id && !hasNumericId;
+      const templateDbId = hasNumericId ? template.id : id;
 
       // Set the appropriate URL and method based on whether we're creating or updating
       const url = isNew
         ? "http://localhost:8000/api/users/garment-template/"
-        : `http://localhost:8000/api/users/templates/${id}/`;
+        : `http://localhost:8000/api/users/templates/${templateDbId}/`;
 
       const method = isNew ? "POST" : "PATCH";
 
@@ -4870,6 +4873,24 @@ const Garment_Template: React.FC = () => {
                   console.log("Updated permissions:", users);
                   // Here you would update the template with the new permissions
                   // setTemplate({ ...template, permissions: users });
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="garment-template-access-tab">
+            <div className="garment-template-permissions-section">
+              <h2>
+                <ClipboardCheck size={22} className="garment-template-section-icon" />
+                Template Assignments
+              </h2>
+              <p>Assign this template to inspectors who will complete the inspections.</p>
+
+              <TemplateAssignmentManager
+                templateId={template.id}
+                templateTitle={template.title || "Untitled Template"}
+                onAssignmentUpdated={() => {
+                  console.log("Template assignments updated")
                 }}
               />
             </div>
