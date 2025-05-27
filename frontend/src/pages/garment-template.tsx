@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck, Save } from 'lucide-react'
 import "./garment-template.css"
 import "./print-styles.css"
 import AccessManager from "./components/AccessManager"
@@ -4941,15 +4941,33 @@ const Garment_Template: React.FC = () => {
         </div>
         <div className="nav-right">
           {activeTab === 0 && (
-            <button className="nav-next-button" onClick={() => setActiveTab(1)}>
-              Next: Report
-              <ArrowRight size={16} />
-            </button>
+            <>
+              <button className="nav-save-button" onClick={handleSave}>
+                <Save size={16} />
+                Save Template
+              </button>
+              <button className="nav-next-button" onClick={() => setActiveTab(1)}>
+                Next: Report
+                <ArrowRight size={16} />
+              </button>
+            </>
           )}
           {activeTab === 1 && (
-            <button className="nav-next-button" onClick={() => setActiveTab(2)}>
-              Next: Access
-              <ArrowRight size={16} />
+            <>
+              <button className="nav-save-button" onClick={handleSave}>
+                <Save size={16} />
+                Save Template
+              </button>
+              <button className="nav-next-button" onClick={() => setActiveTab(2)}>
+                Next: Access
+                <ArrowRight size={16} />
+              </button>
+            </>
+          )}
+          {activeTab === 2 && (
+            <button className="nav-save-button" onClick={handleSave}>
+              <Save size={16} />
+              Save Template
             </button>
           )}
         </div>

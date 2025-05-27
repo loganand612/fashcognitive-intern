@@ -172,6 +172,58 @@
   pointer-events: none;
 }
 
+.nav-save-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  background-color: #10b981;
+  color: white;
+  border: 1px solid #10b981;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  justify-content: center;
+  text-decoration: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  user-select: none;
+  position: relative;
+  z-index: 1002;
+  pointer-events: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-save-button:hover:not(:disabled) {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+}
+
+.nav-save-button:active:not(:disabled) {
+  transform: translateY(0);
+  background-color: #10b981;
+  color: white;
+}
+
+.nav-save-button:focus {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+.nav-save-button:disabled {
+  background-color: #cccccc;
+  border-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 .next-icon {
   transform: rotate(0deg);
 }

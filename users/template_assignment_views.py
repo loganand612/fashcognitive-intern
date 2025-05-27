@@ -38,6 +38,10 @@ class TemplateAssignmentListView(APIView):
 
     def post(self, request):
         """Create a new template assignment"""
+        # Debug logging
+        print(f"Assignment request data: {request.data}")
+        print(f"User role: {request.user.user_role}")
+
         # Only admin users can create assignments
         if request.user.user_role != 'admin':
             return Response(
@@ -48,6 +52,9 @@ class TemplateAssignmentListView(APIView):
         # Get template and inspector
         template_id = request.data.get('template')
         inspector_id = request.data.get('inspector')
+
+        print(f"Template ID: {template_id} (type: {type(template_id)})")
+        print(f"Inspector ID: {inspector_id} (type: {type(inspector_id)})")
 
         if not template_id or not inspector_id:
             return Response(
