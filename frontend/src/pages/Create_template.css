@@ -897,6 +897,45 @@
   cursor: pointer;
 }
 
+.annotation-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: #f9f9f9;
+}
+
+.annotation-image {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.annotation-remove-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.annotation-remove-button:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
 .response-options {
   margin-top: 12px;
   display: flex;
@@ -2147,8 +2186,8 @@
   background-color: rgba(0, 0, 0, 0.7);
 }
 
-/* Enhanced Annotation */
-.mobile-annotation {
+/* Enhanced Annotation - Create Template Specific */
+.create-template-mobile-annotation {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2164,12 +2203,12 @@
   min-height: 100px;
 }
 
-.mobile-annotation:hover {
+.create-template-mobile-annotation:hover {
   background-color: #f0f0f0;
   border-color: var(--color-primary);
 }
 
-.mobile-annotation-placeholder {
+.create-template-mobile-annotation-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2177,17 +2216,175 @@
   cursor: pointer;
 }
 
-.mobile-annotation-preview {
+.create-template-mobile-annotation-preview {
   width: 100%;
   position: relative;
 }
 
-.mobile-annotation-image {
+.create-template-mobile-annotation-image {
   width: 100%;
   height: auto;
   max-height: 200px;
   object-fit: contain;
   border-radius: 6px;
+}
+
+/* Signature Modal Styles */
+.create-template-signature-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 16px;
+}
+
+.create-template-signature-modal {
+  background-color: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.create-template-signature-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9f9f9;
+}
+
+.create-template-signature-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.create-template-signature-modal-close {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.create-template-signature-modal-close:hover {
+  background-color: #f3f4f6;
+}
+
+.create-template-signature-modal-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.create-template-signature-canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.create-template-signature-canvas {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  cursor: crosshair;
+  touch-action: none;
+  width: 280px;
+  height: 140px;
+  display: block;
+}
+
+.create-template-signature-canvas:hover {
+  border-color: var(--color-primary);
+}
+
+.create-template-signature-instructions {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  font-style: italic;
+}
+
+.create-template-signature-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.create-template-signature-clear-btn {
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-template-signature-clear-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.create-template-signature-save-btn {
+  padding: 10px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  background-color: var(--color-primary);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-template-signature-save-btn:hover {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+/* Mobile responsive adjustments for signature modal */
+@media (max-width: 480px) {
+  .create-template-signature-modal {
+    max-width: 95%;
+    margin: 0 auto;
+  }
+
+  .create-template-signature-canvas {
+    width: 260px;
+    height: 130px;
+  }
+
+  .create-template-signature-modal-actions {
+    flex-direction: column;
+  }
+
+  .create-template-signature-clear-btn,
+  .create-template-signature-save-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Enhanced Date & Time */
