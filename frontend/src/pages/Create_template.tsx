@@ -1,12 +1,20 @@
 "use client"
 
 import type React from "react"
-import { useParams } from "react-router-dom";
-
-import { useState, useRef, useEffect } from "react"
+import { useParams } from "react-router-dom"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
-import SimpleLogicRules from "./components/SimpleLogicRules"
+import "./Create_template.css"
+import AccessManager from './components/AccessManager'
+import TemplateAssignmentManager from './components/TemplateAssignmentManager'
+import { fetchCSRFToken } from '../utils/csrf'
+
+import "./components/TemplateBuilderLayout.css"
+import "./components/FixTransitions.css"
+import "./components/ReportPageFix.css"
+import "./components/AccessPageFix.css"
+import "./LogicRules.css"
 import {
   ChevronDown,
   ChevronUp,
@@ -17,13 +25,14 @@ import {
   MapPin,
   X,
   Check,
-  ImageIcon,
+  Image,
   Trash2,
   Move,
   Clock,
   ArrowLeft,
   Bell,
   FileText,
+  CheckCircle,
   MessageSquare,
   CornerDownRight,
   ArrowRight,
@@ -40,64 +49,13 @@ import {
   Download,
   Building,
   Flag,
-  CheckCircle,
   ClipboardCheck,
 } from "lucide-react"
-import { jsPDF } from "jspdf"
-import AccessManager from "../pages/components/AccessManager"
-import TemplateAssignmentManager from "../pages/components/TemplateAssignmentManager"
-import { fetchCSRFToken } from "../utils/csrf"
-import "../assets/Create_template.css"
-import "../pages/components/TemplateBuilderLayout.css"
-import "../pages/components/FixTransitions.css"
-import "../pages/components/ReportPageFix.css"
-import "../pages/components/AccessPageFix.css"
-import "./LogicRules.css"
-
-// U
-// Utility functions
-function getCookie(name: string): string | null {
-  let cookieValue = null
-  if (document.cookie && document.cookie !== "") {
-    const cookies = document.cookie.split(";")
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim()
-      if (cookie.startsWith(name + "=")) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
-        break
-      }
-    }
-  }
-  return cookieValue
-}
-
-const resizeImage = (base64: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = document.createElement("img")
-    img.crossOrigin = "anonymous"
-    img.src = base64
-    img.onload = () => {
-      const canvas = document.createElement("canvas")
-      const MAX_WIDTH = 500
-      const scale = Math.min(MAX_WIDTH / img.width, 1)
-      canvas.width = img.width * scale
-      canvas.height = img.height * scale
-      const ctx = canvas.getContext("2d")
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL("image/jpeg", 0.8))
-      } else {
-        reject(new Error("Failed to get canvas context"))
-      }
-    }
-    img.onerror = () => reject(new Error("Failed to load image"))
-  })
-}
+import jsPDF from "jspdf"
 
 // Types
 type ResponseType =
   | "Site"
-  | "Inspection date"
   | "Person"
   | "Inspection location"
   | "Text"
@@ -157,7 +115,9 @@ interface LogicRule {
   subQuestion?: {
     text: string
     responseType: ResponseType
+    options?: string[]
   }
+  tempDisabled?: boolean // Flag to temporarily disable a rule without removing it
 }
 
 interface ConditionalLogicRule {
@@ -195,6 +155,15 @@ interface Question {
   conditionalProof?: string
   logicRules?: LogicRule[]
   multipleSelection?: boolean
+  logicResponses?: {
+    ruleId: string
+    responseType: string
+    responseValue: string | boolean | number | null
+    responseText?: string
+    responseDate?: string
+    responseEvidence?: string
+    options?: string[] // Added options for Multiple choice
+  }[]
 }
 
 interface Section {
@@ -215,175 +184,267 @@ interface Template {
   logo?: string
 }
 
+// Utility Functions
+const generateId = () => Math.random().toString(36).substring(2, 9)
+const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
+
+// Backend utility functions
+function getCookie(name: string): string | null {
+  let cookieValue = null
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";")
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim()
+      if (cookie.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+        break
+      }
+    }
+  }
+  return cookieValue
+}
+
+function toSnakeCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(toSnakeCase);
+  } else if (obj !== null && typeof obj === "object") {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (!obj.hasOwnProperty(key)) continue;
+      const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+      newObj[snakeKey] = toSnakeCase(obj[key]);
+    }
+    return newObj;
+  }
+  return obj;
+}
+
+function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
+  return {
+    ...(isNew ? {} : { id: template.id }),
+    title: template.title,
+    description: template.description,
+    logo: template.logo,
+    sections: template.sections.map((section) => {
+      const newSectionId = isNew || typeof section.id === "number" ? generateId() : section.id;
+
+      return {
+        id: newSectionId,
+        title: section.title,
+        description: section.description,
+        isCollapsed: section.isCollapsed,
+        questions: section.questions.map((q) => {
+          const newQuestionId = isNew || typeof q.id === "number" ? generateId() : q.id;
+
+          return {
+            id: newQuestionId,
+            text: q.text,
+            responseType: q.responseType ?? "Text", // ensure fallback
+            required: q.required,
+            flagged: q.flagged,
+            options: q.options,
+            value: q.value,
+            conditionalLogic: q.conditionalLogic,
+            conditionalProof: q.conditionalProof,
+            logicRules: q.logicRules,
+            multipleSelection: q.multipleSelection,
+          };
+        }),
+      };
+    }),
+  };
+}
+
+const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
+  id: generateId(),
+  text: "Type question",
+  responseType,
+  required: false,
+  flagged: false,
+  multipleSelection: false,
+  options:
+    responseType === "Multiple choice"
+      ? ["Option 1", "Option 2", "Option 3"]
+      : responseType === "Yes/No"
+      ? ["Yes", "No", "N/A"]
+      : undefined,
+  value: null,
+  logicRules: [],
+})
+
+const getDefaultSection = (title = "Untitled Page"): Section => ({
+  id: generateId(),
+  title,
+  questions: [],
+  isCollapsed: false,
+})
+
+const getInitialTemplate = (): Template => {
+  const titlePageSection: Section = {
+    id: generateId(),
+    title: "Title Page",
+    description: "The Title Page is the first page of your inspection report. You can edit the title and customize the fields below.",
+    questions: [
+      {
+        id: generateId(),
+        text: "Site conducted",
+        responseType: "Site",
+        required: true,
+        flagged: false,
+        value: null,
+        logicRules: [],
+      },
+      {
+        id: generateId(),
+        text: "Conducted on",
+        responseType: "Date & Time",
+        required: true,
+        flagged: false,
+        value: null,
+        logicRules: [],
+      },
+      {
+        id: generateId(),
+        text: "Prepared by",
+        responseType: "Person",
+        required: true,
+        flagged: false,
+        value: null,
+        logicRules: [],
+      },
+      {
+        id: generateId(),
+        text: "Location",
+        responseType: "Inspection location",
+        required: true,
+        flagged: false,
+        value: null,
+        logicRules: [],
+      },
+    ],
+    isCollapsed: false,
+  }
+
+  return {
+    id: generateId(),
+    title: "Untitled template",
+    description: "Add a description",
+    sections: [titlePageSection],
+    lastSaved: new Date(),
+    lastPublished: new Date(),
+    logo: undefined,
+  }
+}
+
+const resizeImage = (base64: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement('img')
+    img.crossOrigin = "anonymous"
+    img.src = base64
+    img.onload = () => {
+      const canvas = document.createElement("canvas")
+      const MAX_WIDTH = 500
+      const scale = Math.min(MAX_WIDTH / img.width, 1)
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL("image/jpeg", 0.8))
+      } else {
+        reject(new Error("Failed to get canvas context"))
+      }
+    }
+    img.onerror = () => reject(new Error("Failed to load image"))
+  })
+}
+
 // Utility type guard
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((v: unknown) => typeof v === "string")
 
-// Helper function to get all questions except the current one
-const getAllQuestionsExcept = (questionId: string) => {
-  // This function will be used inside the component where template is defined
-  // We'll move the implementation there
-  return [];
-}
-
-// Helper function to get options for a question based on its type
-const getOptionsForQuestion = (question: Question) => {
-  if (question.options && question.options.length > 0) {
-    return question.options;
-  }
-
-  if (question.responseType === "Yes/No") {
-    return ["Yes", "No", "N/A"];
-  }
-
-  return [];
-}
-
-// Helper function to check if a response type should have a trigger button
-const shouldHaveTriggerButton = (responseType: ResponseType): boolean => {
-  // Only the first 6 response types should have trigger buttons
-  const triggerEnabledTypes: ResponseType[] = [
-    "Text",
-    "Number",
-    "Checkbox",
-    "Yes/No",
-    "Multiple choice",
-    "Slider"
-  ]
-  return triggerEnabledTypes.includes(responseType)
-}
-
 // Helper function to check if a trigger should be shown based on the question's logic rules
 const shouldShowTrigger = (question: Question, triggerType: TriggerAction): boolean => {
-  // Log the question and trigger type for debugging
-  console.log(`Checking trigger ${triggerType} for question:`, {
-    id: question.id,
-    text: question.text,
-    value: question.value,
-    responseType: question.responseType,
-    logicRules: question.logicRules
-  });
-
-  // If there are no logic rules, don't show any triggers
-  if (!question.logicRules || question.logicRules.length === 0) {
-    console.log("No logic rules found, returning false");
-    return false;
-  }
-
-  // Only evaluate rules if the question has a value
-  if (question.value === null || question.value === undefined) {
-    console.log("Question has no value, returning false");
-    return false;
-  }
+  if (!question.logicRules || question.logicRules.length === 0) return false
+  if (question.value === null || question.value === undefined) return false
 
   for (const rule of question.logicRules) {
+    // Skip rules that don't match the trigger type
     if (rule.trigger !== triggerType) continue
+
+    // Skip rules that have been temporarily disabled
+    if ((rule as any).tempDisabled) continue
+
+    // Skip rules with null values (except for "is" and "is not" conditions)
+    if (rule.value === null && rule.condition !== "is" && rule.condition !== "is not") continue
 
     // Evaluate the condition based on the current value
     const value = question.value
     let conditionMet = false
 
-    // Convert values to appropriate types for comparison
-    let compareValue = value;
-    let ruleValue = rule.value;
-
-    // For number fields, ensure we're comparing numbers
-    if (question.responseType === "Number" || question.responseType === "Slider") {
-      compareValue = typeof value === "string" ? parseFloat(value) : (typeof value === "number" ? value : 0);
-      ruleValue = typeof rule.value === "string" ? parseFloat(rule.value) : (typeof rule.value === "number" ? rule.value : 0);
-    }
-
-    // Debug
-    console.log("Comparing:", {
-      compareValue,
-      ruleValue,
-      condition: rule.condition,
-      originalValue: value,
-      originalRuleValue: rule.value,
-      responseType: question.responseType
-    });
-
-    switch (rule.condition) {
-      case "is":
-        conditionMet = String(compareValue) === String(ruleValue)
-        break
-      case "is not":
-        conditionMet = String(compareValue) !== String(ruleValue)
-        break
-      case "contains":
-        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && compareValue.includes(ruleValue)
-        break
-      case "not contains":
-        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && !compareValue.includes(ruleValue)
-        break
-      case "starts with":
-        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && compareValue.startsWith(ruleValue)
-        break
-      case "ends with":
-        conditionMet = typeof compareValue === "string" && typeof ruleValue === "string" && compareValue.endsWith(ruleValue)
-        break
-      case "greater than":
-        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue > ruleValue
-        break
-      case "less than":
-        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue < ruleValue
-        break
-      case "equal to":
-        // For numbers, convert both to numbers and compare
-        if (question.responseType === "Number" || question.responseType === "Slider") {
-          const numValue = Number(compareValue);
-          const numRuleValue = Number(ruleValue);
-          conditionMet = !isNaN(numValue) && !isNaN(numRuleValue) && numValue === numRuleValue;
-          console.log("Number comparison:", { numValue, numRuleValue, conditionMet });
-        } else {
-          conditionMet = String(compareValue) === String(ruleValue);
-        }
-        break
-      case "not equal to":
-        conditionMet = compareValue != ruleValue // Use loose equality for number comparison
-        break
-      case "greater than or equal to":
-        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue >= ruleValue
-        break
-      case "less than or equal to":
-        conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue <= ruleValue
-        break
-      case "between":
-        conditionMet =
-          Array.isArray(rule.value) &&
-          rule.value.length === 2 &&
-          typeof value === "number" &&
-          value > Number(rule.value[0]) &&
-          value < Number(rule.value[1])
-        break
-      case "is one of":
-        conditionMet = isStringArray(rule.value) && typeof value === "string" && rule.value.includes(value)
-        break
-      case "is not one of":
-        conditionMet = isStringArray(rule.value) && typeof value === "string" && !rule.value.includes(value)
-        break
+    try {
+      switch (rule.condition) {
+        case "is":
+          conditionMet = String(value) === String(rule.value)
+          break
+        case "is not":
+          conditionMet = String(value) !== String(rule.value)
+          break
+        case "contains":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && value.includes(rule.value)
+          break
+        case "not contains":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && !value.includes(rule.value)
+          break
+        case "starts with":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && value.startsWith(rule.value)
+          break
+        case "ends with":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && value.endsWith(rule.value)
+          break
+        case "greater than":
+          conditionMet = Number(value) > Number(rule.value)
+          break
+        case "less than":
+          conditionMet = Number(value) < Number(rule.value)
+          break
+        case "equal to":
+          conditionMet = Number(value) === Number(rule.value)
+          break
+        case "not equal to":
+          conditionMet = Number(value) !== Number(rule.value)
+          break
+        case "greater than or equal to":
+          conditionMet = Number(value) >= Number(rule.value)
+          break
+        case "less than or equal to":
+          conditionMet = Number(value) <= Number(rule.value)
+          break
+        case "between":
+          conditionMet =
+            Array.isArray(rule.value) &&
+            rule.value.length === 2 &&
+            Number(value) >= Number(rule.value[0]) &&
+            Number(value) <= Number(rule.value[1])
+          break
+        case "is one of":
+          conditionMet = isStringArray(rule.value) && rule.value.includes(String(value))
+          break
+        case "is not one of":
+          conditionMet = isStringArray(rule.value) && !rule.value.includes(String(value))
+          break
+      }
+    } catch (error) {
+      console.error("Error evaluating condition:", error);
+      continue; // Skip this rule if there's an error
     }
 
     if (conditionMet) {
-      console.log(`Condition met for trigger ${triggerType}:`, {
-        condition: rule.condition,
-        compareValue,
-        ruleValue,
-        conditionMet
-      });
-      return true;
-    } else {
-      console.log(`Condition NOT met for trigger ${triggerType}:`, {
-        condition: rule.condition,
-        compareValue,
-        ruleValue,
-        conditionMet
-      });
+      return true
     }
   }
 
-  console.log(`No matching conditions found for trigger ${triggerType}, returning false`);
-  return false;
+  return false
 }
 
 // Helper function to get condition icon
@@ -465,7 +526,6 @@ const EnhancedLogicConditionSelector: React.FC<{
         case "Annotation":
           return ["is", "is not"]
         case "Date & Time":
-        case "Inspection date":
           return ["is", "is not", "less than", "greater than", "between"]
         case "Site":
         case "Person":
@@ -653,9 +713,7 @@ const EnhancedLogicTriggerSelector: React.FC<{
   className?: string
 }> = ({ selectedTrigger, onTriggerSelect, onConfigChange, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const triggers: { value: TriggerAction; label: string; icon: React.ReactNode; description: string }[] = [
     {
@@ -667,7 +725,7 @@ const EnhancedLogicTriggerSelector: React.FC<{
     {
       value: "require_evidence",
       label: "Require evidence",
-      icon: <ImageIcon className="trigger-icon" />,
+      icon: <Image className="trigger-icon" />,
       description: "Require the user to upload evidence",
     },
     {
@@ -690,43 +748,6 @@ const EnhancedLogicTriggerSelector: React.FC<{
     },
   ]
 
-  // Position the dropdown when it opens
-  const updateDropdownPosition = () => {
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      const windowWidth = window.innerWidth
-      const windowHeight = window.innerHeight
-
-      // Calculate left position, ensuring it doesn't go off-screen
-      let leftPos = rect.left
-      if (leftPos + 260 > windowWidth) {
-        leftPos = Math.max(0, windowWidth - 270)
-      }
-
-      // Calculate top position, ensuring it doesn't go off-screen
-      // Position the dialog higher up by subtracting 50px from rect.bottom (increased from 30px)
-      let topPos = rect.bottom - 50
-      const dropdownHeight = 300 // Approximate max height of dropdown
-      if (topPos + dropdownHeight > windowHeight) {
-        // Position above the button if there's not enough space below
-        if (rect.top > dropdownHeight) {
-          topPos = rect.top - dropdownHeight
-        }
-      }
-
-      setDropdownPosition({
-        top: topPos,
-        left: leftPos
-      })
-    }
-  }
-
-  // Handle opening the dropdown
-  const handleOpenDropdown = () => {
-    updateDropdownPosition()
-    setIsOpen(true)
-  }
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -738,36 +759,12 @@ const EnhancedLogicTriggerSelector: React.FC<{
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Update position when window is resized or scrolled
-  useEffect(() => {
-    if (isOpen) {
-      const handleResize = () => {
-        updateDropdownPosition()
-      }
-      const handleScroll = () => {
-        updateDropdownPosition()
-      }
-
-      window.addEventListener('resize', handleResize)
-      window.addEventListener('scroll', handleScroll, true) // Capture phase to detect all scrolls
-
-      return () => {
-        window.removeEventListener('resize', handleResize)
-        window.removeEventListener('scroll', handleScroll, true)
-      }
-    }
-  }, [isOpen])
-
   const selectedTriggerInfo = selectedTrigger ? triggers.find((t) => t.value === selectedTrigger) : null
 
   return (
     <div className={`enhanced-logic-trigger-selector ${className}`} ref={dropdownRef}>
       {!selectedTrigger ? (
-        <button
-          className="enhanced-trigger-button"
-          onClick={handleOpenDropdown}
-          ref={buttonRef}
-        >
+        <button className="enhanced-trigger-button" onClick={() => setIsOpen(!isOpen)}>
           <Plus className="trigger-plus-icon" />
           <span>Add trigger</span>
         </button>
@@ -779,7 +776,10 @@ const EnhancedLogicTriggerSelector: React.FC<{
             className="enhanced-clear-trigger"
             onClick={(e) => {
               e.stopPropagation()
-              onTriggerSelect(null)
+              // Use setTimeout to prevent the buffering/spark effect
+              setTimeout(() => {
+                onTriggerSelect(null)
+              }, 10)
             }}
           >
             <X className="clear-icon" />
@@ -788,18 +788,7 @@ const EnhancedLogicTriggerSelector: React.FC<{
       )}
 
       {isOpen && !selectedTrigger && (
-        <>
-          <div
-            className="trigger-dropdown-overlay"
-            onClick={() => setIsOpen(false)}
-          />
-          <div
-            className="enhanced-trigger-dropdown"
-            style={{
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`
-            }}
-          >
+        <div className="enhanced-trigger-dropdown">
           {triggers.map((trigger) => (
             <div
               key={trigger.value}
@@ -816,8 +805,7 @@ const EnhancedLogicTriggerSelector: React.FC<{
               </div>
             </div>
           ))}
-          </div>
-        </>
+        </div>
       )}
     </div>
   )
@@ -831,6 +819,8 @@ const EnhancedLogicTriggerConfig: React.FC<{
   const [message, setMessage] = useState(config?.message || "")
   const [questionText, setQuestionText] = useState(config?.subQuestion?.text || "")
   const [responseType, setResponseType] = useState<ResponseType>(config?.subQuestion?.responseType || "Text")
+  const [options, setOptions] = useState<string[]>(config?.subQuestion?.options || ["Option 1", "Option 2", "Option 3"])
+  const [newOption, setNewOption] = useState<string>("")
 
   useEffect(() => {
     if (trigger === "display_message") {
@@ -841,10 +831,29 @@ const EnhancedLogicTriggerConfig: React.FC<{
         subQuestion: {
           text: questionText,
           responseType,
+          options: responseType === "Multiple choice" ? options : undefined
         },
       })
     }
-  }, [trigger, message, questionText, responseType, config, onConfigChange])
+  }, [trigger, message, questionText, responseType, options, config, onConfigChange])
+
+  const addOption = () => {
+    if (newOption.trim() === "") return;
+    setOptions([...options, newOption.trim()]);
+    setNewOption("");
+  };
+
+  const removeOption = (index: number) => {
+    const newOptions = [...options];
+    newOptions.splice(index, 1);
+    setOptions(newOptions);
+  };
+
+  const updateOption = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  };
 
   if (trigger === "display_message") {
     return (
@@ -883,14 +892,53 @@ const EnhancedLogicTriggerConfig: React.FC<{
           <option value="Yes/No">Yes/No</option>
           <option value="Multiple choice">Multiple choice</option>
         </select>
+
+        {responseType === "Multiple choice" && (
+          <div className="enhanced-options-container mt-2">
+            <label className="enhanced-trigger-config-label">Options:</label>
+            {options.map((option, index) => (
+              <div key={index} className="enhanced-option-item">
+                <input
+                  type="text"
+                  className="enhanced-logic-text-input"
+                  value={option}
+                  onChange={(e) => updateOption(index, e.target.value)}
+                  placeholder={`Option ${index + 1}`}
+                />
+                <button
+                  className="enhanced-remove-option-button"
+                  onClick={() => removeOption(index)}
+                  type="button"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            <div className="enhanced-add-option">
+              <input
+                type="text"
+                className="enhanced-logic-text-input"
+                value={newOption}
+                onChange={(e) => setNewOption(e.target.value)}
+                placeholder="New option"
+              />
+              <button
+                className="enhanced-add-option-button"
+                onClick={addOption}
+                type="button"
+              >
+                <Plus size={14} />
+                Add
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
   return null
 }
-
-const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
 
 const EnhancedLogicRuleBuilder: React.FC<{
   questionType: ResponseType
@@ -935,46 +983,57 @@ const EnhancedLogicRuleBuilder: React.FC<{
           <EnhancedLogicTriggerSelector
             selectedTrigger={localRule.trigger}
             onTriggerSelect={(trigger) => {
-              setLocalRule({
-                ...localRule,
-                trigger,
-                triggerConfig: trigger ? {} : undefined,
-                message: trigger === "display_message" ? localRule.message || "" : undefined,
-                subQuestion:
-                  trigger === "ask_questions" ? localRule.subQuestion || { text: "", responseType: "Text" } : undefined,
-              })
-              setShowConfig(!!trigger)
+              // If removing a trigger, hide config panel first to prevent flickering
+              if (!trigger) {
+                setShowConfig(false)
+                // Small delay before updating the rule state to prevent UI flicker
+                setTimeout(() => {
+                  setLocalRule({
+                    ...localRule,
+                    trigger: null,
+                    triggerConfig: undefined,
+                    message: undefined,
+                    subQuestion: undefined,
+                  })
+                }, 10)
+              } else {
+                // For adding a trigger, update state immediately
+                setLocalRule({
+                  ...localRule,
+                  trigger,
+                  triggerConfig: trigger ? {} : undefined,
+                  message: trigger === "display_message" ? localRule.message || "" : undefined,
+                  subQuestion:
+                    trigger === "ask_questions" ? localRule.subQuestion || { text: "", responseType: "Text" } : undefined,
+                })
+                // Always show config when a trigger is selected
+                setShowConfig(true)
+              }
             }}
             onConfigChange={(config) => setLocalRule({ ...localRule, triggerConfig: config })}
           />
+
+        </div>
+        <div className={`enhanced-logic-config-panel ${showConfig && localRule.trigger ? "" : "hidden"}`}>
           {localRule.trigger && (
-            <button
-              className="enhanced-config-button"
-              onClick={() => setShowConfig(!showConfig)}
-              title="Configure trigger"
-            >
-              <Edit size={16} />
-            </button>
+            <div className="enhanced-logic-config-row">
+              <EnhancedLogicTriggerConfig
+                trigger={localRule.trigger}
+                config={{
+                  message: localRule.message,
+                  subQuestion: localRule.subQuestion,
+                }}
+                onConfigChange={(config) => {
+                  setLocalRule({
+                    ...localRule,
+                    message: config.message,
+                    subQuestion: config.subQuestion,
+                  })
+                }}
+              />
+            </div>
           )}
         </div>
-        {showConfig && localRule.trigger && (
-          <div className="enhanced-logic-config-row">
-            <EnhancedLogicTriggerConfig
-              trigger={localRule.trigger}
-              config={{
-                message: localRule.message,
-                subQuestion: localRule.subQuestion,
-              }}
-              onConfigChange={(config) => {
-                setLocalRule({
-                  ...localRule,
-                  message: config.message,
-                  subQuestion: config.subQuestion,
-                })
-              }}
-            />
-          </div>
-        )}
       </div>
       <button className="enhanced-delete-rule-button" onClick={onRuleDelete} aria-label="Delete rule">
         <Trash2 className="delete-icon" />
@@ -1060,12 +1119,11 @@ const EnhancedLogicRulesContainer: React.FC<{
 
 const EnhancedAddLogicButton: React.FC<{
   hasRules: boolean
-  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
+  onClick: () => void
   className?: string
 }> = ({ hasRules, onClick, className = "" }) => {
   return (
     <button className={`enhanced-add-logic-button ${hasRules ? "has-rules" : ""} ${className}`} onClick={onClick}>
-      <CornerDownRight className="logic-icon" />
       <span>{hasRules ? "Edit logic" : "Add logic"}</span>
       {hasRules && <span className="rules-badge">!</span>}
     </button>
@@ -1075,6 +1133,118 @@ const EnhancedAddLogicButton: React.FC<{
 // Enhanced Report Component
 const Report: React.FC<{ template: Template }> = ({ template }) => {
   const [activeTab, setActiveTab] = useState("summary")
+
+  // Render logic responses
+  const renderLogicResponses = (question: Question) => {
+    if (!question.logicResponses || question.logicResponses.length === 0) return null;
+
+    return (
+      <div className="report-logic-responses">
+        <h4 className="report-logic-responses-title">Additional Information</h4>
+        {question.logicResponses.map((response, index) => (
+          <div key={index} className="report-logic-response">
+            {response.responseType === "Evidence" && (
+              <div className="report-logic-evidence">
+                <div className="report-logic-response-header">
+                  <Upload size={18} className="report-logic-icon" />
+                  <span className="report-logic-label">Evidence Provided</span>
+                </div>
+                {response.responseText && (
+                  <div className="report-logic-evidence-description">
+                    {response.responseText}
+                  </div>
+                )}
+                {response.responseEvidence && (
+                  <div className="report-logic-evidence-image">
+                    <img
+                      src={response.responseEvidence}
+                      alt="Evidence"
+                      className="report-media-preview"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {response.responseType === "Action" && (
+              <div className="report-logic-action">
+                <div className="report-logic-response-header">
+                  <FileText size={18} className="report-logic-icon" />
+                  <span className="report-logic-label">Action Taken</span>
+                </div>
+                <div className="report-logic-action-text">
+                  {response.responseValue}
+                </div>
+              </div>
+            )}
+
+            {response.responseType === "Yes/No" && (
+              <div className="report-logic-followup">
+                <div className="report-logic-response-header">
+                  <MessageSquare size={18} className="report-logic-icon" />
+                  <span className="report-logic-label">Follow-up Response</span>
+                </div>
+                <div className="report-logic-question">
+                  <span>Question:</span> {response.responseText}
+                </div>
+                <div className="report-logic-answer">
+                  <span>Response:</span> {String(response.responseValue)}
+                </div>
+              </div>
+            )}
+
+            {response.responseType === "Multiple choice" && (
+              <div className="report-logic-followup">
+                <div className="report-logic-response-header">
+                  <MessageSquare size={18} className="report-logic-icon" />
+                  <span className="report-logic-label">Follow-up Response</span>
+                </div>
+                <div className="report-logic-question">
+                  <span>Question:</span> {response.responseText}
+                </div>
+                <div className="report-logic-answer">
+                  <span>Response:</span> {String(response.responseValue)}
+                </div>
+                {response.options && response.options.length > 0 && (
+                  <div className="report-logic-options">
+                    <span>Available options:</span>
+                    <div className="report-logic-options-list">
+                      {response.options.map((option, idx) => (
+                        <div
+                          key={idx}
+                          className={`report-logic-option ${response.responseValue === option ? 'selected' : ''}`}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {response.responseType !== "Evidence" &&
+              response.responseType !== "Action" &&
+              response.responseType !== "Yes/No" &&
+              response.responseType !== "Multiple choice" && (
+              <div className="report-logic-followup">
+                <div className="report-logic-response-header">
+                  <MessageSquare size={18} className="report-logic-icon" />
+                  <span className="report-logic-label">Follow-up Response</span>
+                </div>
+                <div className="report-logic-question">
+                  <span>Question:</span> {response.responseText}
+                </div>
+                <div className="report-logic-answer">
+                  <span>Response:</span> {String(response.responseValue)}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const generatePDF = async () => {
     try {
@@ -1089,6 +1259,7 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
       loadingIndicator.style.display = "flex"
       loadingIndicator.style.justifyContent = "center"
       loadingIndicator.style.alignItems = "center"
+      loadingIndicator.style.zIndex = "9999"
       loadingIndicator.innerHTML =
         '<div style="padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">Generating PDF...</div>'
       document.body.appendChild(loadingIndicator)
@@ -1247,11 +1418,7 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
 
       doc.setFontSize(12)
       doc.setTextColor(100, 100, 100)
-      doc.text(
-        `This report provides an overview of the safety inspection conducted at ${template.title}.`,
-        margin,
-        yOffset,
-      )
+      doc.text(`This report provides an overview of the safety inspection conducted at ${template.title}.`, margin, yOffset)
       yOffset += 20
 
       // Process each question with answer
@@ -1272,12 +1439,17 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
             doc.setDrawColor(230, 230, 230)
             doc.rect(margin, yOffset, pageWidth - margin * 2, 40, "S")
 
-            // Add question icon based on value
-            if (question.value === "Yes" || question.value === true) {
-              doc.setFillColor(76, 175, 80)
-              doc.circle(margin + 15, yOffset + 15, 5, "F")
+            // Add question icon based on response type and value
+            if (question.responseType === "Yes/No" || question.responseType === "Checkbox") {
+              if (question.value === "Yes" || question.value === true) {
+                doc.setFillColor(76, 175, 80) // Green
+                doc.circle(margin + 15, yOffset + 15, 5, "F")
+              } else {
+                doc.setFillColor(244, 67, 54) // Red
+                doc.circle(margin + 15, yOffset + 15, 5, "F")
+              }
             } else {
-              doc.setFillColor(244, 67, 54)
+              doc.setFillColor(33, 150, 243) // Blue
               doc.circle(margin + 15, yOffset + 15, 5, "F")
             }
 
@@ -1322,7 +1494,7 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                   processedImage = processedImages.get(imageValue)
                 } else {
                   // Process the image to reduce size
-                  const img = document.createElement("img")
+                  const img = document.createElement('img')
                   img.crossOrigin = "anonymous"
 
                   // Create a promise to handle the image loading
@@ -1455,26 +1627,27 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
   )
 
   return (
-    <div className="report-container" style={{ width: "100%" }}>
-      <div className="report-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div className="create-template-report-wrapper">
+      <div className="create-template-report-container">
+      <div className="create-template-report-header">
         <h2>Report Preview</h2>
-        <button className="generate-pdf-button" onClick={generatePDF}>
-          <Download className="download-icon" />
+        <button className="create-template-generate-pdf-button" onClick={generatePDF}>
+          <Download className="create-template-download-icon" />
           Download PDF Report
         </button>
       </div>
 
-      <div className="report-card">
-        <div className="report-card-header">
-          <div className="report-title-section">
+      <div className="create-template-report-card">
+        <div className="create-template-report-card-header">
+          <div className="create-template-report-title-section">
             {template.logo && (
-              <div className="report-logo">
+              <div className="create-template-report-logo">
                 <img src={template.logo || "/placeholder.svg"} alt="Template logo" />
               </div>
             )}
-            <div className="report-title-info">
+            <div className="create-template-report-title-info">
               <h3>{template.title}</h3>
-              <p className="report-date">
+              <p className="create-template-report-date">
                 {new Date().toLocaleDateString()} /{" "}
                 {template.sections
                   .find((s) => s.questions.some((q) => q.responseType === "Person" && q.value))
@@ -1482,90 +1655,109 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
               </p>
             </div>
           </div>
-          <div className="report-completion-badge">{scorePercentage === 100 ? "Complete" : "Incomplete"}</div>
+          <div className={`create-template-report-completion-badge ${scorePercentage === 100 ? "complete" : ""}`}>
+            {scorePercentage === 100 ? "Complete" : "Incomplete"}
+          </div>
         </div>
 
-        <div className="report-stats">
-          <div className="report-score-container">
-            <p className="report-stat-label">Score</p>
-            <div className="report-score-bar">
-              <div className="report-score-progress" style={{ width: `${scorePercentage}%` }}></div>
+        <div className="create-template-report-stats">
+          <div className="create-template-report-score-container">
+            <p className="create-template-report-stat-label">Score</p>
+            <div className="create-template-report-score-bar">
+              <div className="create-template-report-score-progress" style={{ width: `${scorePercentage}%` }}></div>
             </div>
-            <span className="report-score-text">
+            <span className="create-template-report-score-text">
               {answeredQuestions}/{totalQuestions} ({scorePercentage}%)
             </span>
           </div>
 
-          <div className="report-stat-grid">
-            <div className="report-stat">
-              <p className="report-stat-label">Flagged items</p>
-              <div className="report-stat-value">
-                <Flag className="report-stat-icon flagged" />
+          <div className="create-template-report-stat-grid">
+            <div className="create-template-report-stat">
+              <p className="create-template-report-stat-label">Flagged items</p>
+              <div className="create-template-report-stat-value">
+                <Flag className="create-template-report-stat-icon flagged" />
                 <span>{flaggedItems}</span>
               </div>
             </div>
-            <div className="report-stat">
-              <p className="report-stat-label">Actions</p>
-              <div className="report-stat-value">
-                <AlertTriangle className="report-stat-icon action" />
+            <div className="create-template-report-stat">
+              <p className="create-template-report-stat-label">Actions</p>
+              <div className="create-template-report-stat-value">
+                <AlertTriangle className="create-template-report-stat-icon action" />
                 <span>{actionItems}</span>
               </div>
             </div>
-            <div className="report-stat">
-              <p className="report-stat-label">Status</p>
-              <div className="report-stat-value">
-                <Clock className="report-stat-icon status" />
+            <div className="create-template-report-stat">
+              <p className="create-template-report-stat-label">Status</p>
+              <div className="create-template-report-stat-value">
+                <Clock className="create-template-report-stat-icon status" />
                 <span>In progress</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="report-site-info">
-          <div className="report-site-info-grid">
-            <div className="report-site-info-item">
-              <div className="report-site-info-label">
-                <Building className="report-site-info-icon" />
-                <p>Site conducted</p>
+        <div className="create-template-report-site-info">
+          <h3 className="create-template-report-section-title">Inspection Details</h3>
+          <p className="create-template-report-section-description">Key information about this inspection session.</p>
+          <div className="create-template-report-site-info-grid">
+            <div className="create-template-report-site-info-item">
+              <div className="create-template-report-site-info-label">
+                <Building className="create-template-report-site-info-icon" />
+                Site conducted
               </div>
-              <p className="report-site-info-value">
+              <p className="create-template-report-site-info-value">
                 {template.sections
                   .find((s) => s.questions.some((q) => q.responseType === "Site" && q.value))
                   ?.questions.find((q) => q.responseType === "Site" && q.value)?.value || "Not specified"}
               </p>
             </div>
-            <div className="report-site-info-item">
-              <div className="report-site-info-label">
-                <Calendar className="report-site-info-icon" />
-                <p>Conducted on</p>
+            <div className="create-template-report-site-info-item">
+              <div className="create-template-report-site-info-label">
+                <Calendar className="create-template-report-site-info-icon" />
+                Conducted on
               </div>
-              <p className="report-site-info-value">
+              <p className="create-template-report-site-info-value">
                 {template.sections
-                  .find((s) => s.questions.some((q) => q.responseType === "Inspection date" && q.value))
-                  ?.questions.find((q) => q.responseType === "Inspection date" && q.value)?.value ||
+                  .find((s) => s.questions.some((q) => q.responseType === "Date & Time" && q.value))
+                  ?.questions.find((q) => q.responseType === "Date & Time" && q.value)?.value ||
                   new Date().toLocaleDateString()}
               </p>
             </div>
-            <div className="report-site-info-item">
-              <div className="report-site-info-label">
-                <User className="report-site-info-icon" />
-                <p>Prepared by</p>
+            <div className="create-template-report-site-info-item">
+              <div className="create-template-report-site-info-label">
+                <User className="create-template-report-site-info-icon" />
+                Prepared by
               </div>
-              <p className="report-site-info-value">
+              <p className="create-template-report-site-info-value">
                 {template.sections
                   .find((s) => s.questions.some((q) => q.responseType === "Person" && q.value))
                   ?.questions.find((q) => q.responseType === "Person" && q.value)?.value || "Not specified"}
               </p>
             </div>
-            <div className="report-site-info-item">
-              <div className="report-site-info-label">
-                <MapPin className="report-site-info-icon" />
-                <p>Location</p>
+            <div className="create-template-report-site-info-item">
+              <div className="create-template-report-site-info-label">
+                <MapPin className="create-template-report-site-info-icon" />
+                Location
               </div>
-              <p className="report-site-info-value">
+              <p className="create-template-report-site-info-value">
                 {template.sections
                   .find((s) => s.questions.some((q) => q.responseType === "Inspection location" && q.value))
                   ?.questions.find((q) => q.responseType === "Inspection location" && q.value)?.value ||
+                  "Not specified"}
+              </p>
+            </div>
+            <div className="create-template-report-site-info-item">
+              <div className="create-template-report-site-info-label">
+                <User className="create-template-report-site-info-icon" />
+                Inspector's Name
+              </div>
+              <p className="create-template-report-site-info-value">
+                {template.sections
+                  .find((s) => s.questions.some((q) => q.responseType === "Person" && q.text === "Inspector's Name" && q.value))
+                  ?.questions.find((q) => q.responseType === "Person" && q.text === "Inspector's Name" && q.value)?.value ||
+                  template.sections
+                  .find((s) => s.questions.some((q) => q.responseType === "Person" && q.value))
+                  ?.questions.find((q) => q.responseType === "Person" && q.value)?.value ||
                   "Not specified"}
               </p>
             </div>
@@ -1573,29 +1765,29 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
         </div>
       </div>
 
-      <div className="report-tabs">
-        <div className="report-tab-buttons">
+      <div className="create-template-report-tabs">
+        <div className="create-template-report-tab-buttons">
           <button
-            className={`report-tab-button ${activeTab === "summary" ? "active" : ""}`}
+            className={`create-template-report-tab-button ${activeTab === "summary" ? "active" : ""}`}
             onClick={() => setActiveTab("summary")}
           >
             Summary
           </button>
           <button
-            className={`report-tab-button ${activeTab === "flagged" ? "active" : ""}`}
+            className={`create-template-report-tab-button ${activeTab === "flagged" ? "active" : ""}`}
             onClick={() => setActiveTab("flagged")}
           >
             Flagged Items
           </button>
           <button
-            className={`report-tab-button ${activeTab === "media" ? "active" : ""}`}
+            className={`create-template-report-tab-button ${activeTab === "media" ? "active" : ""}`}
             onClick={() => setActiveTab("media")}
           >
             Media
           </button>
         </div>
 
-        <div className="report-tab-content">
+        <div className="create-template-report-tab-content">
           {activeTab === "summary" && (
             <div className="report-summary">
               <h3 className="report-section-title">Inspection Summary</h3>
@@ -1615,17 +1807,27 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                       <div key={question.id} className={`report-question-item ${question.flagged ? "flagged" : ""}`}>
                         <div className="report-question-header">
                           <div className="report-question-icon">
-                            {question.value === "Yes" || question.value === true ? (
-                              <Check className="report-question-check" />
+                            {question.responseType === "Yes/No" || question.responseType === "Checkbox" ? (
+                              question.value === "Yes" || question.value === true ? (
+                                <Check className="report-question-check" />
+                              ) : (
+                                <AlertTriangle className="report-question-alert" />
+                              )
                             ) : (
-                              <AlertTriangle className="report-question-alert" />
+                              <FileText className="report-question-info" />
                             )}
                           </div>
                           <div className="report-question-text">
                             <p>{question.text}</p>
                             <div className="report-question-badges">
                               <span
-                                className={`report-question-answer ${question.value === "Yes" || question.value === true ? "positive" : "negative"}`}
+                                className={`report-question-answer ${
+                                  question.responseType === "Yes/No" || question.responseType === "Checkbox"
+                                    ? question.value === "Yes" || question.value === true
+                                      ? "positive"
+                                      : "negative"
+                                    : "neutral"
+                                }`}
                               >
                                 {question.responseType === "Media" || question.responseType === "Annotation"
                                   ? "Media uploaded"
@@ -1650,6 +1852,9 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                               />
                             </div>
                           )}
+
+                        {/* Display logic responses */}
+                        {renderLogicResponses(question)}
                       </div>
                     )),
                 )}
@@ -1674,11 +1879,27 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                       <div key={question.id} className="report-question-item flagged">
                         <div className="report-question-header">
                           <div className="report-question-icon">
-                            <AlertTriangle className="report-question-alert" />
+                            {question.responseType === "Yes/No" || question.responseType === "Checkbox" ? (
+                              question.value === "Yes" || question.value === true ? (
+                                <Check className="report-question-check" />
+                              ) : (
+                                <AlertTriangle className="report-question-alert" />
+                              )
+                            ) : (
+                              <FileText className="report-question-info" />
+                            )}
                           </div>
                           <div className="report-question-text">
                             <p>{question.text}</p>
-                            <span className="report-question-answer negative">
+                            <span
+                              className={`report-question-answer ${
+                                question.responseType === "Yes/No" || question.responseType === "Checkbox"
+                                  ? question.value === "Yes" || question.value === true
+                                    ? "positive"
+                                    : "negative"
+                                  : "neutral"
+                              }`}
+                            >
                               {question.responseType === "Media" || question.responseType === "Annotation"
                                 ? "Media uploaded"
                                 : String(question.value || "No")}
@@ -1696,6 +1917,9 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                               />
                             </div>
                           )}
+
+                        {/* Display logic responses */}
+                        {renderLogicResponses(question)}
 
                         <div className="report-question-action">
                           <div className="report-action-header">
@@ -1750,7 +1974,7 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
                   ))
                 ) : (
                   <div className="report-media-empty">
-                    <ImageIcon className="report-media-empty-icon" />
+                    <Image className="report-media-empty-icon" />
                     <p>No media has been added to this report</p>
                   </div>
                 )}
@@ -1760,17 +1984,8 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
         </div>
       </div>
 
-      <div className="report-footer" style={{ display: "flex", justifyContent: "center" }}>
-        <div className="report-footer-buttons" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-          <button className="report-footer-button">
-            <FileText className="report-footer-icon" />
-            Web preview
-          </button>
-          <button className="report-footer-button primary" onClick={generatePDF}>
-            <Download className="report-footer-icon" />
-            PDF preview
-          </button>
-        </div>
+      <div className="report-footer">
+        {/* PDF preview button removed from footer */}
       </div>
 
       <div className="report-mobile-fab">
@@ -1779,110 +1994,38 @@ const Report: React.FC<{ template: Template }> = ({ template }) => {
         </button>
       </div>
     </div>
+    </div>
   )
 }
 
+// Define supported types for logic
+const LOGIC_SUPPORTED_TYPES: ResponseType[] = ["Text", "Number", "Checkbox", "Yes/No", "Multiple choice", "Slider"];
+
 // Main Component
-const CreateTemplate = () => {
+const CreateTemplate: React.FC = () => {
   const navigate = useNavigate()
+  const { id } = useParams()
 
+  // Backend state management
   const [templateId, setTemplateId] = useState<string | null>(null)
-
   const [templateData, setTemplateData] = useState({
     title: "",
     description: "",
   })
-  const generateId = () => Math.random().toString(36).substring(2, 9)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
-    id: generateId(),
-    text: "Type question",
-    responseType,
-    required: false,
-    flagged: false,
-    multipleSelection: false,
-    options:
-      responseType === "Multiple choice" || responseType === "Yes/No"
-        ? ["Option 1", "Option 2", "Option 3"]
-        : undefined,
-    value: null,
-    logicRules: [],
-  })
-
-  const getDefaultSection = (title = "Untitled Page"): Section => ({
-    id: generateId(),
-    title,
-    questions: [],
-    isCollapsed: false,
-  })
-
-  const getInitialTemplate = (): Template => {
-    const titlePageSection: Section = {
-      id: generateId(),
-      title: "Title Page",
-      description: "The Title Page is the first page of your inspection report. Customize it below.",
-      questions: [
-        {
-          id: generateId(),
-          text: "Site conducted",
-          responseType: "Site",
-          required: true,
-          flagged: false,
-          value: null,
-          logicRules: [],
-        },
-        {
-          id: generateId(),
-          text: "Conducted on",
-          responseType: "Inspection date",
-          required: true,
-          flagged: false,
-          value: null,
-          logicRules: [],
-        },
-        {
-          id: generateId(),
-          text: "Prepared by",
-          responseType: "Person",
-          required: true,
-          flagged: false,
-          value: null,
-          logicRules: [],
-        },
-        {
-          id: generateId(),
-          text: "Location",
-          responseType: "Inspection location",
-          required: true,
-          flagged: false,
-          value: null,
-          logicRules: [],
-        },
-      ],
-      isCollapsed: false,
-    }
-
-    return {
-      id: generateId(),
-      title: "Untitled template",
-      description: "Add a description",
-      sections: [titlePageSection],
-      lastSaved: new Date(),
-      lastPublished: new Date(),
-      logo: undefined,
-    }
-  }
+  // Initialize template state
   const [template, setTemplate] = useState<Template>({
-    id: generateId(), // Add the required id property
+    id: generateId(),
     title: "",
     description: "",
-    logo: undefined, // Changed from null to undefined
+    logo: undefined,
     sections: [],
     lastSaved: new Date(),
     lastPublished: new Date(),
   })
-  const [activeTab, setActiveTab] = useState<number>(0)
 
+  const [activeTab, setActiveTab] = useState<number>(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
   const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
@@ -1890,59 +2033,27 @@ const CreateTemplate = () => {
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
   const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
-  const [logicButtonPosition, setLogicButtonPosition] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [showSignatureModal, setShowSignatureModal] = useState<boolean>(false)
+  const [activeQuestion, setActiveQuestion] = useState<Question | null>(null)
 
-  // Update logic panel position on scroll or resize
-  useEffect(() => {
-    const updateLogicPanelPosition = () => {
-      if (showLogicPanel && logicButtonPosition) {
-        const questionElement = document.getElementById(`question-${showLogicPanel}`);
-        if (questionElement) {
-          const logicButton = questionElement.querySelector('.enhanced-add-logic-button');
-          if (logicButton) {
-            const buttonRect = logicButton.getBoundingClientRect();
-            const containerRect = logicButton.closest('.logic-button-container')?.getBoundingClientRect();
+  // States for action buttons
+  const [isSubmittingAction, setIsSubmittingAction] = useState<boolean>(false)
+  const [isSubmittingResponse, setIsSubmittingResponse] = useState<boolean>(false)
 
-            setLogicButtonPosition({
-              // Position the logic panel higher up by subtracting 40px (increased from 20px)
-              top: (containerRect ? 0 : buttonRect.top) + buttonRect.height - 40,
-              left: containerRect ? 0 : buttonRect.left,
-              width: buttonRect.width,
-              height: buttonRect.height
-            });
-          }
-        }
-      }
-    };
+  // State for storing temporary logic responses
+  const [tempLogicResponses, setTempLogicResponses] = useState<{
+    questionId: string;
+    ruleId: string;
+    value: string | number | boolean | null;
+  } | null>(null)
 
-    // Update position on scroll and resize
-    window.addEventListener('scroll', updateLogicPanelPosition);
-    window.addEventListener('resize', updateLogicPanelPosition);
-
-    // Initial position update
-    updateLogicPanelPosition();
-
-    return () => {
-      window.removeEventListener('scroll', updateLogicPanelPosition);
-      window.removeEventListener('resize', updateLogicPanelPosition);
-    };
-  }, [showLogicPanel, logicButtonPosition]);
-
-  // Add a class to the document body when mobile preview is hidden
-  useEffect(() => {
-    if (showMobilePreview) {
-      document.body.classList.remove('mobile-preview-hidden')
-    } else {
-      document.body.classList.add('mobile-preview-hidden')
-    }
-  }, [showMobilePreview])
+  // State for storing action text
+  const [actionText, setActionText] = useState<string>("")
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
-  const { id } = useParams();
 
-
+  // Backend API integration - Load template from server
   useEffect(() => {
     if (id) {
       axios
@@ -1950,6 +2061,7 @@ const CreateTemplate = () => {
         .then((res) => {
           setTemplate(res.data);
           setTemplateData(res.data);
+          setActiveSectionId(res.data.sections[0]?.id || null);
           setIsLoading(false);
         })
         .catch((err) => {
@@ -1964,70 +2076,12 @@ const CreateTemplate = () => {
     }
   }, [id]);
 
-
-
+  // Show loading state
   if (isLoading || !template) {
     return <div>Loading template...</div>
   }
 
-  function toSnakeCase(obj: any): any {
-    if (Array.isArray(obj)) {
-      return obj.map(toSnakeCase);
-    } else if (obj !== null && typeof obj === "object") {
-      const newObj: any = {};
-      for (const key in obj) {
-        if (!obj.hasOwnProperty(key)) continue;
-        const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
-        newObj[snakeKey] = toSnakeCase(obj[key]);
-      }
-      return newObj;
-    }
-    return obj;
-  }
-
-
-
-  function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
-    return {
-      ...(isNew ? {} : { id: template.id }),
-      title: template.title,
-      description: template.description,
-      logo: template.logo,
-      sections: template.sections.map((section) => {
-        const newSectionId = isNew || typeof section.id === "number" ? generateId() : section.id;
-
-        return {
-          id: newSectionId,
-          title: section.title,
-          description: section.description,
-          isCollapsed: section.isCollapsed,
-          questions: section.questions.map((q) => {
-            const newQuestionId = isNew || typeof q.id === "number" ? generateId() : q.id;
-
-            return {
-              id: newQuestionId,
-              text: q.text,
-              responseType: q.responseType ?? "Text", // ensure fallback
-              required: q.required,
-              flagged: q.flagged,
-              options: q.options,
-              value: q.value,
-              conditionalLogic: q.conditionalLogic,
-              conditionalProof: q.conditionalProof,
-              logicRules: q.logicRules,
-              multipleSelection: q.multipleSelection,
-            };
-          }),
-        };
-      }),
-    };
-  }
-
-
-
-
-
-  // Updated handleSave function with proper CSRF token handling
+  // Backend API functions
   const handleSave = async () => {
     const isNew = !id;
 
@@ -2087,12 +2141,80 @@ const CreateTemplate = () => {
     }
   };
 
+  const handlePublishTemplate = async () => {
+    try {
+      // 1. First, get a fresh CSRF token
+      const csrfToken = await fetchCSRFToken()
+
+      // 2. Prepare the form data
+      const formData = new FormData()
+      formData.append("title", template.title)
+      formData.append("description", template.description)
+
+      // 3. Handle the logo if it exists
+      if (template.logo) {
+        // If logo is a base64 string, convert to blob
+        if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
+          const response = await fetch(template.logo)
+          const blob = await response.blob()
+          formData.append("logo", blob, "logo.png")
+        } else {
+          formData.append("logo", template.logo)
+        }
+      }
+
+      // 4. Add sections data
+      const isNew = !id;
+      const cleanedTemplate = cleanTemplateForSave(template, isNew)
+      formData.append("sections", JSON.stringify(cleanedTemplate.sections))
+
+      // 5. Make the API request with the fresh CSRF token
+      const publishResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+        body: formData,
+        credentials: "include", // Important: include cookies
+      })
+
+      if (!publishResponse.ok) {
+        const errorData = await publishResponse.json()
+        throw new Error(errorData.error || "Failed to publish template")
+      }
+
+      // Success handling
+      setTemplate((prev) => ({
+        ...prev,
+        lastSaved: new Date(),
+        lastPublished: new Date(),
+      }))
+
+      console.log("Template published successfully!")
+      alert("Template published and saved successfully!")
+      navigate("/templates")
+    } catch (error: unknown) {
+      console.error("Error publishing template:", error)
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          alert("Authentication error. Please log in again.")
+          navigate(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
+        } else {
+          alert(`Failed to publish template: ${error.response?.data?.error || error.message}`)
+        }
+      } else {
+        alert("Failed to publish template: Unknown error occurred.")
+      }
+    }
+  }
+
   // Template Management
   const updateTemplate = (updates: Partial<Template>) => setTemplate((prev) => ({ ...prev, ...updates }))
 
   const handleBack = () => {
     if (window.confirm("Do you want to save before leaving?")) handleSave()
-      navigate("/templates")
+    navigate("/templates")
   }
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2140,6 +2262,10 @@ const CreateTemplate = () => {
       questions: [...template.sections.find((s) => s.id === sectionId)!.questions, newQuestion],
     })
     setActiveQuestionId(newQuestion.id)
+    // Scroll to the new question after a short delay to allow rendering
+    setTimeout(() => {
+      questionRefs.current[newQuestion.id]?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }, 100)
   }
 
   const updateQuestion = (sectionId: string, questionId: string, updates: Partial<Question>) => {
@@ -2163,11 +2289,19 @@ const CreateTemplate = () => {
     updateQuestion(sectionId, questionId, {
       responseType,
       options:
-        responseType === "Multiple choice" || responseType === "Yes/No"
+        responseType === "Multiple choice"
           ? ["Option 1", "Option 2", "Option 3"]
+          : responseType === "Yes/No"
+          ? ["Yes", "No", "N/A"]
           : undefined,
       value: null,
-      logicRules: [],
+      // Only keep logic rules if changing to a supported type
+      logicRules: LOGIC_SUPPORTED_TYPES.includes(responseType) ?
+        template.sections
+          .find(s => s.id === sectionId)
+          ?.questions.find(q => q.id === questionId)
+          ?.logicRules || []
+        : [],
     })
     setShowResponseTypeMenu(null)
   }
@@ -2211,22 +2345,11 @@ const CreateTemplate = () => {
     setDropTarget(null)
   }
 
-  // Helper function to get all questions except the current one
-  const getAllQuestionsExcept = (questionId: string) => {
-    return template.sections.flatMap((s) =>
-      s.questions
-        .filter(q => q.id !== questionId)
-        .map((q) => ({ id: q.id, text: q.text }))
-    );
-  }
-
   // Rendering Helpers
   const renderResponseTypeIcon = (type: ResponseType) => {
     switch (type) {
       case "Site":
         return <MapPin size={18} className="response-type-icon" />
-      case "Inspection date":
-        return <Calendar size={18} className="response-type-icon" />
       case "Person":
         return <User size={18} className="response-type-icon" />
       case "Inspection location":
@@ -2252,7 +2375,7 @@ const CreateTemplate = () => {
       case "Slider":
         return <div className="response-type-icon slider-icon">⟷</div>
       case "Media":
-        return <ImageIcon size={18} className="response-type-icon" />
+        return <Image size={18} className="response-type-icon" />
       case "Annotation":
         return <Edit size={18} className="response-type-icon" />
       case "Date & Time":
@@ -2275,7 +2398,6 @@ const CreateTemplate = () => {
       "Annotation",
       "Date & Time",
       "Site",
-      "Inspection date",
       "Person",
       "Inspection location",
     ]
@@ -2347,10 +2469,39 @@ const CreateTemplate = () => {
           <div className="response-field multiple-choice-field">
             <div className="multiple-choice-options">
               {(question.options || []).map((option, idx) => (
-                <button key={idx} className={`choice-option choice-${idx % 4}`}>
-                  {option}
-                </button>
+                <div key={idx} className="choice-option-container">
+                  <input
+                    type="text"
+                    className={`choice-option-input choice-${idx % 4}`}
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...(question.options || [])];
+                      newOptions[idx] = e.target.value;
+                      updateQuestion(sectionId, question.id, { options: newOptions });
+                    }}
+                  />
+                  <button
+                    className="delete-option-button"
+                    onClick={() => {
+                      const newOptions = [...(question.options || [])];
+                      newOptions.splice(idx, 1);
+                      updateQuestion(sectionId, question.id, { options: newOptions });
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               ))}
+              <button
+                className="add-option-button"
+                onClick={() => {
+                  const newOptions = [...(question.options || []), `Option ${(question.options || []).length + 1}`];
+                  updateQuestion(sectionId, question.id, { options: newOptions });
+                }}
+              >
+                <Plus size={14} />
+                <span>Add Option</span>
+              </button>
             </div>
           </div>
         )
@@ -2373,7 +2524,7 @@ const CreateTemplate = () => {
         return (
           <div className="response-field media-field">
             <div className="media-upload">
-              <ImageIcon size={20} />
+              <Image size={20} />
               <span>Upload media</span>
             </div>
           </div>
@@ -2381,14 +2532,35 @@ const CreateTemplate = () => {
       case "Annotation":
         return (
           <div className="response-field annotation-field">
-            <div className="annotation-area">
-              <Edit size={20} />
-              <span>Add annotation</span>
-            </div>
+            {!question.value ? (
+              <div
+                className="annotation-area"
+                onClick={() => {
+                  setActiveQuestion(question);
+                  setShowSignatureModal(true);
+                }}
+              >
+                <Edit size={20} />
+                <span>Add annotation</span>
+              </div>
+            ) : (
+              <div className="annotation-preview">
+                <img
+                  src={question.value as string}
+                  alt="Signature"
+                  className="annotation-image"
+                />
+                <button
+                  className="annotation-remove-button"
+                  onClick={() => updateQuestion(sectionId, question.id, { value: null })}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )
       case "Date & Time":
-      case "Inspection date":
         return (
           <div className="response-field date-time-field">
             <div className="date-time-input">
@@ -2411,6 +2583,7 @@ const CreateTemplate = () => {
       default:
         // Exhaustive type check to ensure all ResponseType values are handled
         const _exhaustiveCheck: never = question.responseType
+        console.warn(`Unsupported response type: ${_exhaustiveCheck}`)
         return <div className="response-field">Unsupported response type</div>
     }
   }
@@ -2423,14 +2596,13 @@ const CreateTemplate = () => {
     return (
       <div
         key={question.id}
-        id={`question-${question.id}`}
         ref={(el) => {
           questionRefs.current[question.id] = el
         }}
         className={`question-item ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
         onClick={() => setActiveQuestionId(question.id)}
         draggable
-        onDragStart={(e) => handleDragStart("question", question.id)}
+        onDragStart={() => handleDragStart("question", question.id)}
         onDragOver={(e) => handleDragOver("question", question.id, e)}
         onDrop={handleDrop}
       >
@@ -2465,65 +2637,45 @@ const CreateTemplate = () => {
           {renderQuestionResponse(question, sectionId)}
         </div>
         <div className="question-footer">
-          {shouldHaveTriggerButton(question.responseType) && (
-            <div style={{ position: 'relative' }} className="logic-button-container">
-              <EnhancedAddLogicButton
-                hasRules={question.logicRules?.length ? true : false}
-                onClick={(e) => {
-                  // Get the button's position and dimensions
-                  const buttonRect = e.currentTarget.getBoundingClientRect();
-
-                  // Get the container's position for relative positioning
-                  const containerRect = e.currentTarget.closest('.logic-button-container')?.getBoundingClientRect();
-
-                  // Calculate the position for the logic panel
-                  // Position it higher up by subtracting 20px from the original position
-                  const position = {
-                    top: (containerRect ? 0 : buttonRect.top) + buttonRect.height - 20,
-                    left: containerRect ? 0 : buttonRect.left,
-                    width: buttonRect.width,
-                    height: buttonRect.height
-                  };
-
-                  setLogicButtonPosition(position);
-                  setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
-                }}
-              />
-              {showLogicPanel === question.id && (
-                <SimpleLogicRules
-                  rules={question.logicRules || []}
-                  onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
-                  onClose={() => setShowLogicPanel(null)}
-                  buttonPosition={logicButtonPosition || undefined}
-                  questionType={question.responseType}
-                />
-              )}
-            </div>
+          {LOGIC_SUPPORTED_TYPES.includes(question.responseType) && (
+            <EnhancedAddLogicButton
+              hasRules={question.logicRules?.length ? true : false}
+              onClick={() => {
+                // Only show logic panel for supported types
+                setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
+              }}
+            />
           )}
-          {/* Only show Required and Flag checkboxes when logic panel is not open */}
-          {showLogicPanel !== question.id && (
-            <>
-              <label className="required-checkbox">
-                <input
-                  type="checkbox"
-                  checked={question.required}
-                  onChange={(e) => updateQuestion(sectionId, question.id, { required: e.target.checked })}
-                />
-                <span>Required</span>
-              </label>
-              <label className="required-checkbox">
-                <input
-                  type="checkbox"
-                  checked={question.flagged}
-                  onChange={(e) => updateQuestion(sectionId, question.id, { flagged: e.target.checked })}
-                />
-                <span>Flag</span>
-              </label>
-            </>
-          )}
+          <label className="required-checkbox">
+            <input
+              type="checkbox"
+              checked={question.required}
+              onChange={(e) => updateQuestion(sectionId, question.id, { required: e.target.checked })}
+            />
+            <span>Required</span>
+          </label>
+          <label className="required-checkbox">
+            <input
+              type="checkbox"
+              checked={question.flagged}
+              onChange={(e) => updateQuestion(sectionId, question.id, { flagged: e.target.checked })}
+            />
+            <span>Flag</span>
+          </label>
           <button className="delete-question" onClick={() => deleteQuestion(sectionId, question.id)}>
             <Trash2 size={16} />
           </button>
+          {showLogicPanel === question.id &&
+            LOGIC_SUPPORTED_TYPES.includes(question.responseType) && (
+            <EnhancedLogicRulesContainer
+              questionType={question.responseType}
+              rules={question.logicRules || []}
+              options={question.options || []}
+              onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
+              questions={template.sections.flatMap((s) => s.questions.map((q) => ({ id: q.id, text: q.text })))}
+              onClose={() => setShowLogicPanel(null)}
+            />
+          )}
         </div>
       </div>
     )
@@ -2544,7 +2696,7 @@ const CreateTemplate = () => {
         className={`section-container ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
         onClick={() => setActiveSectionId(section.id)}
         draggable={!isTitlePage}
-        onDragStart={(e) => !isTitlePage && handleDragStart("section", section.id)}
+        onDragStart={() => !isTitlePage && handleDragStart("section", section.id)}
         onDragOver={(e) => handleDragOver("section", section.id, e)}
         onDrop={handleDrop}
       >
@@ -2564,14 +2716,10 @@ const CreateTemplate = () => {
               className="section-title"
               value={section.title}
               onChange={(e) => updateSection(section.id, { title: e.target.value })}
-              
             />
-            {!isTitlePage && (
-              <button className="edit-section-title">
-                <Edit size={16} />
-                
-              </button>
-            )}
+            <button className="edit-section-title">
+              <Edit size={16} />
+            </button>
           </div>
           {!isTitlePage && (
             <div className="section-actions">
@@ -2592,7 +2740,7 @@ const CreateTemplate = () => {
             {section.description && (
               <div className="section-description">
                 {section.description}
-                {isTitlePage }
+                {isTitlePage && <p>You can edit the Title Page name above and customize the fields below</p>}
               </div>
             )}
             <div className="questions-container">
@@ -2616,84 +2764,123 @@ const CreateTemplate = () => {
     )
   }
 
-  // Updated handlePublishTemplate function with proper CSRF token handling
-  const handlePublishTemplate = async () => {
-    try {
-      // 1. First, get a fresh CSRF token
-      const csrfToken = await fetchCSRFToken()
-
-      // 2. Prepare the form data
-      const formData = new FormData()
-      formData.append("title", template.title)
-      formData.append("description", template.description)
-
-      // 3. Handle the logo if it exists
-      if (template.logo) {
-        // If logo is a base64 string, convert to blob
-        if (typeof template.logo === "string" && template.logo.startsWith("data:")) {
-          const response = await fetch(template.logo)
-          const blob = await response.blob()
-          formData.append("logo", blob, "logo.png")
-        } else {
-          formData.append("logo", template.logo)
-        }
-      }
-
-      // 4. Add sections data
-      const isNew = !id;
-      const cleanedTemplate = cleanTemplateForSave(template, isNew)
-      formData.append("sections", JSON.stringify(cleanedTemplate.sections))
-
-      // 5. Make the API request with the fresh CSRF token
-      const publishResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-        },
-        body: formData,
-        credentials: "include", // Important: include cookies
-      })
-
-      if (!publishResponse.ok) {
-        const errorData = await publishResponse.json()
-        throw new Error(errorData.error || "Failed to publish template")
-      }
-
-      // Success handling
-      setTemplate((prev) => ({
-        ...prev,
-        lastSaved: new Date(),
-        lastPublished: new Date(),
-      }))
-
-      console.log("Template published successfully!")
-      alert("Template published and saved successfully!")
-      navigate("/templates")
-    } catch (error: unknown) {
-      console.error("Error publishing template:", error)
-
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 403) {
-          alert("Authentication error. Please log in again.")
-          navigate(`/login?returnUrl=${encodeURIComponent(window.location.pathname)}`)
-        } else {
-          alert(`Failed to publish template: ${error.response?.data?.error || error.message}`)
-        }
-      } else {
-        alert("Failed to publish template: Unknown error occurred.")
-      }
-    }
-  }
-
   // Render trigger UI components based on the trigger type
   const renderTriggerUI = (question: Question, activeSection: Section) => {
-    // Only show triggers based on condition evaluation
-    if (shouldShowTrigger(question, "require_evidence")) {
+    // Check if any evidence rule conditions are met
+    const evidenceRules = question.logicRules?.filter(r =>
+      r.trigger === "require_evidence" && !r.tempDisabled
+    );
+
+    // Check if any of the evidence rules' conditions are met
+    const shouldShowEvidence = evidenceRules?.some(rule => {
+      // If there's no value yet, don't show the evidence UI
+      if (question.value === null || question.value === undefined) return false;
+
+      // Evaluate the condition based on the current value
+      const value = question.value;
+      let conditionMet = false;
+
+      try {
+        switch (rule.condition) {
+          case "is":
+            conditionMet = String(value) === String(rule.value);
+            break;
+          case "is not":
+            conditionMet = String(value) !== String(rule.value);
+            break;
+          case "contains":
+            conditionMet = typeof value === "string" && typeof rule.value === "string" && value.includes(rule.value);
+            break;
+          case "not contains":
+            conditionMet = typeof value === "string" && typeof rule.value === "string" && !value.includes(rule.value);
+            break;
+          case "starts with":
+            conditionMet = typeof value === "string" && typeof rule.value === "string" && value.startsWith(rule.value);
+            break;
+          case "ends with":
+            conditionMet = typeof value === "string" && typeof rule.value === "string" && value.endsWith(rule.value);
+            break;
+          case "greater than":
+            conditionMet = Number(value) > Number(rule.value);
+            break;
+          case "less than":
+            conditionMet = Number(value) < Number(rule.value);
+            break;
+          case "equal to":
+            conditionMet = Number(value) === Number(rule.value);
+            break;
+          case "not equal to":
+            conditionMet = Number(value) !== Number(rule.value);
+            break;
+          case "greater than or equal to":
+            conditionMet = Number(value) >= Number(rule.value);
+            break;
+          case "less than or equal to":
+            conditionMet = Number(value) <= Number(rule.value);
+            break;
+          case "between":
+            conditionMet =
+              Array.isArray(rule.value) &&
+              rule.value.length === 2 &&
+              Number(value) >= Number(rule.value[0]) &&
+              Number(value) <= Number(rule.value[1]);
+            break;
+          case "is one of":
+            conditionMet = isStringArray(rule.value) && rule.value.includes(String(value));
+            break;
+          case "is not one of":
+            conditionMet = isStringArray(rule.value) && !rule.value.includes(String(value));
+            break;
+        }
+      } catch (error) {
+        console.error("Error evaluating condition:", error);
+        return false;
+      }
+
+      return conditionMet;
+    });
+
+    if (shouldShowEvidence) {
       return (
         <div className="mobile-trigger-container">
           <div className="mobile-trigger-header">
             <Upload size={16} />
             <span>Evidence Required</span>
+            <button
+              className="mobile-trigger-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // If evidence is provided, we don't need to show the trigger anymore
+                if (question.conditionalProof) {
+                  // Find the rule that triggered this
+                  const rule = question.logicRules?.find(r => r.trigger === "require_evidence");
+                  if (rule) {
+                    // Create a temporary copy of the rule with the trigger set to null
+                    // This will hide the trigger UI but keep the rule for future use
+                    const updatedRules = question.logicRules?.map(r =>
+                      r.id === rule.id ? {...r, tempDisabled: true} : r
+                    );
+
+                    // Store the evidence in logicResponses
+                    const existingResponses = question.logicResponses || [];
+                    const newResponse = {
+                      ruleId: rule.id,
+                      responseType: "Evidence",
+                      responseValue: "Evidence provided",
+                      responseEvidence: question.conditionalProof
+                    };
+
+                    updateQuestion(activeSection.id, question.id, {
+                      logicRules: updatedRules,
+                      logicResponses: [...existingResponses, newResponse]
+                    });
+                  }
+                }
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
           <div className="mobile-media-upload">
             <input
@@ -2703,71 +2890,211 @@ const CreateTemplate = () => {
               id={`evidence-upload-${question.id}`}
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
-                  const file = e.target.files[0];
-                  console.log("Evidence file selected:", file.name, file.type, file.size);
-
-                  // Create a temporary URL for immediate display
-                  const tempUrl = URL.createObjectURL(file);
-                  // Set a temporary value to show something immediately
-                  updateQuestion(activeSection.id, question.id, { conditionalProof: tempUrl });
-
-                  // Force a re-render of the component to show the temporary image
-                  setTemplate(prevTemplate => ({ ...prevTemplate }));
-
-                  const reader = new FileReader();
-                  reader.onload = async (event) => {
+                  const reader = new FileReader()
+                  reader.onload = (event) => {
                     if (event.target?.result) {
-                      try {
-                        console.log("Evidence file loaded, resizing image...");
-                        // Resize the image to ensure it loads properly
-                        const resizedImage = await resizeImage(event.target.result as string);
-                        console.log("Evidence image resized successfully");
-                        // Update with the properly resized image
-                        updateQuestion(activeSection.id, question.id, { conditionalProof: resizedImage });
+                      // Get all rules that triggered this evidence requirement
+                      const evidenceRules = question.logicRules?.filter(r =>
+                        r.trigger === "require_evidence" && !r.tempDisabled
+                      );
 
-                        // Force a re-render of the component to show the resized image
-                        setTemplate(prevTemplate => ({ ...prevTemplate }));
-                      } catch (error) {
-                        console.error("Error resizing evidence image:", error);
-                        // Fallback to original image if resize fails
-                        updateQuestion(activeSection.id, question.id, { conditionalProof: event.target.result as string });
+                      // Find the specific rule that matches the current condition
+                      const matchingRule = evidenceRules?.find(rule => {
+                        // Evaluate the condition based on the current value
+                        const value = question.value;
+                        let conditionMet = false;
 
-                        // Force a re-render of the component to show the original image
-                        setTemplate(prevTemplate => ({ ...prevTemplate }));
+                        try {
+                          switch (rule.condition) {
+                            case "is":
+                              conditionMet = String(value) === String(rule.value);
+                              break;
+                            case "is not":
+                              conditionMet = String(value) !== String(rule.value);
+                              break;
+                            case "contains":
+                              conditionMet = typeof value === "string" && typeof rule.value === "string" && value.includes(rule.value);
+                              break;
+                            case "not contains":
+                              conditionMet = typeof value === "string" && typeof rule.value === "string" && !value.includes(rule.value);
+                              break;
+                            case "starts with":
+                              conditionMet = typeof value === "string" && typeof rule.value === "string" && value.startsWith(rule.value);
+                              break;
+                            case "ends with":
+                              conditionMet = typeof value === "string" && typeof rule.value === "string" && value.endsWith(rule.value);
+                              break;
+                            case "greater than":
+                              conditionMet = Number(value) > Number(rule.value);
+                              break;
+                            case "less than":
+                              conditionMet = Number(value) < Number(rule.value);
+                              break;
+                            case "equal to":
+                              conditionMet = Number(value) === Number(rule.value);
+                              break;
+                            case "not equal to":
+                              conditionMet = Number(value) !== Number(rule.value);
+                              break;
+                            case "greater than or equal to":
+                              conditionMet = Number(value) >= Number(rule.value);
+                              break;
+                            case "less than or equal to":
+                              conditionMet = Number(value) <= Number(rule.value);
+                              break;
+                            case "between":
+                              conditionMet =
+                                Array.isArray(rule.value) &&
+                                rule.value.length === 2 &&
+                                Number(value) >= Number(rule.value[0]) &&
+                                Number(value) <= Number(rule.value[1]);
+                              break;
+                            case "is one of":
+                              conditionMet = isStringArray(rule.value) && rule.value.includes(String(value));
+                              break;
+                            case "is not one of":
+                              conditionMet = isStringArray(rule.value) && !rule.value.includes(String(value));
+                              break;
+                          }
+                        } catch (error) {
+                          console.error("Error evaluating condition:", error);
+                          return false;
+                        }
+
+                        return conditionMet;
+                      });
+
+                      // Use the matching rule or the first evidence rule if no match found
+                      const rule = matchingRule || (evidenceRules && evidenceRules.length > 0 ? evidenceRules[0] : null);
+
+                      if (rule) {
+                        // Create a temporary copy of the rule with the trigger set to null
+                        const updatedRules = question.logicRules?.map(r =>
+                          r.id === rule.id ? {...r, tempDisabled: true} : r
+                        );
+
+                        // Store the evidence in logicResponses
+                        const existingResponses = question.logicResponses || [];
+
+                        // Create a descriptive text based on the condition
+                        let conditionDescription = "";
+                        try {
+                          switch (rule.condition) {
+                            case "is":
+                              conditionDescription = `is "${rule.value}"`;
+                              break;
+                            case "is not":
+                              conditionDescription = `is not "${rule.value}"`;
+                              break;
+                            case "contains":
+                              conditionDescription = `contains "${rule.value}"`;
+                              break;
+                            case "not contains":
+                              conditionDescription = `does not contain "${rule.value}"`;
+                              break;
+                            case "starts with":
+                              conditionDescription = `starts with "${rule.value}"`;
+                              break;
+                            case "ends with":
+                              conditionDescription = `ends with "${rule.value}"`;
+                              break;
+                            case "greater than":
+                              conditionDescription = `is greater than ${rule.value}`;
+                              break;
+                            case "less than":
+                              conditionDescription = `is less than ${rule.value}`;
+                              break;
+                            case "equal to":
+                              conditionDescription = `equals ${rule.value}`;
+                              break;
+                            case "not equal to":
+                              conditionDescription = `does not equal ${rule.value}`;
+                              break;
+                            case "greater than or equal to":
+                              conditionDescription = `is greater than or equal to ${rule.value}`;
+                              break;
+                            case "less than or equal to":
+                              conditionDescription = `is less than or equal to ${rule.value}`;
+                              break;
+                            case "between":
+                              if (Array.isArray(rule.value) && rule.value.length === 2) {
+                                conditionDescription = `is between ${rule.value[0]} and ${rule.value[1]}`;
+                              }
+                              break;
+                            case "is one of":
+                              if (isStringArray(rule.value)) {
+                                conditionDescription = `is one of [${rule.value.join(", ")}]`;
+                              }
+                              break;
+                            case "is not one of":
+                              if (isStringArray(rule.value)) {
+                                conditionDescription = `is not one of [${rule.value.join(", ")}]`;
+                              }
+                              break;
+                            default:
+                              conditionDescription = `matches condition "${rule.condition}"`;
+                          }
+                        } catch (error) {
+                          console.error("Error creating condition description:", error);
+                          conditionDescription = "matches a condition";
+                        }
+
+                        const newResponse = {
+                          ruleId: rule.id,
+                          responseType: "Evidence",
+                          responseValue: "Evidence provided",
+                          responseText: `Evidence for "${question.text}" when answer ${conditionDescription}`,
+                          responseEvidence: event.target.result as string,
+                          condition: rule.condition,
+                          conditionValue: rule.value
+                        };
+
+                        // Update the question with both the conditionalProof and the logicResponse
+                        updateQuestion(activeSection.id, question.id, {
+                          conditionalProof: event.target.result as string,
+                          logicRules: updatedRules,
+                          logicResponses: [...existingResponses, newResponse]
+                        });
+                      } else {
+                        // If no rule found, just update the conditionalProof
+                        updateQuestion(activeSection.id, question.id, {
+                          conditionalProof: event.target.result as string
+                        });
                       }
                     }
-                  };
-                  reader.onerror = (error) => {
-                    console.error("FileReader error for evidence:", error);
-                  };
-                  reader.readAsDataURL(file);
+                  }
+                  reader.readAsDataURL(e.target.files[0])
                 }
               }}
             />
             {!question.conditionalProof ? (
               <label htmlFor={`evidence-upload-${question.id}`} className="mobile-media-placeholder">
-                <ImageIcon size={20} />
+                <Image size={20} />
                 <span>Upload evidence (photo or video)</span>
               </label>
             ) : (
               <div className="mobile-media-preview">
                 <img
-                  key={`evidence-${question.id}-${Date.now()}`} // Force re-render on update
                   src={question.conditionalProof || "/placeholder.svg"}
                   alt="Evidence"
                   className="mobile-media-image"
-                  onError={(e) => {
-                    console.error("Evidence image failed to load:", e);
-                    // Set a fallback image if the original fails to load
-                    e.currentTarget.src = "/placeholder.svg";
-                  }}
                 />
                 <button
                   className="mobile-media-remove"
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    updateQuestion(activeSection.id, question.id, { conditionalProof: undefined })
+
+                    // Find and remove any evidence responses for this question
+                    const updatedResponses = question.logicResponses?.filter(
+                      response => response.responseType !== "Evidence"
+                    ) || [];
+
+                    // Update the question, removing the conditionalProof and any evidence responses
+                    updateQuestion(activeSection.id, question.id, {
+                      conditionalProof: undefined,
+                      logicResponses: updatedResponses
+                    })
                   }}
                 >
                   <X size={16} />
@@ -2779,40 +3106,141 @@ const CreateTemplate = () => {
       )
     }
 
+    // Check for require_action trigger
     if (shouldShowTrigger(question, "require_action")) {
+      // Get the rule that triggered this
+      const rule = question.logicRules?.find(r => r.trigger === "require_action");
+
+      // Function to handle the submit action
+      const handleSubmitAction = () => {
+        // Show loading state
+        setIsSubmittingAction(true);
+
+        // Simulate a delay to show the loading state (remove in production)
+        setTimeout(() => {
+          if (rule) {
+            // Create a temporary copy of the rule with the trigger set to null
+            const updatedRules = question.logicRules?.map(r =>
+              r.id === rule.id ? {...r, tempDisabled: true} : r
+            );
+
+            // Store the action in logicResponses
+            if (actionText.trim()) {
+              const existingResponses = question.logicResponses || [];
+              const newResponse = {
+                ruleId: rule.id,
+                responseType: "Action",
+                responseValue: actionText,
+                responseText: "Action taken"
+              };
+
+              updateQuestion(activeSection.id, question.id, {
+                logicRules: updatedRules,
+                logicResponses: [...existingResponses, newResponse]
+              });
+
+              // Clear the action text
+              setActionText("");
+            } else {
+              updateQuestion(activeSection.id, question.id, { logicRules: updatedRules });
+            }
+          }
+          setIsSubmittingAction(false);
+        }, 800);
+      };
+
+      // Function to handle cancel
+      const handleCancel = () => {
+        // Find the rule that triggered this
+        const rule = question.logicRules?.find(r => r.trigger === "require_action");
+        if (rule) {
+          // Create a temporary copy of the rule with the trigger set to null
+          const updatedRules = question.logicRules?.map(r =>
+            r.id === rule.id ? {...r, tempDisabled: true} : r
+          );
+          updateQuestion(activeSection.id, question.id, { logicRules: updatedRules });
+        }
+      };
+
       return (
         <div className="mobile-trigger-container">
           <div className="mobile-trigger-header">
             <FileText size={16} />
             <span>Action Required</span>
+            <button
+              className="mobile-trigger-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleCancel();
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
           <div className="mobile-action-form">
-            <input type="text" className="mobile-text-input" placeholder="Describe the action taken..." />
+            <input
+              type="text"
+              className="mobile-text-input"
+              placeholder="Describe the action taken..."
+              value={actionText}
+              onChange={(e) => setActionText(e.target.value)}
+            />
             <div className="mobile-action-buttons">
-              <button className="mobile-action-button">Submit Action</button>
-              <button className="mobile-action-button secondary">Cancel</button>
+              <button
+                className={`mobile-action-button ${isSubmittingAction ? 'loading' : ''}`}
+                onClick={handleSubmitAction}
+                disabled={isSubmittingAction}
+              >
+                Submit Action
+              </button>
+              <button
+                className="mobile-action-button secondary"
+                onClick={handleCancel}
+                disabled={isSubmittingAction}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )
     }
 
+    // Check for notify trigger
     if (shouldShowTrigger(question, "notify")) {
       return (
         <div className="mobile-trigger-container">
           <div className="mobile-notification-banner">
             <Bell size={16} />
             <span>Notification has been sent to the relevant team members.</span>
+            <button
+              className="mobile-trigger-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // Find the rule that triggered this
+                const rule = question.logicRules?.find(r => r.trigger === "notify");
+                if (rule) {
+                  // Create a temporary copy of the rule with the trigger set to null
+                  const updatedRules = question.logicRules?.map(r =>
+                    r.id === rule.id ? {...r, tempDisabled: true} : r
+                  );
+                  updateQuestion(activeSection.id, question.id, { logicRules: updatedRules });
+                }
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
       )
     }
 
+    // Check for display_message trigger
     if (shouldShowTrigger(question, "display_message")) {
       // Get the message from the rule that triggered this
-      const rule = question.logicRules?.find(
-        (r) => r.trigger === "display_message"
-      )
+      const rule = question.logicRules?.find((r) => r.trigger === "display_message")
       const message = rule?.message || "Important: This response requires immediate attention."
 
       return (
@@ -2820,22 +3248,113 @@ const CreateTemplate = () => {
           <div className="mobile-message-banner">
             <AlertTriangle size={16} />
             <span>{message}</span>
+            <button
+              className="mobile-trigger-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (rule) {
+                  // Create a temporary copy of the rule with the trigger set to null
+                  const updatedRules = question.logicRules?.map(r =>
+                    r.id === rule.id ? {...r, tempDisabled: true} : r
+                  );
+                  updateQuestion(activeSection.id, question.id, { logicRules: updatedRules });
+                }
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
       )
     }
 
+    // Check for ask_questions trigger
     if (shouldShowTrigger(question, "ask_questions")) {
       // Get the subQuestion from the rule that triggered this
       const rule = question.logicRules?.find((r) => r.trigger === "ask_questions")
-      const subQuestionText = rule?.subQuestion?.text || "Please provide more details about this issue"
-      const responseType = rule?.subQuestion?.responseType || "Text"
+      if (!rule) return null;
+
+      const subQuestionText = rule.subQuestion?.text || "Please provide more details about this issue"
+      const responseType = rule.subQuestion?.responseType || "Text"
+
+      // Check if we have a temporary response for this question and rule
+      const hasResponse = tempLogicResponses &&
+                         tempLogicResponses.questionId === question.id &&
+                         tempLogicResponses.ruleId === rule.id;
+
+      // Function to handle input changes
+      const handleInputChange = (value: string | number | boolean | null) => {
+        setTempLogicResponses({
+          questionId: question.id,
+          ruleId: rule.id,
+          value: value
+        });
+      };
+
+      // Function to remove the trigger rule and store the response
+      const removeTriggerRule = (saveResponse = false) => {
+        if (!rule) return;
+
+        // Find and temporarily disable the rule that has the ask_questions trigger
+        const updatedRules = question.logicRules?.map(r =>
+          r.id === rule.id ? {...r, tempDisabled: true} : r
+        );
+
+        // If we're saving the response, add it to the question's logicResponses
+        if (saveResponse && tempLogicResponses &&
+            tempLogicResponses.questionId === question.id &&
+            tempLogicResponses.ruleId === rule.id) {
+
+          const existingResponses = question.logicResponses || [];
+          const newResponse = {
+            ruleId: rule.id,
+            responseType: responseType,
+            responseValue: tempLogicResponses.value,
+            responseText: subQuestionText,
+            options: rule.subQuestion?.options // Include options for Multiple choice
+          };
+
+          updateQuestion(activeSection.id, question.id, {
+            logicRules: updatedRules,
+            logicResponses: [...existingResponses, newResponse]
+          });
+
+          // Clear the temporary response
+          setTempLogicResponses(null);
+        } else {
+          updateQuestion(activeSection.id, question.id, { logicRules: updatedRules });
+        }
+      };
+
+      // Function to handle the submit response action
+      const handleSubmitResponse = () => {
+        // Show loading state
+        setIsSubmittingResponse(true);
+
+        // Simulate a delay to show the loading state (remove in production)
+        setTimeout(() => {
+          // After "processing", remove the trigger rule and save the response
+          removeTriggerRule(true);
+          setIsSubmittingResponse(false);
+        }, 800);
+      };
 
       return (
-        <div className="mobile-trigger-container">
+        <div className="mobile-trigger-container" style={{ transition: "opacity 0.2s ease", opacity: 1 }}>
           <div className="mobile-trigger-header">
             <MessageSquare size={16} />
             <span>Follow-up Questions</span>
+            <button
+              className="mobile-trigger-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                removeTriggerRule(false);
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
           <div className="mobile-subquestion">
             <div className="mobile-question-text">
@@ -2844,27 +3363,68 @@ const CreateTemplate = () => {
             </div>
             <div className="mobile-question-response">
               {responseType === "Text" && (
-                <textarea className="mobile-text-input" rows={3} placeholder="Enter details here..."></textarea>
+                <textarea
+                  className="mobile-text-input"
+                  rows={3}
+                  placeholder="Enter details here..."
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  value={hasResponse && typeof tempLogicResponses?.value === 'string' ? tempLogicResponses.value : ''}
+                ></textarea>
               )}
               {responseType === "Yes/No" && (
                 <div className="mobile-yes-no">
-                  <button className="mobile-yes">Yes</button>
-                  <button className="mobile-no">No</button>
-                  <button className="mobile-na">N/A</button>
+                  <button
+                    className={`mobile-yes ${hasResponse && tempLogicResponses?.value === "Yes" ? "selected" : ""}`}
+                    onClick={() => handleInputChange("Yes")}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className={`mobile-no ${hasResponse && tempLogicResponses?.value === "No" ? "selected" : ""}`}
+                    onClick={() => handleInputChange("No")}
+                  >
+                    No
+                  </button>
+                  <button
+                    className={`mobile-na ${hasResponse && tempLogicResponses?.value === "N/A" ? "selected" : ""}`}
+                    onClick={() => handleInputChange("N/A")}
+                  >
+                    N/A
+                  </button>
                 </div>
               )}
-              {responseType === "Number" && <input type="number" className="mobile-number-input" placeholder="0" />}
+              {responseType === "Number" && (
+                <input
+                  type="number"
+                  className="mobile-number-input"
+                  placeholder="0"
+                  onChange={(e) => handleInputChange(Number(e.target.value))}
+                  value={hasResponse && typeof tempLogicResponses?.value === 'number' ? tempLogicResponses.value : ''}
+                />
+              )}
               {responseType === "Multiple choice" && (
                 <div className="mobile-multiple-choice">
-                  <button className="mobile-choice">Option 1</button>
-                  <button className="mobile-choice">Option 2</button>
-                  <button className="mobile-choice">Option 3</button>
+                  {(rule.subQuestion?.options || ["Option 1", "Option 2", "Option 3"]).map((option, idx) => (
+                    <button
+                      key={idx}
+                      className={`mobile-choice ${hasResponse && tempLogicResponses?.value === option ? "selected" : ""}`}
+                      onClick={() => handleInputChange(option)}
+                    >
+                      {option}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           </div>
           <div className="mobile-action-buttons">
-            <button className="mobile-action-button">Submit Responses</button>
+            <button
+              className={`mobile-action-button ${isSubmittingResponse ? 'loading' : ''}`}
+              onClick={handleSubmitResponse}
+              disabled={isSubmittingResponse || !hasResponse}
+            >
+              Submit Responses
+            </button>
           </div>
         </div>
       )
@@ -2965,164 +3525,74 @@ const CreateTemplate = () => {
         )
       case "Media":
         return (
-          <div className="mobile-media-container">
-            <label className="mobile-media-upload">
-              <input
-                type="file"
-                accept="image/*,video/*"
-                className="sr-only"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    const file = e.target.files[0];
-                    console.log("File selected:", file.name, file.type, file.size);
-
-                    // Create a temporary URL for immediate display
-                    const tempUrl = URL.createObjectURL(file);
-                    // Set a temporary value to show something immediately
-                    updateQuestion(activeSection.id, question.id, { value: tempUrl });
-
-                    // Force a re-render of the component to show the temporary image
-                    setTemplate(prevTemplate => ({ ...prevTemplate }));
-
-                    const reader = new FileReader();
-                    reader.onload = async (event) => {
-                      if (event.target?.result) {
-                        try {
-                          console.log("File loaded, resizing image...");
-                          // Resize the image to ensure it loads properly
-                          const resizedImage = await resizeImage(event.target.result as string);
-                          console.log("Image resized successfully");
-                          // Update with the properly resized image
-                          updateQuestion(activeSection.id, question.id, { value: resizedImage });
-
-                          // Force a re-render of the component to show the resized image
-                          setTemplate(prevTemplate => ({ ...prevTemplate }));
-                        } catch (error) {
-                          console.error("Error resizing image:", error);
-                          // Fallback to original image if resize fails
-                          updateQuestion(activeSection.id, question.id, { value: event.target.result as string });
-
-                          // Force a re-render of the component to show the original image
-                          setTemplate(prevTemplate => ({ ...prevTemplate }));
-                        }
-                      }
-                    };
-                    reader.onerror = (error) => {
-                      console.error("FileReader error:", error);
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
-              />
-              {!question.value ? (
-                <div className="mobile-media-placeholder">
-                  <ImageIcon size={20} />
-                  <span>Upload media (photo or video)</span>
-                </div>
-              ) : (
-                <div className="mobile-media-preview">
-                  <img
-                    key={`img-${question.id}-${Date.now()}`} // Force re-render on update
-                    src={(question.value as string) || "/placeholder.svg"}
-                    alt="Uploaded media"
-                    className="mobile-media-image"
-                    onError={(e) => {
-                      console.error("Image failed to load:", e);
-                      // Set a fallback image if the original fails to load
-                      e.currentTarget.src = "/placeholder.svg";
-                    }}
-                  />
-                  <button
-                    className="mobile-media-remove"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      updateQuestion(activeSection.id, question.id, { value: null });
-                    }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-            </label>
-          </div>
-        )
-      case "Annotation":
-        return (
-          <div className="mobile-annotation">
+          <label className="mobile-media-upload">
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               className="sr-only"
-              id={`annotation-${question.id}`}
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
-                  const file = e.target.files[0];
-                  console.log("Annotation file selected:", file.name, file.type, file.size);
-
-                  // Create a temporary URL for immediate display
-                  const tempUrl = URL.createObjectURL(file);
-                  // Set a temporary value to show something immediately
-                  updateQuestion(activeSection.id, question.id, { value: tempUrl });
-
-                  // Force a re-render of the component to show the temporary image
-                  setTemplate(prevTemplate => ({ ...prevTemplate }));
-
-                  const reader = new FileReader();
-                  reader.onload = async (event) => {
+                  const reader = new FileReader()
+                  reader.onload = (event) => {
                     if (event.target?.result) {
-                      try {
-                        console.log("Annotation file loaded, resizing image...");
-                        // Resize the image to ensure it loads properly
-                        const resizedImage = await resizeImage(event.target.result as string);
-                        console.log("Annotation image resized successfully");
-                        // Update with the properly resized image
-                        updateQuestion(activeSection.id, question.id, { value: resizedImage });
-
-                        // Force a re-render of the component to show the resized image
-                        setTemplate(prevTemplate => ({ ...prevTemplate }));
-                      } catch (error) {
-                        console.error("Error resizing annotation image:", error);
-                        // Fallback to original image if resize fails
-                        updateQuestion(activeSection.id, question.id, { value: event.target.result as string });
-
-                        // Force a re-render of the component to show the original image
-                        setTemplate(prevTemplate => ({ ...prevTemplate }));
-                      }
+                      updateQuestion(activeSection.id, question.id, { value: event.target.result as string })
                     }
-                  };
-                  reader.onerror = (error) => {
-                    console.error("FileReader error for annotation:", error);
-                  };
-                  reader.readAsDataURL(file);
+                  }
+                  reader.readAsDataURL(e.target.files[0])
                 }
               }}
             />
             {!question.value ? (
-              <label htmlFor={`annotation-${question.id}`} className="mobile-annotation-placeholder">
+              <>
+                <Image size={20} />
+                <span>Upload media (photo or video)</span>
+              </>
+            ) : (
+              <div className="mobile-media-preview">
+                <img
+                  src={(question.value as string) || "/placeholder.svg"}
+                  alt="Uploaded media"
+                  className="mobile-media-image"
+                />
+                <button
+                  className="mobile-media-remove"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    updateQuestion(activeSection.id, question.id, { value: null })
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+          </label>
+        )
+      case "Annotation":
+        return (
+          <div className="mobile-annotation">
+            {!question.value ? (
+              <div
+                className="mobile-annotation-placeholder"
+                onClick={() => {
+                  // Open a modal with signature pad
+                  setActiveQuestion(question);
+                  setShowSignatureModal(true);
+                }}
+              >
                 <Edit size={20} />
-                <span>Add annotation</span>
-              </label>
+                <span>Tap to sign</span>
+              </div>
             ) : (
               <div className="mobile-annotation-preview">
                 <img
-                  key={`annotation-${question.id}-${Date.now()}`} // Force re-render on update
                   src={(question.value as string) || "/placeholder.svg"}
-                  alt="Annotation"
+                  alt="Signature"
                   className="mobile-annotation-image"
-                  onError={(e) => {
-                    console.error("Annotation image failed to load:", e);
-                    // Set a fallback image if the original fails to load
-                    e.currentTarget.src = "/placeholder.svg";
-                  }}
                 />
                 <button
                   className="mobile-annotation-remove"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    updateQuestion(activeSection.id, question.id, { value: null });
-                  }}
+                  onClick={() => updateQuestion(activeSection.id, question.id, { value: null })}
                 >
                   <X size={16} />
                 </button>
@@ -3131,7 +3601,6 @@ const CreateTemplate = () => {
           </div>
         )
       case "Date & Time":
-      case "Inspection date":
         return (
           <input
             type="datetime-local"
@@ -3200,50 +3669,7 @@ const CreateTemplate = () => {
   }
 
   const renderMobilePreview = () => {
-    if (!showMobilePreview) {
-      return (
-        <div className="mobile-preview-collapsed">
-          <button className="show-mobile-preview-button" onClick={() => setShowMobilePreview(true)}>
-            <div className="mobile-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
-                <line x1="5" y1="18" x2="19" y2="18" stroke="currentColor" strokeWidth="2" />
-                <line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span>Show Preview</span>
-          </button>
-        </div>
-      )
-    }
-
-    // Add null check for template
-    if (!template) {
-      return <div className="mobile-preview">Loading...</div>
-    }
-
-    const activeSection = template.sections?.find((s) => s.id === activeSectionId) || template.sections?.[0]
-
-    if (!activeSection) {
-      return (
-        <div className="mobile-preview">
-          <div className="mobile-preview-header">
-            <button className="mobile-preview-close" onClick={() => setShowMobilePreview(false)}>
-              <X size={16} />
-              <span>Hide Preview</span>
-            </button>
-          </div>
-          <div className="mobile-device-container">
-            <div className="mobile-device">
-              <div className="mobile-content">
-                <div className="mobile-template-title">{template.title || "Untitled Template"}</div>
-                <div className="mobile-page-indicator">No pages added yet.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    }
+    const activeSection = template.sections.find((s) => s.id === activeSectionId) || template.sections[0]
 
     return (
       <div className="mobile-preview">
@@ -3300,7 +3726,7 @@ const CreateTemplate = () => {
                     </div>
                     <div className="mobile-question-response">
                       {renderMobileQuestionResponse(question, activeSection)}
-                      {shouldHaveTriggerButton(question.responseType) && renderTriggerUI(question, activeSection)}
+                      {renderTriggerUI(question, activeSection)}
                     </div>
                   </div>
                 ))}
@@ -3327,7 +3753,7 @@ const CreateTemplate = () => {
     <div className="template-builder">
       <div className="top-navigation">
         <div className="nav-left">
-          <div className="company-name">STREAMLINEER</div>
+          <div className="company-name">Streamlineer</div>
           <button className="back-button" onClick={handleBack}>
             <ArrowLeft size={16} />
             <span>back</span>
@@ -3335,7 +3761,10 @@ const CreateTemplate = () => {
         </div>
         <div className="nav-center">
           <div className="nav-tabs">
-            <button className={`nav-tab ${activeTab === 0 ? "active" : ""}`} onClick={() => setActiveTab(0)}>
+            <button
+              className={`nav-tab ${activeTab === 0 ? "active" : ""}`}
+              onClick={() => setActiveTab(0)}
+            >
               1. Build
             </button>
             <button
@@ -3354,7 +3783,9 @@ const CreateTemplate = () => {
             </button>
           </div>
         </div>
-        <div className="nav-right"></div>
+        <div className="nav-right">
+          {/* Save button removed */}
+        </div>
       </div>
 
       <div className="builder-content">
@@ -3375,13 +3806,7 @@ const CreateTemplate = () => {
                       <Plus size={24} />
                     </div>
                   )}
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={handleLogoUpload}
-                  />
+                  <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
                 </div>
                 <div className="template-info">
                   <input
@@ -3415,15 +3840,33 @@ const CreateTemplate = () => {
                 </div>
               </div>
             </div>
-            {renderMobilePreview()}
+
+            {showMobilePreview ? (
+              <div className="mobile-preview-container">
+                {renderMobilePreview()}
+              </div>
+            ) : (
+              <div className="mobile-preview-collapsed">
+                <button className="show-mobile-preview-button" onClick={() => setShowMobilePreview(true)}>
+                  <div className="mobile-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
+                      <line x1="5" y1="18" x2="19" y2="18" stroke="currentColor" strokeWidth="2" />
+                      <line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <span>Show Preview</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
         {activeTab === 2 && (
           <div className="report-page-container">
-            <div style={{ width: "100%", maxWidth: "1200px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              {!isLoading && template?.title && <Report template={template} />}
+            <div style={{ width: '100%', maxWidth: '1200px' }}>
+              <Report template={template} />
             </div>
-            <div className="report-footer" style={{ display: "flex", justifyContent: "center" }}>
+            <div className="report-footer">
               <button className="next-button" onClick={() => setActiveTab(3)}>
                 Next: Access
                 <ArrowRight size={16} />
@@ -3432,61 +3875,63 @@ const CreateTemplate = () => {
           </div>
         )}
         {activeTab === 3 && (
-          <div className="access-page-container">
-            <h1 className="access-main-title">Template Access & Settings</h1>
-            <p className="access-main-description">Configure access permissions and inspection timeframe for this template.</p>
+          <div className="create-template-access-container">
+            <div className="create-template-access-header">
+              <h1 className="create-template-access-title">Template Access & Settings</h1>
+              <p className="create-template-access-description">Configure access permissions and inspection timeframe for this template.</p>
+            </div>
 
-            <div className="access-content">
-              <div className="access-tab">
-                <div className="session-section">
+            <div className="create-template-access-content">
+              <div className="create-template-access-tab">
+                <div className="create-template-session-section">
                   <h2>
-                    <Calendar size={20} className="section-icon" />
+                    <Calendar size={22} className="create-template-section-icon" />
                     Inspection Timeframe
                   </h2>
-                  <p>Set the start and due dates for inspections using this template.</p>
+                  <p>Set the start and due dates for inspections using this template. These dates will determine when inspectors can access and complete their work.</p>
 
-                  <div className="date-fields">
-                    <div className="date-field">
-                      <label htmlFor="startDate">Start Date <span className="required-indicator">*</span></label>
-                      <div className="date-input-container">
+                  <div className="create-template-date-fields">
+                    <div className="create-template-date-field">
+                      <label htmlFor="startDate">Start Date <span className="create-template-required-indicator">*</span></label>
+                      <div className="create-template-date-input-container">
+                        <Calendar size={16} className="create-template-date-icon" />
                         <input
                           type="date"
                           id="startDate"
                           name="startDate"
                           min={new Date().toISOString().split('T')[0]}
-                          className="date-input"
+                          className="create-template-date-input"
                           style={{appearance: "none", WebkitAppearance: "none"}}
                         />
-                        <Calendar size={16} className="date-icon" />
                       </div>
-                      <div className="date-helper-text">Earliest date inspections can begin</div>
+                      <div className="create-template-date-helper-text">Earliest date inspections can begin</div>
                     </div>
-                    <div className="date-field">
-                      <label htmlFor="dueDate">Due Date <span className="required-indicator">*</span></label>
-                      <div className="date-input-container">
+                    <div className="create-template-date-field">
+                      <label htmlFor="dueDate">Due Date <span className="create-template-required-indicator">*</span></label>
+                      <div className="create-template-date-input-container">
+                        <Calendar size={16} className="create-template-date-icon" />
                         <input
                           type="date"
                           id="dueDate"
                           name="dueDate"
                           min={new Date().toISOString().split('T')[0]}
-                          className="date-input"
+                          className="create-template-date-input"
                           style={{appearance: "none", WebkitAppearance: "none"}}
                         />
-                        <Calendar size={16} className="date-icon" />
                       </div>
-                      <div className="date-helper-text">Deadline for completing inspections</div>
+                      <div className="create-template-date-helper-text">Deadline for completing inspections</div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="access-tab">
-                <div className="permissions-section">
+              <div className="create-template-access-tab">
+                <div className="create-template-permissions-section">
                   <h2>
-                    <User size={20} className="section-icon" />
+                    <User size={22} className="create-template-section-icon" />
                     User Permissions
                   </h2>
-                  <p>Manage who can access, edit, and use this template.</p>
+                  <p>Manage who can access, edit, and use this template. Add team members and set appropriate permission levels.</p>
 
                   <AccessManager
                     templateId={template.id}
@@ -3501,10 +3946,10 @@ const CreateTemplate = () => {
                 </div>
               </div>
 
-              <div className="access-tab">
-                <div className="permissions-section">
+              <div className="create-template-access-tab">
+                <div className="create-template-permissions-section">
                   <h2>
-                    <ClipboardCheck size={20} className="section-icon" />
+                    <ClipboardCheck size={22} className="create-template-section-icon" />
                     Template Assignments
                   </h2>
                   <p>Assign this template to inspectors who will complete the inspections.</p>
@@ -3520,16 +3965,23 @@ const CreateTemplate = () => {
               </div>
             </div>
 
-            <div className="access-footer">
-              <button className="publish-button" onClick={handlePublishTemplate}>
-                <Upload className="publish-icon" />
-                Publish Template
-                <CheckCircle size={16} />
-              </button>
+            <div className="create-template-access-footer">
+              <div className="create-template-publish-container">
+                <button className="create-template-publish-button" onClick={handlePublishTemplate}>
+                  <Upload size={16} />
+                  Publish Template
+                  <CheckCircle size={16} />
+                </button>
+                <p className="create-template-publish-note">
+                  Once published, this template will be available for inspectors to use. You can still make changes after publishing.
+                </p>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+
     </div>
   )
 }

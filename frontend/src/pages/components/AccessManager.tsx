@@ -331,7 +331,6 @@ const AccessManager: React.FC<AccessManagerProps> = ({
 
   return (
     <div className="access-manager">
-      <div style={{ width: '100%', maxWidth: '1000px' }}>
       <div className="access-header">
         <h2>Manage Access</h2>
         <p>Control who can view and edit "{templateTitle}"</p>
@@ -677,7 +676,6 @@ const AccessManager: React.FC<AccessManagerProps> = ({
             ))
           )}
         </div>
-      </div>
       </div>
     </div>
   );

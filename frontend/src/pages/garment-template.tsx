@@ -3,14 +3,13 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, ClipboardCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck } from 'lucide-react'
 import "./garment-template.css"
 import "./print-styles.css"
 import AccessManager from "./components/AccessManager"
 import TemplateAssignmentManager from "./components/TemplateAssignmentManager"
 import { getAqlCodeLetter, getSamplePlan } from "../utils/aqlHelpers"
 import { InspectionLevel as AqlInspectionLevel } from "../utils/aqlTables";
-
 
 // Types
 type ResponseType =
@@ -28,7 +27,25 @@ type ResponseType =
   | "Annotation"
   | "Date & Time"
 
-
+// Kept for future implementation of conditional logic
+// Commented out to avoid unused variable warning
+/*
+type LogicOperator =
+  | "equals"
+  | "notEquals"
+  | "greaterThan"
+  | "lessThan"
+  | "greaterThanOrEqual"
+  | "lessThanOrEqual"
+  | "between"
+  | "isOneOf"
+  | "isNotOneOf"
+  | "contains"
+  | "notContains"
+  | "startsWith"
+  | "endsWith"
+  | "matches"
+*/
 
 type TriggerAction = "require_action" | "require_evidence" | "notify" | "ask_questions" | "display_message"
 
@@ -61,6 +78,7 @@ interface LogicRule {
   subQuestion?: {
     text: string
     responseType: ResponseType
+    options?: string[]
   }
 }
 
@@ -78,7 +96,7 @@ interface Question {
 
 // Garment-specific types
 type AQLLevel = "1.5" | "2.5" | "4.0" | "6.5"
-type InspectionLevel = "I" | "II" | "III" | "S1" | "S2" | "S3" | "S4"
+type InspectionLevel = "I" | "II" | "III"
 type SamplingPlan = "Single" | "Double" | "Multiple"
 type Severity = "Normal" | "Tightened" | "Reduced"
 
@@ -153,6 +171,26 @@ interface ReportData {
   questionAnswers: {
     [questionId: string]: string | string[] | boolean | number | null
   }
+  // Track active triggers for each question
+  activeTriggers?: {
+    [questionId: string]: { rule: LogicRule; question: Question; section: AppSection }[]
+  }
+  // Track evidence for questions that require it
+  questionEvidence?: {
+    [questionId: string]: string[]
+  }
+  // Track action responses for questions that require actions
+  actionResponses?: {
+    [questionId: string]: {
+      [ruleId: string]: string
+    }
+  }
+  // Track subquestion answers
+  subQuestionAnswers?: {
+    [questionId: string]: {
+      [ruleId: string]: string
+    }
+  }
 }
 
 // Update the type for quantities in ReportData
@@ -173,11 +211,9 @@ interface DefectData {
   [key: string]: any; // Add index signature
 }
 
-// This function will be defined inside the component
-
 // Constants
 const AQL_LEVELS: AQLLevel[] = ["1.5", "2.5", "4.0", "6.5"]
-const INSPECTION_LEVELS: InspectionLevel[] = ["I", "II", "III", "S1", "S2", "S3", "S4"]
+const INSPECTION_LEVELS: InspectionLevel[] = ["I", "II", "III"]
 const SAMPLING_PLANS: SamplingPlan[] = ["Single", "Double", "Multiple"]
 const SEVERITIES: Severity[] = ["Normal", "Tightened", "Reduced"]
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"]
@@ -186,9 +222,8 @@ const DEFAULT_DEFECTS = ["Stitching", "Fabric", "Color", "Measurement", "Packing
 
 // Utility Functions
 const generateId = () => Math.random().toString(36).substring(2, 9)
-// Kept for future implementation of logic rules
-// Commented out to avoid unused variable warning
-// const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
+// Used for logic rules implementation
+const generateRuleId = () => `rule_${Math.random().toString(36).substring(2, 9)}`
 
 const getDefaultQuestion = (responseType: ResponseType = "Text"): Question => ({
   id: generateId(),
@@ -340,6 +375,8 @@ const resizeImage = (base64: string): Promise<string> => {
 function isGarmentDetailsContent(content: StandardSectionContent | GarmentDetailsContent): content is GarmentDetailsContent {
   return 'aqlSettings' in content && 'sizes' in content && 'colors' in content;
 }
+
+
 
 
 
@@ -530,8 +567,18 @@ const renderQuestionResponse = (
     case "Annotation":
       return (
         <div className="response-field annotation-field">
-          <div className="annotation-placeholder-box">
-            Annotation Placeholder
+          <div className="signature-container">
+            <div className="signature-canvas-wrapper">
+              {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') ? (
+                <div className="signature-preview">
+                  <img src={question.value} alt="Signature" className="signature-image" />
+                </div>
+              ) : (
+                <div className="annotation-placeholder-box">
+                  Click to sign in the report page
+                </div>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -635,6 +682,778 @@ const renderQuestionResponse = (
   }
 };
 
+// Define supported types for logic
+const LOGIC_SUPPORTED_TYPES: ResponseType[] = ["Text", "Number", "Checkbox", "Yes/No", "Multiple choice", "Slider"];
+
+// Helper function to get condition icon
+const getConditionIcon = (condition: LogicCondition) => {
+  switch (condition) {
+    case "is":
+      return <Equal className="condition-icon" />
+    case "is not":
+      return <X className="condition-icon" />
+    case "contains":
+      return <CircleDot className="condition-icon" />
+    case "not contains":
+      return <X className="condition-icon" />
+    case "starts with":
+      return <ArrowRight className="condition-icon" />
+    case "ends with":
+      return <ArrowLeft className="condition-icon" />
+    case "matches (regex)":
+      return <Hash className="condition-icon" />
+    case "less than":
+      return <ArrowLeft className="condition-icon" />
+    case "less than or equal to":
+      return <ArrowLeft className="condition-icon" />
+    case "equal to":
+      return <Equal className="condition-icon" />
+    case "not equal to":
+      return <X className="condition-icon" />
+    case "greater than or equal to":
+      return <ArrowRight className="condition-icon" />
+    case "greater than":
+      return <ArrowRight className="condition-icon" />
+    case "between":
+      return <ListFilter className="condition-icon" />
+    case "not between":
+      return <ListFilter className="condition-icon" />
+    case "is one of":
+      return <ListFilter className="condition-icon" />
+    case "is not one of":
+      return <ListFilter className="condition-icon" />
+    default:
+      return <Equal className="condition-icon" />
+  }
+}
+
+// Utility type guard
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((v: unknown) => typeof v === "string")
+
+// Helper function to check if a trigger should be shown based on the question's logic rules
+const shouldShowTrigger = (question: Question, triggerType: TriggerAction): boolean => {
+  if (!question.logicRules || question.logicRules.length === 0) return false
+  if (question.value === null || question.value === undefined) return false
+
+  for (const rule of question.logicRules) {
+    // Skip rules that don't match the trigger type
+    if (rule.trigger !== triggerType) continue
+
+    // Skip rules with null values (except for "is" and "is not" conditions)
+    if (rule.value === null && rule.condition !== "is" && rule.condition !== "is not") continue
+
+    // Evaluate the condition based on the current value
+    const value = question.value
+    let conditionMet = false
+
+    try {
+      switch (rule.condition) {
+        case "is":
+          conditionMet = String(value) === String(rule.value)
+          break
+        case "is not":
+          conditionMet = String(value) !== String(rule.value)
+          break
+        case "contains":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && value.includes(rule.value)
+          break
+        case "not contains":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && !value.includes(rule.value)
+          break
+        case "starts with":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && value.startsWith(rule.value)
+          break
+        case "ends with":
+          conditionMet = typeof value === "string" && typeof rule.value === "string" && value.endsWith(rule.value)
+          break
+        case "greater than":
+          conditionMet = Number(value) > Number(rule.value)
+          break
+        case "less than":
+          conditionMet = Number(value) < Number(rule.value)
+          break
+        case "equal to":
+          conditionMet = Number(value) === Number(rule.value)
+          break
+        case "not equal to":
+          conditionMet = Number(value) !== Number(rule.value)
+          break
+        case "greater than or equal to":
+          conditionMet = Number(value) >= Number(rule.value)
+          break
+        case "less than or equal to":
+          conditionMet = Number(value) <= Number(rule.value)
+          break
+        case "between":
+          conditionMet =
+            Array.isArray(rule.value) &&
+            rule.value.length === 2 &&
+            Number(value) >= Number(rule.value[0]) &&
+            Number(value) <= Number(rule.value[1])
+          break
+        case "is one of":
+          conditionMet = isStringArray(rule.value) && rule.value.includes(String(value))
+          break
+        case "is not one of":
+          conditionMet = isStringArray(rule.value) && !rule.value.includes(String(value))
+          break
+      }
+    } catch (error) {
+      console.error("Error evaluating condition:", error);
+      continue; // Skip this rule if there's an error
+    }
+
+    if (conditionMet) {
+      return true
+    }
+  }
+
+  return false
+}
+
+// Enhanced Logic Components
+const EnhancedLogicConditionSelector: React.FC<{
+  questionType: ResponseType
+  selectedCondition: LogicCondition
+  onConditionChange: (condition: LogicCondition) => void
+  className?: string
+}> = ({ questionType, selectedCondition, onConditionChange, className = "" }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [availableConditions, setAvailableConditions] = useState<LogicCondition[]>([])
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const conditions: LogicCondition[] = (() => {
+      switch (questionType) {
+        case "Text":
+          return ["is", "is not", "contains", "not contains", "starts with", "ends with", "matches (regex)"]
+        case "Number":
+        case "Slider":
+          return [
+            "less than",
+            "less than or equal to",
+            "equal to",
+            "not equal to",
+            "greater than or equal to",
+            "greater than",
+            "between",
+            "not between",
+          ]
+        case "Checkbox":
+        case "Yes/No":
+          return ["is", "is not"]
+        case "Multiple choice":
+          return ["is", "is not", "is one of", "is not one of"]
+        case "Media":
+        case "Annotation":
+          return ["is", "is not"]
+        case "Date & Time":
+          return ["is", "is not", "less than", "greater than", "between"]
+        case "Site":
+        case "Person":
+        case "Inspection location":
+          return ["is", "is not", "is one of", "is not one of"]
+        default:
+          return ["is", "is not"]
+      }
+    })()
+
+    setAvailableConditions(conditions)
+    if (!conditions.includes(selectedCondition) && conditions.length > 0) {
+      onConditionChange(conditions[0])
+    }
+  }, [questionType, selectedCondition, onConditionChange])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  return (
+    <div className={`enhanced-logic-condition-selector ${className}`} ref={dropdownRef}>
+      <div className="selected-condition" onClick={() => setIsOpen(!isOpen)}>
+        {getConditionIcon(selectedCondition)}
+        <span className="condition-text">{selectedCondition}</span>
+        <ChevronDown className={`dropdown-arrow ${isOpen ? "rotate" : ""}`} />
+      </div>
+      {isOpen && (
+        <div className="enhanced-condition-dropdown">
+          {availableConditions.map((condition) => (
+            <div
+              key={condition}
+              className={`enhanced-condition-option ${selectedCondition === condition ? "selected" : ""}`}
+              onClick={() => {
+                onConditionChange(condition)
+                setIsOpen(false)
+              }}
+            >
+              {getConditionIcon(condition)}
+              <span>{condition}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const EnhancedLogicValueInput: React.FC<{
+  questionType: ResponseType
+  condition: LogicCondition
+  value: string | number | string[] | [number, number] | null
+  onChange: (value: string | number | string[] | [number, number]) => void
+  options?: string[]
+  className?: string
+}> = ({ questionType, condition, value, onChange, options = [], className = "" }) => {
+  const [rangeStart, setRangeStart] = useState("")
+  const [rangeEnd, setRangeEnd] = useState("")
+
+  useEffect(() => {
+    if (Array.isArray(value) && value.length === 2 && ["between", "not between"].includes(condition)) {
+      setRangeStart(String(value[0] || ""))
+      setRangeEnd(String(value[1] || ""))
+    }
+  }, [value, condition])
+
+  const handleRangeChange = () => {
+    if (rangeStart && rangeEnd) {
+      if (questionType === "Number") {
+        onChange([Number(rangeStart), Number(rangeEnd)] as [number, number])
+      } else {
+        onChange([rangeStart, rangeEnd] as [string, string])
+      }
+    }
+  }
+
+  const handleOptionToggle = (option: string) => {
+    const currentValues = isStringArray(value) ? value : []
+    const newValues = currentValues.includes(option)
+      ? currentValues.filter((v) => v !== option)
+      : [...currentValues, option]
+    onChange(newValues)
+  }
+
+  if (["between", "not between"].includes(condition)) {
+    return (
+      <div className={`enhanced-logic-range-input ${className}`}>
+        <input
+          type={questionType === "Number" ? "number" : "text"}
+          placeholder="Min"
+          value={rangeStart}
+          onChange={(e) => {
+            setRangeStart(e.target.value)
+            if (rangeEnd) handleRangeChange()
+          }}
+          className="range-input-min"
+        />
+        <span className="range-separator">and</span>
+        <input
+          type={questionType === "Number" ? "number" : "text"}
+          placeholder="Max"
+          value={rangeEnd}
+          onChange={(e) => {
+            setRangeEnd(e.target.value)
+            if (rangeStart) handleRangeChange()
+          }}
+          className="range-input-max"
+        />
+      </div>
+    )
+  }
+
+  if (["is one of", "is not one of"].includes(condition) && options.length > 0) {
+    const currentValues = isStringArray(value) ? value : []
+    return (
+      <div className={`enhanced-logic-multi-select ${className}`}>
+        {options.map((option) => (
+          <label key={option} className="enhanced-multi-select-option">
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={currentValues.includes(option)}
+              onChange={() => handleOptionToggle(option)}
+            />
+            <span className={currentValues.includes(option) ? "selected" : ""}>{option}</span>
+          </label>
+        ))}
+      </div>
+    )
+  }
+
+  if (questionType === "Yes/No") {
+    return (
+      <div className={`enhanced-logic-yes-no-select ${className}`}>
+        {["Yes", "No", "N/A"].map((opt) => (
+          <label key={opt} className="enhanced-yes-no-option">
+            <input
+              type="radio"
+              className="sr-only"
+              checked={value === opt}
+              onChange={() => onChange(opt)}
+              name="yes-no-value"
+            />
+            <span className={value === opt ? "selected" : ""}>{opt}</span>
+          </label>
+        ))}
+      </div>
+    )
+  }
+
+  if (questionType === "Number") {
+    return (
+      <input
+        type="number"
+        value={(value as number) ?? ""}
+        onChange={(e) => onChange(Number(e.target.value))}
+        placeholder="Enter value"
+        className={`enhanced-logic-number-input ${className}`}
+      />
+    )
+  }
+
+  return (
+    <input
+      type="text"
+      value={(value as string) ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Enter value"
+      className={`enhanced-logic-text-input ${className}`}
+    />
+  )
+}
+
+const EnhancedLogicTriggerSelector: React.FC<{
+  selectedTrigger: TriggerAction | null
+  onTriggerSelect: (trigger: TriggerAction | null) => void
+  onConfigChange?: (config: any) => void
+  className?: string
+}> = ({ selectedTrigger, onTriggerSelect, onConfigChange = () => {}, className = "" }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const triggers: { value: TriggerAction; label: string; icon: React.ReactNode; description: string }[] = [
+    {
+      value: "require_action",
+      label: "Require action",
+      icon: <FileText className="trigger-icon" />,
+      description: "Require the user to take an action",
+    },
+    {
+      value: "require_evidence",
+      label: "Require evidence",
+      icon: <ImageIcon className="trigger-icon" />,
+      description: "Require the user to upload evidence",
+    },
+    {
+      value: "notify",
+      label: "Notify",
+      icon: <Bell className="trigger-icon" />,
+      description: "Send a notification",
+    },
+    {
+      value: "ask_questions",
+      label: "Ask questions",
+      icon: <MessageSquare className="trigger-icon" />,
+      description: "Ask follow-up questions",
+    },
+    {
+      value: "display_message",
+      label: "Display message",
+      icon: <AlertTriangle className="trigger-icon" />,
+      description: "Show a message to the user",
+    },
+  ]
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const selectedTriggerInfo = selectedTrigger ? triggers.find((t) => t.value === selectedTrigger) : null
+
+  return (
+    <div className={`enhanced-logic-trigger-selector ${className}`} ref={dropdownRef}>
+      {!selectedTrigger ? (
+        <button className="enhanced-trigger-button" onClick={() => setIsOpen(!isOpen)}>
+          <Plus className="trigger-plus-icon" />
+          <span>Add trigger</span>
+        </button>
+      ) : (
+        <div className="enhanced-selected-trigger">
+          {selectedTriggerInfo?.icon}
+          <span>{selectedTriggerInfo?.label}</span>
+          <button
+            className="enhanced-clear-trigger"
+            onClick={(e) => {
+              e.stopPropagation()
+              // Use setTimeout to prevent the buffering/spark effect
+              setTimeout(() => {
+                onTriggerSelect(null)
+              }, 10)
+            }}
+          >
+            <X className="clear-icon" />
+          </button>
+        </div>
+      )}
+
+      {isOpen && !selectedTrigger && (
+        <div className="enhanced-trigger-dropdown">
+          {triggers.map((trigger) => (
+            <div
+              key={trigger.value}
+              className="enhanced-trigger-option"
+              onClick={() => {
+                onTriggerSelect(trigger.value)
+                setIsOpen(false)
+              }}
+            >
+              <div className="enhanced-trigger-icon-container">{trigger.icon}</div>
+              <div className="enhanced-trigger-details">
+                <div className="enhanced-trigger-label">{trigger.label}</div>
+                <div className="enhanced-trigger-description">{trigger.description}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const EnhancedLogicTriggerConfig: React.FC<{
+  trigger: TriggerAction
+  config: any
+  onConfigChange: (config: any) => void
+}> = ({ trigger, config, onConfigChange }) => {
+  const [message, setMessage] = useState(config?.message || "")
+  const [questionText, setQuestionText] = useState(config?.subQuestion?.text || "")
+  const [responseType, setResponseType] = useState<ResponseType>(config?.subQuestion?.responseType || "Text")
+  const [options, setOptions] = useState<string[]>(config?.subQuestion?.options || ["Option 1", "Option 2", "Option 3"])
+  const [newOption, setNewOption] = useState<string>("")
+
+  useEffect(() => {
+    if (trigger === "display_message") {
+      onConfigChange({ ...config, message })
+    } else if (trigger === "ask_questions") {
+      onConfigChange({
+        ...config,
+        subQuestion: {
+          text: questionText,
+          responseType,
+          options: responseType === "Multiple choice" ? options : undefined
+        },
+      })
+    }
+  }, [trigger, message, questionText, responseType, options, config, onConfigChange])
+
+  const addOption = () => {
+    if (newOption.trim() === "") return;
+    setOptions([...options, newOption.trim()]);
+    setNewOption("");
+  };
+
+  const removeOption = (index: number) => {
+    const newOptions = [...options];
+    newOptions.splice(index, 1);
+    setOptions(newOptions);
+  };
+
+  const updateOption = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  };
+
+  if (trigger === "display_message") {
+    return (
+      <div className="enhanced-trigger-config">
+        <label className="enhanced-trigger-config-label">Message to display:</label>
+        <textarea
+          className="enhanced-logic-text-input"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Enter message to display to the user"
+          rows={3}
+        />
+      </div>
+    )
+  }
+
+  if (trigger === "ask_questions") {
+    return (
+      <div className="enhanced-trigger-config">
+        <label className="enhanced-trigger-config-label">Follow-up question:</label>
+        <input
+          type="text"
+          className="enhanced-logic-text-input"
+          value={questionText}
+          onChange={(e) => setQuestionText(e.target.value)}
+          placeholder="Enter follow-up question"
+        />
+        <label className="enhanced-trigger-config-label mt-2">Response type:</label>
+        <select
+          className="enhanced-logic-text-input"
+          value={responseType}
+          onChange={(e) => setResponseType(e.target.value as ResponseType)}
+        >
+          <option value="Text">Text</option>
+          <option value="Number">Number</option>
+          <option value="Yes/No">Yes/No</option>
+          <option value="Multiple choice">Multiple choice</option>
+        </select>
+
+        {responseType === "Multiple choice" && (
+          <div className="enhanced-options-container mt-2">
+            <label className="enhanced-trigger-config-label">Options:</label>
+            {options.map((option, index) => (
+              <div key={index} className="enhanced-option-item">
+                <input
+                  type="text"
+                  className="enhanced-logic-text-input"
+                  value={option}
+                  onChange={(e) => updateOption(index, e.target.value)}
+                  placeholder={`Option ${index + 1}`}
+                />
+                <button
+                  className="enhanced-remove-option-button"
+                  onClick={() => removeOption(index)}
+                  type="button"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            <div className="enhanced-add-option-row">
+              <input
+                type="text"
+                className="enhanced-logic-text-input"
+                value={newOption}
+                onChange={(e) => setNewOption(e.target.value)}
+                placeholder="New option"
+              />
+              <button
+                className="enhanced-add-option-button"
+                onClick={addOption}
+                type="button"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return null
+}
+
+const EnhancedLogicRuleBuilder: React.FC<{
+  questionType: ResponseType
+  rule: LogicRule
+  options?: string[]
+  onRuleChange: (rule: LogicRule) => void
+  onRuleDelete: () => void
+  questions?: Array<{ id: string; text: string }>
+  className?: string
+}> = ({ questionType, rule, options = [], onRuleChange, onRuleDelete, questions = [], className = "" }) => {
+  const [localRule, setLocalRule] = useState<LogicRule>(rule)
+  const [showConfig, setShowConfig] = useState(false)
+
+  // Use questions parameter for future implementation of cross-question logic
+
+  useEffect(() => {
+    onRuleChange(localRule)
+  }, [localRule, onRuleChange])
+
+  useEffect(() => {
+    setLocalRule(rule)
+  }, [rule])
+
+  return (
+    <div className={`enhanced-logic-rule-builder ${className}`}>
+      <div className="enhanced-logic-rule-content">
+        <div className="enhanced-logic-condition-row">
+          <span className="enhanced-if-label">If answer</span>
+          <EnhancedLogicConditionSelector
+            questionType={questionType}
+            selectedCondition={localRule.condition}
+            onConditionChange={(condition) => setLocalRule({ ...localRule, condition })}
+          />
+          <EnhancedLogicValueInput
+            questionType={questionType}
+            condition={localRule.condition}
+            value={localRule.value}
+            onChange={(value) => setLocalRule({ ...localRule, value })}
+            options={options}
+          />
+        </div>
+        <div className="enhanced-logic-trigger-row">
+          <span className="enhanced-then-label">then</span>
+          <EnhancedLogicTriggerSelector
+            selectedTrigger={localRule.trigger}
+            onTriggerSelect={(trigger) => {
+              // If removing a trigger, hide config panel first to prevent flickering
+              if (!trigger) {
+                setShowConfig(false)
+                // Small delay before updating the rule state to prevent UI flicker
+                setTimeout(() => {
+                  setLocalRule({
+                    ...localRule,
+                    trigger: null,
+                    triggerConfig: undefined,
+                    message: undefined,
+                    subQuestion: undefined,
+                  })
+                }, 10)
+              } else {
+                // For adding a trigger, update state immediately
+                setLocalRule({
+                  ...localRule,
+                  trigger,
+                  triggerConfig: trigger ? {} : undefined,
+                  message: trigger === "display_message" ? localRule.message || "" : undefined,
+                  subQuestion:
+                    trigger === "ask_questions" ? localRule.subQuestion || { text: "", responseType: "Text" } : undefined,
+                })
+                // Always show config when a trigger is selected
+                setShowConfig(true)
+              }
+            }}
+            onConfigChange={(config) => setLocalRule({ ...localRule, triggerConfig: config })}
+          />
+
+        </div>
+        <div className={`enhanced-logic-config-panel ${showConfig && localRule.trigger ? "" : "hidden"}`}>
+          {localRule.trigger && (
+            <div className="enhanced-logic-config-row">
+              <EnhancedLogicTriggerConfig
+                trigger={localRule.trigger}
+                config={{
+                  message: localRule.message,
+                  subQuestion: localRule.subQuestion,
+                }}
+                onConfigChange={(config) => {
+                  setLocalRule({
+                    ...localRule,
+                    message: config.message,
+                    subQuestion: config.subQuestion,
+                  })
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      <button className="enhanced-delete-rule-button" onClick={onRuleDelete} aria-label="Delete rule">
+        <Trash2 className="delete-icon" />
+      </button>
+    </div>
+  )
+}
+
+const EnhancedLogicRulesContainer: React.FC<{
+  questionType: ResponseType
+  rules: LogicRule[]
+  options?: string[]
+  onRulesChange: (rules: LogicRule[]) => void
+  questions?: Array<{ id: string; text: string }>
+  onClose: () => void
+  className?: string
+}> = ({ questionType, rules, options = [], onRulesChange, questions = [], onClose, className = "" }) => {
+  const addNewRule = () => {
+    const defaultCondition: LogicCondition = questionType === "Number" ? "equal to" : "is"
+    const newRule: LogicRule = {
+      id: generateRuleId(),
+      condition: defaultCondition,
+      value: null,
+      trigger: null,
+    }
+    onRulesChange([...rules, newRule])
+  }
+
+  const updateRule = (index: number, updatedRule: LogicRule) => {
+    const newRules = [...rules]
+    newRules[index] = updatedRule
+    onRulesChange(newRules)
+  }
+
+  const deleteRule = (index: number) => {
+    const newRules = [...rules]
+    newRules.splice(index, 1)
+    onRulesChange(newRules)
+  }
+
+  return (
+    <div className={`enhanced-logic-rules-container ${className}`}>
+      <div className="enhanced-logic-header">
+        <h3>Logic Rules</h3>
+        <button className="enhanced-close-button" onClick={onClose} aria-label="Close">
+          <X className="close-icon" />
+        </button>
+      </div>
+
+      <div className="enhanced-logic-rules-list">
+        {rules.length === 0 ? (
+          <div className="enhanced-empty-rules">
+            <p>No rules added yet. Add your first rule below.</p>
+          </div>
+        ) : (
+          rules.map((rule, index) => (
+            <EnhancedLogicRuleBuilder
+              key={rule.id}
+              questionType={questionType}
+              rule={rule}
+              options={options}
+              onRuleChange={(updatedRule) => updateRule(index, updatedRule)}
+              onRuleDelete={() => deleteRule(index)}
+              questions={questions}
+              className="enhanced-logic-rule-item"
+            />
+          ))
+        )}
+      </div>
+
+      <div className="enhanced-logic-rules-actions">
+        <button className="enhanced-add-rule-button" onClick={addNewRule}>
+          <Plus className="add-icon" />
+          <span>Add rule</span>
+        </button>
+        <button className="enhanced-done-button" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const EnhancedAddLogicButton: React.FC<{
+  hasRules: boolean
+  onClick: () => void
+  className?: string
+}> = ({ hasRules, onClick, className = "" }) => {
+  return (
+    <button className={`enhanced-add-logic-button ${hasRules ? "has-rules" : ""} ${className}`} onClick={onClick}>
+      <span>{hasRules ? "Edit logic" : "Add logic"}</span>
+      {hasRules && <span className="rules-badge">!</span>}
+    </button>
+  )
+}
+
 // Main Component
 const Garment_Template: React.FC = () => {
   const navigate = useNavigate()
@@ -647,6 +1466,19 @@ const Garment_Template: React.FC = () => {
   const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
+  const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
+  const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
+  const [newSize, setNewSize] = useState<string>("")
+  const [newColor, setNewColor] = useState<string>("")
+  const [newDefect, setNewDefect] = useState<string>("")
+  const [defectImages, setDefectImages] = useState<{ [defectIndex: number]: string[] }>({})
+  const [startDate, setStartDate] = useState<string>("")
+  const [dueDate, setDueDate] = useState<string>("")
+  const [dateErrors, setDateErrors] = useState<{
+    startDate?: string;
+    dueDate?: string;
+  }>({})
+  const [isExporting, setIsExporting] = useState<boolean>(false)
 
   // Load existing template if in edit mode
   useEffect(() => {
@@ -819,84 +1651,6 @@ const Garment_Template: React.FC = () => {
       console.log("Garment_Template: No ID provided, using default template")
     }
   }, [id, navigate])
-  const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
-  const [newSize, setNewSize] = useState<string>("")
-  const [newColor, setNewColor] = useState<string>("")
-  const [newDefect, setNewDefect] = useState<string>("")
-  const [defectImages, setDefectImages] = useState<{ [defectIndex: number]: string[] }>({})
-  const [startDate, setStartDate] = useState<string>("")
-  const [dueDate, setDueDate] = useState<string>("")
-  const [dateErrors, setDateErrors] = useState<{
-    startDate?: string;
-    dueDate?: string;
-  }>({})
-  const [isExporting, setIsExporting] = useState<boolean>(false)
-
-  // Report data state - moved to top level
-  const [reportData, setReportData] = useState<ReportData>(() => {
-    const initialDefects =
-      (() => {
-        const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
-        if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
-          return garmentSection.content.defaultDefects.map((defect: string) => ({
-          type: defect,
-          remarks: "",
-          critical: 0,
-          major: 0,
-          minor: 0,
-          }));
-        }
-        return [];
-      })()
-
-    const initialAqlLevel = (() => {
-      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
-      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
-        return garmentSection.content.aqlSettings.aqlLevel;
-      }
-      return "2.5"; // default value
-    })();
-    const initialInspectionLevel = (() => {
-      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
-      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
-        return garmentSection.content.aqlSettings.inspectionLevel;
-      }
-      return "II"; // default value
-    })();
-    const initialSamplingPlan = (() => {
-      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
-      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
-        return garmentSection.content.aqlSettings.samplingPlan;
-      }
-      return "Single"; // default value
-    })();
-    const initialSeverity = (() => {
-      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
-      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
-        return garmentSection.content.aqlSettings.severity;
-      }
-      return "Normal"; // default value
-    })();
-
-    return {
-      quantities: {},
-      cartonOffered: "30",
-      cartonInspected: "5",
-      cartonToInspect: "5",
-      defects: initialDefects,
-      aqlSettings: {
-        aqlLevel: initialAqlLevel,
-        inspectionLevel: initialInspectionLevel,
-        samplingPlan: initialSamplingPlan,
-        severity: initialSeverity,
-        status: "PASS",
-      },
-      editingAql: false,
-      newSize: "",
-      newColor: "",
-      questionAnswers: {},
-    }
-  })
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
@@ -1057,6 +1811,78 @@ const Garment_Template: React.FC = () => {
     }
   }
 
+  // Report data state - moved to top level
+  const [reportData, setReportData] = useState<ReportData>(() => {
+    const initialDefects =
+      (() => {
+        const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
+        if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
+          return garmentSection.content.defaultDefects.map((defect: string) => ({
+          type: defect,
+          remarks: "",
+          critical: 0,
+          major: 0,
+          minor: 0,
+          }));
+        }
+        return [];
+      })()
+
+    const initialAqlLevel = (() => {
+      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
+      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
+        return garmentSection.content.aqlSettings.aqlLevel;
+      }
+      return "2.5"; // default value
+    })();
+    const initialInspectionLevel = (() => {
+      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
+      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
+        return garmentSection.content.aqlSettings.inspectionLevel;
+      }
+      return "II"; // default value
+    })();
+    const initialSamplingPlan = (() => {
+      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
+      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
+        return garmentSection.content.aqlSettings.samplingPlan;
+      }
+      return "Single"; // default value
+    })();
+    const initialSeverity = (() => {
+      const garmentSection = template.sections.find((s) => s.type === "garmentDetails");
+      if (garmentSection && isGarmentDetailsContent(garmentSection.content)) {
+        return garmentSection.content.aqlSettings.severity;
+      }
+      return "Normal"; // default value
+    })();
+
+    return {
+      quantities: {},
+      cartonOffered: "30",
+      cartonInspected: "5",
+      cartonToInspect: "5",
+      defects: initialDefects,
+      aqlSettings: {
+        aqlLevel: initialAqlLevel,
+        inspectionLevel: initialInspectionLevel,
+        samplingPlan: initialSamplingPlan,
+        severity: initialSeverity,
+        status: "PASS",
+      },
+      editingAql: false,
+      newSize: "",
+      newColor: "",
+      questionAnswers: {},
+      activeTriggers: {},
+      questionEvidence: {},
+      actionResponses: {},
+      subQuestionAnswers: {}
+    }
+  })
+
+
+
   // Section Management
   const addStandardSection = () => {
     const newSection = getDefaultStandardSection()
@@ -1080,7 +1906,7 @@ const Garment_Template: React.FC = () => {
     if (section.type === "garmentDetails") {
       if (
         window.confirm(
-          "Are you sure you want to delete the Garment Details section? This will remove all garment-specific configuration.",
+          "Are you sure you want to delete the Garment details section? This will remove all garment-specific configuration.",
         )
       ) {
         setTemplate((prev) => ({ ...prev, sections: prev.sections.filter((s) => s.id !== sectionId) }))
@@ -1149,6 +1975,15 @@ const Garment_Template: React.FC = () => {
   }
 
   const changeQuestionResponseType = (sectionId: string, questionId: string, responseType: ResponseType) => {
+    const section = template.sections.find((s) => s.id === sectionId)
+    if (!section || section.type !== "standard") return
+
+    const question = (section.content as StandardSectionContent).questions.find((q) => q.id === questionId)
+    if (!question) return
+
+    // Only keep logic rules if changing to a supported type
+    const keepLogicRules = LOGIC_SUPPORTED_TYPES.includes(responseType) ? question.logicRules || [] : []
+
     updateQuestion(sectionId, questionId, {
       responseType,
       options:
@@ -1156,7 +1991,7 @@ const Garment_Template: React.FC = () => {
           ? ["Option 1", "Option 2", "Option 3"]
           : undefined,
       value: null,
-      logicRules: [],
+      logicRules: keepLogicRules,
     })
     setShowResponseTypeMenu(null)
   }
@@ -1393,7 +2228,12 @@ const Garment_Template: React.FC = () => {
       if (!newQuantities[color][size]) newQuantities[color][size] = { orderQty: "", offeredQty: "" }
       newQuantities[color][size][field] = value
       return { ...prev, quantities: newQuantities }
-    })
+    });
+
+    // If we're changing offered quantity, recalculate AQL status
+    if (field === "offeredQty") {
+      setTimeout(() => updateAqlStatus(), 0);
+    }
   }
 
   const calculateRowTotal = (color: string, field: string) => {
@@ -1434,47 +2274,60 @@ const Garment_Template: React.FC = () => {
     return total;
   };
 
-  const evaluateAqlStatus = () => {
-    const lotSize = calculateGrandTotal("offeredQty");
-    const inspectionLevel = reportData.aqlSettings.inspectionLevel;
-    const aqlLevel = reportData.aqlSettings.aqlLevel;
+  const calculateAqlStatus = () => {
+    // Get the total offered quantity
+    const totalOfferedQty = calculateGrandTotal("offeredQty");
 
-    // Check if the inspection level is one of the valid AQL inspection levels
-    if (isValidAqlInspectionLevel(inspectionLevel)) {
-      const code = getAqlCodeLetter(lotSize, inspectionLevel);
-      const plan = code ? getSamplePlan(code, aqlLevel) : null;
+    // Get the AQL settings
+    const { aqlLevel, inspectionLevel } = reportData.aqlSettings;
 
-      if (plan) {
-        const totalMajorDefects = calculateTotalDefects("major");
+    // Get the code letter based on lot size and inspection level
+    const codeLetter = getAqlCodeLetter(totalOfferedQty, inspectionLevel as AqlInspectionLevel);
 
-        const status = totalMajorDefects > plan.accept ? "FAIL" : "PASS";
-        setReportData(prev => ({
-          ...prev,
-          aqlSettings: {
-            ...prev.aqlSettings,
-            status,
-          },
-        }));
-      }
-    } else {
-      // For non-standard inspection levels, use a default status
-      console.warn(`Inspection level ${inspectionLevel} is not supported by AQL tables. Using default status.`);
-      setReportData(prev => ({
-        ...prev,
-        aqlSettings: {
-          ...prev.aqlSettings,
-          status: "PASS", // Default to PASS for unsupported inspection levels
-        },
-      }));
+    if (!codeLetter) {
+      console.error("Could not determine AQL code letter for lot size:", totalOfferedQty);
+      return "FAIL";
     }
+
+    // Get the sample plan based on code letter and AQL level
+    const samplePlan = getSamplePlan(codeLetter, aqlLevel);
+
+    if (!samplePlan) {
+      console.error("Could not determine sample plan for code letter:", codeLetter, "and AQL level:", aqlLevel);
+      return "FAIL";
+    }
+
+    // Calculate total defects
+    let totalCritical = 0;
+    let totalMajor = 0;
+    let totalMinor = 0;
+
+    reportData.defects.forEach(defect => {
+      totalCritical += Number(defect.critical) || 0;
+      totalMajor += Number(defect.major) || 0;
+      totalMinor += Number(defect.minor) || 0;
+    });
+
+    // Check if the defects exceed the acceptance criteria
+    const { accept } = samplePlan;
+
+    // Critical defects are an automatic fail
+    if (totalCritical > 0) {
+      return "FAIL";
+    }
+
+    // Check major defects against acceptance criteria
+    if (totalMajor > accept) {
+      return "FAIL";
+    }
+
+    // Minor defects are typically allowed at a higher rate, but still check
+    if (totalMinor > accept * 2) {
+      return "FAIL";
+    }
+
+    return "PASS";
   };
-
-  // Helper function to check if an inspection level is valid for AQL calculations
-  const isValidAqlInspectionLevel = (level: InspectionLevel): level is AqlInspectionLevel => {
-    return level === "I" || level === "II" || level === "III";
-  };
-
-
 
   const addReportDefect = () => {
     setReportData((prev) => ({
@@ -1483,12 +2336,26 @@ const Garment_Template: React.FC = () => {
     }))
   }
 
+  const updateAqlStatus = () => {
+    const status = calculateAqlStatus();
+    setReportData(prev => ({
+      ...prev,
+      aqlSettings: {
+        ...prev.aqlSettings,
+        status
+      }
+    }));
+  }
+
   const updateDefect = (index: number, field: string, value: string | number) => {
     setReportData((prev) => {
       const newDefects = [...prev.defects]
       newDefects[index] = { ...newDefects[index], [field]: value }
       return { ...prev, defects: newDefects }
-    })
+    });
+
+    // Recalculate AQL status when defects are updated
+    setTimeout(() => updateAqlStatus(), 0);
   }
 
   const handleDefectImageUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1533,6 +2400,8 @@ const Garment_Template: React.FC = () => {
     })
   }
 
+
+
   const calculateTotalDefects = (field: string) => {
     return reportData.defects.reduce((total, defect) => {
       // Use type assertion to let TypeScript know we can index this
@@ -1575,12 +2444,162 @@ const Garment_Template: React.FC = () => {
     }))
   }
 
+  // Helper function to evaluate logic conditions
+  const evaluateLogicCondition = (
+    condition: LogicCondition,
+    conditionValue: any,
+    answerValue: any,
+    questionType: ResponseType
+  ): boolean => {
+    // Handle different question types and conditions
+    switch (questionType) {
+      case "Number":
+        const numAnswer = Number(answerValue);
+        const numCondition = Number(conditionValue);
+
+        switch (condition) {
+          case "equal to": return numAnswer === numCondition;
+          case "not equal to": return numAnswer !== numCondition;
+          case "greater than": return numAnswer > numCondition;
+          case "less than": return numAnswer < numCondition;
+          case "greater than or equal to": return numAnswer >= numCondition;
+          case "less than or equal to": return numAnswer <= numCondition;
+          case "between":
+            if (Array.isArray(conditionValue) && conditionValue.length === 2) {
+              return numAnswer >= Number(conditionValue[0]) && numAnswer <= Number(conditionValue[1]);
+            }
+            return false;
+          default: return false;
+        }
+
+      case "Text":
+      case "Site":
+      case "Person":
+      case "Inspection location":
+        const strAnswer = String(answerValue || "");
+        const strCondition = String(conditionValue || "");
+
+        switch (condition) {
+          case "is": return strAnswer === strCondition;
+          case "is not": return strAnswer !== strCondition;
+          case "contains": return strAnswer.includes(strCondition);
+          case "not contains": return !strAnswer.includes(strCondition);
+          case "starts with": return strAnswer.startsWith(strCondition);
+          case "ends with": return strAnswer.endsWith(strCondition);
+          default: return false;
+        }
+
+      case "Yes/No":
+      case "Checkbox":
+        switch (condition) {
+          case "is": return answerValue === conditionValue;
+          case "is not": return answerValue !== conditionValue;
+          default: return false;
+        }
+
+      case "Multiple choice":
+        switch (condition) {
+          case "is": return answerValue === conditionValue;
+          case "is not": return answerValue !== conditionValue;
+          case "is one of":
+            if (Array.isArray(conditionValue)) {
+              return conditionValue.includes(answerValue);
+            }
+            return false;
+          case "is not one of":
+            if (Array.isArray(conditionValue)) {
+              return !conditionValue.includes(answerValue);
+            }
+            return false;
+          default: return false;
+        }
+
+      case "Slider":
+        const sliderAnswer = Number(answerValue);
+        const sliderCondition = Number(conditionValue);
+
+        switch (condition) {
+          case "equal to": return sliderAnswer === sliderCondition;
+          case "not equal to": return sliderAnswer !== sliderCondition;
+          case "greater than": return sliderAnswer > sliderCondition;
+          case "less than": return sliderAnswer < sliderCondition;
+          case "greater than or equal to": return sliderAnswer >= sliderCondition;
+          case "less than or equal to": return sliderAnswer <= sliderCondition;
+          case "between":
+            if (Array.isArray(conditionValue) && conditionValue.length === 2) {
+              return sliderAnswer >= Number(conditionValue[0]) && sliderAnswer <= Number(conditionValue[1]);
+            }
+            return false;
+          default: return false;
+        }
+
+      default:
+        return false;
+    }
+  };
+
+  // Function to check logic rules and update active triggers
+  const checkLogicRules = (questionId: string, value: string | string[] | boolean | number | null) => {
+    // Find the question in the template
+    let foundQuestion: Question | null = null;
+    let foundSection: AppSection | null = null;
+
+    for (const section of template.sections) {
+      if (section.type === "standard") {
+        const question = (section.content as StandardSectionContent).questions.find(q => q.id === questionId);
+        if (question) {
+          foundQuestion = question;
+          foundSection = section;
+          break;
+        }
+      }
+    }
+
+    if (!foundQuestion || !foundSection) return;
+
+    // Check if the question has logic rules
+    const logicRules = foundQuestion.logicRules || [];
+    if (logicRules.length === 0) return;
+
+    // Evaluate each rule
+    const activeTriggers: { rule: LogicRule; question: Question; section: AppSection }[] = [];
+
+    for (const rule of logicRules) {
+      if (!rule.condition || rule.value === undefined || rule.value === null || !rule.trigger) continue;
+
+      const conditionMet = evaluateLogicCondition(
+        rule.condition,
+        rule.value,
+        value,
+        foundQuestion.responseType
+      );
+
+      if (conditionMet) {
+        activeTriggers.push({ rule, question: foundQuestion, section: foundSection });
+      }
+    }
+
+    // Update the active triggers in the report data
+    setReportData(prev => ({
+      ...prev,
+      activeTriggers: {
+        ...prev.activeTriggers || {},
+        [questionId]: activeTriggers
+      }
+    }));
+  };
+
   const updateQuestionAnswer = (questionId: string, value: string | string[] | boolean | number | null) => {
     setReportData((prev) => ({
       ...prev,
       questionAnswers: { ...prev.questionAnswers, [questionId]: value },
-    }))
+    }));
+
+    // Check logic rules after updating the answer
+    checkLogicRules(questionId, value);
   }
+
+
 
   // Print function using browser's native print capability
   const printReport = () => {
@@ -1771,13 +2790,23 @@ const Garment_Template: React.FC = () => {
     const isDragging = draggedItem?.type === "question" && draggedItem.id === question.id
     const isDropTarget = dropTarget?.type === "question" && dropTarget.id === question.id
 
+    // Check if any triggers should be shown
+    const hasRequireEvidence = shouldShowTrigger(question, "require_evidence")
+    const hasRequireAction = shouldShowTrigger(question, "require_action")
+    const hasDisplayMessage = shouldShowTrigger(question, "display_message")
+    const hasAskQuestions = shouldShowTrigger(question, "ask_questions")
+    const hasNotify = shouldShowTrigger(question, "notify")
+
+    // Determine if any triggers are active
+    const hasActiveTriggers = hasRequireEvidence || hasRequireAction || hasDisplayMessage || hasAskQuestions || hasNotify
+
     return (
       <div
         key={question.id}
         ref={(el) => {
           questionRefs.current[question.id] = el
         }}
-        className={`question-item ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
+        className={`question-item ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${hasActiveTriggers ? "has-active-triggers" : ""}`}
         onClick={() => setActiveQuestionId(question.id)}
         draggable
         onDragStart={() => handleDragStart("question", question.id)}
@@ -1796,6 +2825,15 @@ const Garment_Template: React.FC = () => {
             onChange={(e) => updateQuestion(sectionId, question.id, { text: e.target.value })}
             placeholder="Type question"
           />
+          {(shouldShowTrigger(question, "require_evidence") ||
+            shouldShowTrigger(question, "require_action") ||
+            shouldShowTrigger(question, "display_message") ||
+            shouldShowTrigger(question, "ask_questions") ||
+            shouldShowTrigger(question, "notify")) && (
+            <div className="active-trigger-indicator" title="This question has active logic triggers">
+              <AlertTriangle size={16} color="#f59e0b" />
+            </div>
+          )}
         </div>
         <div className="question-body">
           <div className="response-type-selector">
@@ -1815,6 +2853,15 @@ const Garment_Template: React.FC = () => {
           {renderQuestionResponse(question, sectionId, updateQuestion)}
         </div>
         <div className="question-footer">
+          {LOGIC_SUPPORTED_TYPES.includes(question.responseType) && (
+            <EnhancedAddLogicButton
+              hasRules={question.logicRules?.length ? true : false}
+              onClick={() => {
+                // Only show logic panel for supported types
+                setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
+              }}
+            />
+          )}
           <label className="required-checkbox">
             <input
               type="checkbox"
@@ -1834,6 +2881,21 @@ const Garment_Template: React.FC = () => {
           <button className="delete-question" onClick={() => deleteQuestion(sectionId, question.id)}>
             <Trash2 size={16} />
           </button>
+          {showLogicPanel === question.id &&
+            LOGIC_SUPPORTED_TYPES.includes(question.responseType) && (
+            <EnhancedLogicRulesContainer
+              questionType={question.responseType}
+              rules={question.logicRules || []}
+              options={question.options || []}
+              onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
+              questions={template.sections.flatMap((s) =>
+                s.type === "standard" ?
+                  (s.content as StandardSectionContent).questions.map((q) => ({ id: q.id, text: q.text })) :
+                  []
+              )}
+              onClose={() => setShowLogicPanel(null)}
+            />
+          )}
         </div>
       </div>
     )
@@ -2148,10 +3210,18 @@ const Garment_Template: React.FC = () => {
               className="section-title"
               value={section.title}
               onChange={(e) => updateSection(section.id, { title: e.target.value })}
-              readOnly={isTitlePage || isGarmentDetails}
+              readOnly={isGarmentDetails}
             />
-            {!isTitlePage && !isGarmentDetails && (
-              <button className="edit-section-title">
+            {(isTitlePage || !isGarmentDetails) && (
+              <button
+                className="edit-section-title"
+                onClick={() => {
+                  const newTitle = prompt("Edit section title", section.title);
+                  if (newTitle && newTitle.trim() !== "") {
+                    updateSection(section.id, { title: newTitle.trim() });
+                  }
+                }}
+              >
                 <Edit size={16} />
               </button>
             )}
@@ -2460,8 +3530,145 @@ const Garment_Template: React.FC = () => {
       case "Annotation":
         return (
           <div className="report-response-field">
-            <div className="annotation-placeholder-box">
-              Annotation Placeholder (Report)
+            <div className="report-signature-container">
+              <div className="signature-canvas-wrapper">
+                <canvas
+                  ref={(canvas) => {
+                    if (!canvas) return;
+
+                    // Store canvas in a ref to avoid recreating it
+                    if ((canvas as any).__initialized) return;
+                    (canvas as any).__initialized = true;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+
+                    // Set canvas dimensions
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = canvas.offsetHeight;
+
+                    // Set canvas styles
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = '#000000';
+
+                    // Clear canvas
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // If there's already a saved signature, draw it
+                    if (value && typeof value === 'string' && value.startsWith('data:image/png')) {
+                      const img = new Image();
+                      img.onload = () => {
+                        ctx.drawImage(img, 0, 0);
+                      };
+                      img.src = value;
+                    }
+
+                    // Set up drawing variables
+                    let isDrawing = false;
+                    let lastX = 0;
+                    let lastY = 0;
+
+                    // Store canvas and context in local variables that are definitely not null
+                    const canvasElement = canvas;
+                    const context = ctx;
+
+                    // Define drawing functions
+                    function startDrawing(e: MouseEvent | TouchEvent) {
+                      isDrawing = true;
+
+                      const rect = canvasElement.getBoundingClientRect();
+                      let clientX, clientY;
+
+                      if (e instanceof TouchEvent) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                      } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                      }
+
+                      lastX = clientX - rect.left;
+                      lastY = clientY - rect.top;
+                    }
+
+                    function draw(e: MouseEvent | TouchEvent) {
+                      if (!isDrawing) return;
+
+                      const rect = canvasElement.getBoundingClientRect();
+                      let clientX, clientY;
+
+                      if (e instanceof TouchEvent) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                        e.preventDefault(); // Prevent scrolling on touch devices
+                      } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                      }
+
+                      const x = clientX - rect.left;
+                      const y = clientY - rect.top;
+
+                      context.beginPath();
+                      context.moveTo(lastX, lastY);
+                      context.lineTo(x, y);
+                      context.stroke();
+
+                      lastX = x;
+                      lastY = y;
+                    }
+
+                    function endDrawing() {
+                      if (isDrawing) {
+                        // Only save the signature when the drawing is complete
+                        const signatureImage = canvasElement.toDataURL('image/png');
+                        updateQuestionAnswer(question.id, signatureImage);
+                        isDrawing = false;
+                      }
+                    }
+
+                    // Add event listeners
+                    canvasElement.addEventListener('mousedown', startDrawing);
+                    canvasElement.addEventListener('mousemove', draw);
+                    canvasElement.addEventListener('mouseup', endDrawing);
+                    canvasElement.addEventListener('mouseleave', endDrawing);
+                    canvasElement.addEventListener('touchstart', startDrawing);
+                    canvasElement.addEventListener('touchmove', draw);
+                    canvasElement.addEventListener('touchend', endDrawing);
+                  }}
+                  className="report-signature-canvas"
+                  width={300}
+                  height={150}
+                />
+                <div className="report-signature-controls">
+                  <button
+                    className="report-clear-signature-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+
+                      // Find the canvas element
+                      const canvasElement = e.currentTarget.closest('.signature-canvas-wrapper')?.querySelector('canvas') as HTMLCanvasElement;
+                      if (!canvasElement) return;
+
+                      const ctx = canvasElement.getContext('2d');
+                      if (!ctx) return;
+
+                      // Clear the canvas
+                      ctx.fillStyle = '#ffffff';
+                      ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+
+                      // Clear the saved value
+                      updateQuestionAnswer(question.id, null);
+                    }}
+                    type="button"
+                  >
+                    Clear Signature
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -2482,6 +3689,335 @@ const Garment_Template: React.FC = () => {
     }
   };
 
+  // Component to render active triggers for a question
+  const renderActiveTriggers = (questionId: string) => {
+    if (!reportData.activeTriggers || !reportData.activeTriggers[questionId]) {
+      return null;
+    }
+
+    const activeTriggers = reportData.activeTriggers[questionId];
+
+    return (
+      <div className="report-question-triggers">
+        {activeTriggers.map((triggerData, index) => {
+          const { rule } = triggerData;
+
+          switch (rule.trigger) {
+            case "require_evidence":
+              return (
+                <div key={index} className="report-trigger report-evidence-trigger">
+                  <div className="report-trigger-header">
+                    <AlertTriangle size={16} className="report-trigger-icon" />
+                    <span className="report-trigger-text">Evidence required</span>
+                  </div>
+                  <div className="report-evidence-upload">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={async (e) => {
+                        const files = e.target.files;
+                        if (!files || files.length === 0) return;
+
+                        // Convert files to base64 and store them
+                        const evidenceFiles: string[] = [];
+
+                        for (let i = 0; i < files.length; i++) {
+                          const file = files[i];
+                          const reader = new FileReader();
+
+                          reader.onload = async (event) => {
+                            const result = event.target?.result as string;
+                            if (result) {
+                              try {
+                                // Resize image
+                                const resizedImage = await resizeImage(result);
+                                evidenceFiles.push(resizedImage);
+
+                                // Update the evidence when all files are processed
+                                if (evidenceFiles.length === files.length) {
+                                  setReportData(prev => ({
+                                    ...prev,
+                                    questionEvidence: {
+                                      ...prev.questionEvidence || {},
+                                      [questionId]: [
+                                        ...(prev.questionEvidence?.[questionId] || []),
+                                        ...evidenceFiles
+                                      ]
+                                    }
+                                  }));
+                                }
+                              } catch (error) {
+                                console.error("Error processing evidence file:", error);
+                              }
+                            }
+                          };
+
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      id={`evidence-upload-${questionId}`}
+                      className="evidence-file-input"
+                    />
+                    <label htmlFor={`evidence-upload-${questionId}`} className="evidence-upload-button">
+                      <Upload size={16} />
+                      <span>Upload evidence</span>
+                    </label>
+                  </div>
+
+                  {/* Display uploaded evidence */}
+                  {reportData.questionEvidence && reportData.questionEvidence[questionId] && (
+                    <div className="report-evidence-previews">
+                      {reportData.questionEvidence[questionId].map((evidence, idx) => (
+                        <div key={idx} className="report-evidence-preview">
+                          <img src={evidence} alt={`Evidence ${idx + 1}`} />
+                          <button
+                            className="remove-evidence-button"
+                            onClick={() => {
+                              setReportData(prev => {
+                                const updatedEvidence = [...(prev.questionEvidence?.[questionId] || [])];
+                                updatedEvidence.splice(idx, 1);
+
+                                return {
+                                  ...prev,
+                                  questionEvidence: {
+                                    ...prev.questionEvidence || {},
+                                    [questionId]: updatedEvidence
+                                  }
+                                };
+                              });
+                            }}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+
+            case "display_message":
+              return (
+                <div key={index} className="report-trigger report-message-trigger">
+                  <div className="report-trigger-header">
+                    <MessageSquare size={16} className="report-trigger-icon" />
+                    <span className="report-trigger-text">Message</span>
+                  </div>
+                  <div className="report-trigger-message">
+                    {rule.message || "Please review this answer carefully."}
+                  </div>
+                </div>
+              );
+
+            case "notify":
+              return (
+                <div key={index} className="report-trigger report-notify-trigger">
+                  <div className="report-trigger-header">
+                    <Bell size={16} className="report-trigger-icon" />
+                    <span className="report-trigger-text">Notification</span>
+                  </div>
+                  <div className="report-trigger-message">
+                    {rule.message || "This answer requires attention."}
+                  </div>
+                </div>
+              );
+
+            case "require_action":
+              return (
+                <div key={index} className="report-trigger report-action-trigger">
+                  <div className="report-trigger-header">
+                    <AlertTriangle size={16} className="report-trigger-icon" />
+                    <span className="report-trigger-text">Action required</span>
+                  </div>
+                  <div className="report-action-input">
+                    <textarea
+                      placeholder="Describe the action taken..."
+                      className="report-action-textarea"
+                      onChange={(e) => {
+                        // Store action text in report data
+                        setReportData(prev => ({
+                          ...prev,
+                          actionResponses: {
+                            ...prev.actionResponses || {},
+                            [questionId]: {
+                              ...prev.actionResponses?.[questionId] || {},
+                              [rule.id]: e.target.value
+                            }
+                          }
+                        }));
+                      }}
+                      value={reportData.actionResponses?.[questionId]?.[rule.id] || ""}
+                    />
+                  </div>
+                </div>
+              );
+
+            case "ask_questions":
+              return (
+                <div key={index} className="report-trigger report-subquestion-trigger">
+                  <div className="report-trigger-header">
+                    <MessageSquare size={16} className="report-trigger-icon" />
+                    <span className="report-trigger-text">Additional question</span>
+                  </div>
+                  {rule.subQuestion && (
+                    <div className="report-subquestion">
+                      <div className="report-subquestion-text">{rule.subQuestion.text}</div>
+
+                      {/* Render different input types based on the subQuestion responseType */}
+                      {rule.subQuestion.responseType === "Text" && (
+                        <input
+                          type="text"
+                          className="report-subquestion-input"
+                          placeholder="Enter your answer"
+                          onChange={(e) => {
+                            setReportData(prev => ({
+                              ...prev,
+                              subQuestionAnswers: {
+                                ...prev.subQuestionAnswers || {},
+                                [questionId]: {
+                                  ...prev.subQuestionAnswers?.[questionId] || {},
+                                  [rule.id]: e.target.value
+                                }
+                              }
+                            }));
+                          }}
+                          value={reportData.subQuestionAnswers?.[questionId]?.[rule.id] || ""}
+                        />
+                      )}
+
+                      {rule.subQuestion.responseType === "Number" && (
+                        <input
+                          type="number"
+                          className="report-subquestion-input"
+                          placeholder="0"
+                          onChange={(e) => {
+                            setReportData(prev => ({
+                              ...prev,
+                              subQuestionAnswers: {
+                                ...prev.subQuestionAnswers || {},
+                                [questionId]: {
+                                  ...prev.subQuestionAnswers?.[questionId] || {},
+                                  [rule.id]: e.target.value
+                                }
+                              }
+                            }));
+                          }}
+                          value={reportData.subQuestionAnswers?.[questionId]?.[rule.id] || ""}
+                        />
+                      )}
+
+                      {rule.subQuestion.responseType === "Yes/No" && (
+                        <div className="report-subquestion-yes-no">
+                          <label className="report-radio-label">
+                            <input
+                              type="radio"
+                              name={`subquestion-yesno-${questionId}-${rule.id}`}
+                              value="Yes"
+                              checked={reportData.subQuestionAnswers?.[questionId]?.[rule.id] === "Yes"}
+                              onChange={() => {
+                                setReportData(prev => ({
+                                  ...prev,
+                                  subQuestionAnswers: {
+                                    ...prev.subQuestionAnswers || {},
+                                    [questionId]: {
+                                      ...prev.subQuestionAnswers?.[questionId] || {},
+                                      [rule.id]: "Yes"
+                                    }
+                                  }
+                                }));
+                              }}
+                            />
+                            <span>Yes</span>
+                          </label>
+                          <label className="report-radio-label">
+                            <input
+                              type="radio"
+                              name={`subquestion-yesno-${questionId}-${rule.id}`}
+                              value="No"
+                              checked={reportData.subQuestionAnswers?.[questionId]?.[rule.id] === "No"}
+                              onChange={() => {
+                                setReportData(prev => ({
+                                  ...prev,
+                                  subQuestionAnswers: {
+                                    ...prev.subQuestionAnswers || {},
+                                    [questionId]: {
+                                      ...prev.subQuestionAnswers?.[questionId] || {},
+                                      [rule.id]: "No"
+                                    }
+                                  }
+                                }));
+                              }}
+                            />
+                            <span>No</span>
+                          </label>
+                          <label className="report-radio-label">
+                            <input
+                              type="radio"
+                              name={`subquestion-yesno-${questionId}-${rule.id}`}
+                              value="N/A"
+                              checked={reportData.subQuestionAnswers?.[questionId]?.[rule.id] === "N/A"}
+                              onChange={() => {
+                                setReportData(prev => ({
+                                  ...prev,
+                                  subQuestionAnswers: {
+                                    ...prev.subQuestionAnswers || {},
+                                    [questionId]: {
+                                      ...prev.subQuestionAnswers?.[questionId] || {},
+                                      [rule.id]: "N/A"
+                                    }
+                                  }
+                                }));
+                              }}
+                            />
+                            <span>N/A</span>
+                          </label>
+                        </div>
+                      )}
+
+                      {rule.subQuestion.responseType === "Multiple choice" && (
+                        <select
+                          className="report-subquestion-select"
+                          value={reportData.subQuestionAnswers?.[questionId]?.[rule.id] || ""}
+                          onChange={(e) => {
+                            setReportData(prev => ({
+                              ...prev,
+                              subQuestionAnswers: {
+                                ...prev.subQuestionAnswers || {},
+                                [questionId]: {
+                                  ...prev.subQuestionAnswers?.[questionId] || {},
+                                  [rule.id]: e.target.value
+                                }
+                              }
+                            }));
+                          }}
+                        >
+                          <option value="">Select an option</option>
+                          {rule.subQuestion.options ?
+                            rule.subQuestion.options.map((option, idx) => (
+                              <option key={idx} value={option}>{option}</option>
+                            )) :
+                            [
+                              <option key="1" value="Option 1">Option 1</option>,
+                              <option key="2" value="Option 2">Option 2</option>,
+                              <option key="3" value="Option 3">Option 3</option>
+                            ]
+                          }
+                        </select>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+
+            default:
+              return null;
+          }
+        })}
+      </div>
+    );
+  };
+
   const renderReportQuestion = (question: Question, questionIndex: number) => (
     <div key={question.id} className="report-question-item compact-question">
       <div className="report-question-header">
@@ -2490,6 +4026,7 @@ const Garment_Template: React.FC = () => {
         {question.required && <span className="report-required-badge">Required</span>}
       </div>
       {renderReportQuestionResponse(question, reportData, updateQuestionAnswer)}
+      {renderActiveTriggers(question.id)}
     </div>
   )
 
@@ -3107,70 +4644,19 @@ const Garment_Template: React.FC = () => {
       }
     };
 
-    const handlePublish = async () => {
+    const handlePublish = () => {
       // Validate dates before publishing
       if (validateDates()) {
-        try {
-          // Update template with session dates
-          updateTemplate({
-            ...template,
-            startDate: startDate,
-            dueDate: dueDate,
-            lastSaved: new Date()
-          });
+        // Save the template with session dates
+        updateTemplate({
+          ...template,
+          startDate: startDate,
+          dueDate: dueDate,
+          lastSaved: new Date()
+        });
 
-          // Save the template to the backend
-          await handleSave();
-
-          // Mark as published in the database
-          const csrfToken = await fetchCSRFToken();
-          const formData = new FormData();
-          formData.append("template_id", template.id);
-          formData.append("title", template.title);
-          formData.append("publish", "true");
-
-          const publishResponse = await fetch("http://localhost:8000/api/users/garment-template/", {
-            method: "POST",
-            headers: {
-              "X-CSRFToken": csrfToken,
-            },
-            body: formData,
-            credentials: "include",
-          });
-
-          if (!publishResponse.ok) {
-            let errorData;
-            try {
-              errorData = await publishResponse.json();
-              throw new Error(errorData.error || "Failed to publish template");
-            } catch (jsonError) {
-              throw new Error(`Failed to publish template: ${publishResponse.statusText}`);
-            }
-          }
-
-          // Try to get the response data
-          let publishData;
-          try {
-            publishData = await publishResponse.json();
-            console.log("Publish response:", publishData);
-
-            // If we got a template_id back from the server, update our template
-            if (publishData && publishData.template_id) {
-              updateTemplate({
-                id: publishData.template_id.toString(),
-                lastPublished: new Date()
-              });
-            }
-          } catch (error) {
-            console.warn("Could not parse publish response as JSON:", error);
-          }
-
-          alert('Template published successfully!');
-          window.location.href = '/dashboard';
-        } catch (error: any) {
-          console.error("Error publishing template:", error);
-          alert(`Failed to publish template: ${error.message || "Unknown error"}`);
-        }
+        alert('Template published successfully!');
+        window.location.href = '/dashboard';
       } else {
         // Show error message if validation fails
         alert('Please correct the errors before publishing.');
@@ -3178,70 +4664,70 @@ const Garment_Template: React.FC = () => {
     };
 
     return (
-      <div className="access-page-container">
-        <h1 className="access-main-title">Template Access & Settings</h1>
-        <p className="access-main-description">Configure access permissions and inspection timeframe for this template.</p>
+      <div className="garment-template-access-container">
+        <div className="garment-template-access-header">
+          <h1 className="garment-template-access-title">Template Access & Settings</h1>
+          <p className="garment-template-access-description">Configure access permissions and inspection timeframe for this template.</p>
+        </div>
 
-        <div className="access-content">
-          <div className="access-tab">
-            <div className="session-section">
+        <div className="garment-template-access-content">
+          <div className="garment-template-access-tab">
+            <div className="garment-template-session-section">
               <h2>
-                <Calendar size={20} className="section-icon" />
+                <Calendar size={22} className="garment-template-section-icon" />
                 Inspection Timeframe
               </h2>
-              <p>Set the start and due dates for inspections using this template.</p>
+              <p>Set the start and due dates for inspections using this template. These dates will determine when inspectors can access and complete their work.</p>
 
-              <div className="date-fields">
-                <div className="date-field">
-                  <label htmlFor="start-date">Start Date <span className="required-indicator">*</span></label>
-                  <div className="date-input-container">
+              <div className="garment-template-date-fields">
+                <div className="garment-template-date-field">
+                  <label htmlFor="start-date">Start Date <span className="garment-template-required-indicator">*</span></label>
+                  <div className="garment-template-date-input-container">
+                    <Calendar size={16} className="garment-template-date-icon" />
                     <input
                       type="date"
                       id="start-date"
                       value={startDate}
                       onChange={handleStartDateChange}
                       min={today} // Prevent selecting dates before today
-                      className={`date-input ${dateErrors.startDate ? 'date-input-error' : ''}`}
-                      style={{appearance: "none", WebkitAppearance: "none"}}
+                      className={`garment-template-date-input ${dateErrors.startDate ? 'garment-template-date-input-error' : ''}`}
                     />
-                    <Calendar size={16} className="date-icon" />
                   </div>
                   {dateErrors.startDate && (
-                    <div className="date-error-message">{dateErrors.startDate}</div>
+                    <div className="garment-template-date-error-message">{dateErrors.startDate}</div>
                   )}
-                  <div className="date-helper-text">Earliest date inspections can begin</div>
+                  <div className="garment-template-date-helper-text">Earliest date inspections can begin</div>
                 </div>
 
-                <div className="date-field">
-                  <label htmlFor="due-date">Due Date <span className="required-indicator">*</span></label>
-                  <div className="date-input-container">
+                <div className="garment-template-date-field">
+                  <label htmlFor="due-date">Due Date <span className="garment-template-required-indicator">*</span></label>
+                  <div className="garment-template-date-input-container">
+                    <Calendar size={16} className="garment-template-date-icon" />
                     <input
                       type="date"
                       id="due-date"
                       value={dueDate}
                       onChange={handleDueDateChange}
                       min={startDate} // Prevent selecting a due date before start date
-                      className={`date-input ${dateErrors.dueDate ? 'date-input-error' : ''}`}
-                      style={{appearance: "none", WebkitAppearance: "none"}}
+                      className={`garment-template-date-input ${dateErrors.dueDate ? 'garment-template-date-input-error' : ''}`}
                     />
-                    <Calendar size={16} className="date-icon" />
                   </div>
                   {dateErrors.dueDate && (
-                    <div className="date-error-message">{dateErrors.dueDate}</div>
+                    <div className="garment-template-date-error-message">{dateErrors.dueDate}</div>
                   )}
-                  <div className="date-helper-text">Deadline for completing inspections</div>
+                  <div className="garment-template-date-helper-text">Deadline for completing inspections</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="access-tab">
-            <div className="permissions-section">
+          <div className="garment-template-access-tab">
+            <div className="garment-template-permissions-section">
               <h2>
-                <User size={20} className="section-icon" />
+                <User size={22} className="garment-template-section-icon" />
                 User Permissions
               </h2>
-              <p>Manage who can access, edit, and use this template.</p>
+              <p>Manage who can access, edit, and use this template. Add team members and set appropriate permission levels.</p>
 
               <AccessManager
                 templateId={template.id}
@@ -3255,37 +4741,19 @@ const Garment_Template: React.FC = () => {
               />
             </div>
           </div>
-
-          <div className="access-tab">
-            <div className="permissions-section">
-              <h2>
-                <ClipboardCheck size={20} className="section-icon" />
-                Template Assignments
-              </h2>
-              <p>Assign this template to inspectors who will complete the inspections.</p>
-
-              <TemplateAssignmentManager
-                templateId={template.id}
-                templateTitle={template.title || "Untitled Template"}
-                onAssignmentUpdated={() => {
-                  console.log("Template assignments updated")
-                }}
-              />
-            </div>
-          </div>
         </div>
 
-        <div className="access-footer">
-          <div className="publish-container">
+        <div className="garment-template-access-footer">
+          <div className="garment-template-publish-container">
             <button
-              className="publish-button"
+              className="garment-template-publish-button"
               onClick={handlePublish}
             >
-              <CheckCircle size={18} />
+              <CheckCircle size={20} />
               <span>Publish Template</span>
             </button>
-            <p className="publish-note">
-              Publishing will make this template available to all users with access permissions.
+            <p className="garment-template-publish-note">
+              Publishing will make this template available to all users with access permissions. Once published, inspectors can begin using this template according to the timeframe you've set.
             </p>
           </div>
         </div>
@@ -3294,96 +4762,11 @@ const Garment_Template: React.FC = () => {
   }
 
   // Main Render
-  if (isLoading) {
-    console.log("Garment_Template: Rendering loading state");
-    return (
-      <div className="garment-template-builder-page">
-        <div className="loading-container" style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          fontSize: '24px',
-          fontWeight: 'bold'
-        }}>
-          <p>Loading garment template...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Log template data for debugging
-  console.log("Garment_Template: Rendering full template UI");
-  console.log("Garment_Template: Current template data:", template);
-  console.log("Garment_Template: Template sections:", template.sections);
-
-  // Safety check for template structure
-  if (!template || !template.sections || !Array.isArray(template.sections) || template.sections.length === 0) {
-    console.error("Garment_Template: Invalid template structure detected");
-    return (
-      <div className="garment-template-builder-page">
-        <div className="error-container" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          fontSize: '18px',
-          padding: '20px',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ color: 'red', marginBottom: '20px' }}>Error Loading Template</h2>
-          <p>There was a problem loading the template data. The template structure appears to be invalid.</p>
-          <div style={{ marginTop: '20px' }}>
-            <button
-              onClick={() => window.location.href = '/templates'}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#4a90e2',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginRight: '10px'
-              }}
-            >
-              Return to Templates
-            </button>
-            <button
-              onClick={() => {
-                // Reset to a new template
-                const defaultTemplate = getInitialTemplate();
-                setTemplate(defaultTemplate);
-                setActiveSectionId(defaultTemplate.sections[0]?.id || null);
-                setIsLoading(false);
-
-                // Force a re-render by setting a timeout
-                setTimeout(() => {
-                  console.log("Garment_Template: Forcing re-render with new template");
-                }, 100);
-              }}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#5cb85c',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Create New Template
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="garment-template-builder-page">
       <div className="top-navigation">
         <div className="nav-left">
-          <div className="company-name">FASHCOGNITIVE</div>
+          <div className="company-name">STREAMLINEER</div>
           <button className="back-button" onClick={handleBack}>
             <ArrowLeft size={16} />
             <span>back</span>
