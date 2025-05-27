@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     RegisterUserView, login_user, logout_user, templates_api, DashboardAPI,
     TemplateAPI, TemplateCreateView, TemplateDetailView,
-    DashboardTemplateView, auth_status, get_csrf_token, current_user
+    DashboardTemplateView, AuthStatusView, auth_status, debug_auth_status, get_csrf_token, current_user
 )
 from .views import GarmentTemplateCreateView
 from .template_access_views import TemplateAccessListView, TemplateAccessDetailView
@@ -29,7 +29,8 @@ urlpatterns = [
     path("login/", login_user, name="login"),
     path("logout/", logout_user, name="logout"),
     path("register/", RegisterUserView.as_view(), name="register"),
-    path("auth-status/", auth_status, name="auth-status"),
+    path("auth-status/", AuthStatusView.as_view(), name="auth-status"),
+    path("debug-auth-status/", debug_auth_status, name="debug-auth-status"),
     path("dashboard/", DashboardAPI.as_view(), name="dashboard_api"),
     path("create_templates/", TemplateCreateView.as_view(), name="create_templates"),
     path("templates/", TemplateAPI.as_view(), name="template-list"),
@@ -41,13 +42,14 @@ urlpatterns = [
     path("api/templates/", TemplateCreateView.as_view(), name="api-template-create"),
 
     # API endpoints for frontend
-    path("users/garment-template/", GarmentTemplateCreateView.as_view(), name='api-garment-template'),
-    path("users/garment-template/publish/", GarmentTemplateCreateView.as_view(), name='api-garment-template-publish'),
-    path("users/get-csrf-token/", get_csrf_token, name="api-get-csrf-token"),
-    path("users/auth-status/", auth_status, name="api-auth-status"),
-    path("users/current-user/", current_user, name="api-current-user"),
-    path("users/logout/", logout_user, name="api-logout"),
-    path("users/templates/<int:pk>/", TemplateDetailView.as_view(), name="api-template-detail"),
+    path("garment-template/", GarmentTemplateCreateView.as_view(), name='api-garment-template'),
+    path("garment-template/publish/", GarmentTemplateCreateView.as_view(), name='api-garment-template-publish'),
+    path("get-csrf-token/", get_csrf_token, name="api-get-csrf-token"),
+    path("auth-status/", AuthStatusView.as_view(), name="api-auth-status"),
+    path("debug-auth-status/", debug_auth_status, name="api-debug-auth-status"),
+    path("current-user/", current_user, name="api-current-user"),
+    path("logout/", logout_user, name="api-logout"),
+    path("templates/<int:pk>/", TemplateDetailView.as_view(), name="api-template-detail"),
 
     # Template access management endpoints
     path("templates/<int:template_id>/access/", TemplateAccessListView.as_view(), name="template-access-list"),
@@ -60,9 +62,9 @@ urlpatterns = [
     path("templates/<int:template_id>/access-check/", template_detail_with_access_check, name="template-detail-with-access"),
 
     # API endpoints for frontend (shared templates)
-    path("users/shared-templates/", shared_templates, name="api-shared-templates"),
-    path("users/all-templates/", all_accessible_templates, name="api-all-accessible-templates"),
-    path("users/templates-with-shared/", user_templates_with_shared, name="api-templates-with-shared"),
+    path("shared-templates/", shared_templates, name="api-shared-templates"),
+    path("all-templates/", all_accessible_templates, name="api-all-accessible-templates"),
+    path("templates-with-shared/", user_templates_with_shared, name="api-templates-with-shared"),
 
     # Granular permission endpoints
     path("permission-types/", PermissionTypeListView.as_view(), name="permission-type-list"),
@@ -98,31 +100,31 @@ urlpatterns = [
          reassign_template, name="reassign-template"),
 
     # API endpoints for frontend (template assignments)
-    path("users/template-assignments/",
+    path("template-assignments/",
          TemplateAssignmentListView.as_view(), name="api-template-assignment-list"),
-    path("users/template-assignments/<int:pk>/",
+    path("template-assignments/<int:pk>/",
          TemplateAssignmentDetailView.as_view(), name="api-template-assignment-detail"),
-    path("users/my-assignments/",
+    path("my-assignments/",
          InspectorAssignmentsView.as_view(), name="api-inspector-assignments"),
-    path("users/template-assignments/<int:pk>/start/",
+    path("template-assignments/<int:pk>/start/",
          start_assignment, name="api-start-assignment"),
-    path("users/template-assignments/<int:pk>/complete/",
+    path("template-assignments/<int:pk>/complete/",
          complete_assignment, name="api-complete-assignment"),
-    path("users/template-assignments/<int:pk>/revoke/",
+    path("template-assignments/<int:pk>/revoke/",
          revoke_assignment, name="api-revoke-assignment"),
-    path("users/template-assignments/<int:pk>/reassign/",
+    path("template-assignments/<int:pk>/reassign/",
          reassign_template, name="api-reassign-template"),
 
     # Inspector endpoints
     path("inspectors/",
          InspectorListView.as_view(), name="inspector-list"),
-    path("users/inspectors/",
+    path("inspectors/",
          get_inspectors, name="api-inspector-list"),
 
     # Inspection endpoints
     path("submit-inspection/",
          submit_inspection, name="submit-inspection"),
-    path("users/submit-inspection/",
+    path("submit-inspection/",
          submit_inspection, name="api-submit-inspection"),
 ]
 

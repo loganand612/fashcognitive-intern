@@ -53,7 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'users.middleware.AccessVerificationMiddleware',  # Custom middleware for access verification
+    # 'users.middleware.AccessVerificationMiddleware',  # Temporarily disabled for debugging
 ]
 
 ROOT_URLCONF = 'FC.urls'
@@ -66,12 +66,12 @@ SESSION_COOKIE_SAMESITE = "Lax"
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-
+    "http://127.0.0.1:3000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
-
+    "http://127.0.0.1:3000",
 ]
 
 TEMPLATES = [
@@ -177,6 +177,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
+# Django REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 AUTHENTICATION_BACKENDS = [
     "users.backends.EmailBackend",  # Custom backend for email login
@@ -202,8 +211,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-SESSION_COOKIE_DOMAIN = "localhost"
-CSRF_COOKIE_DOMAIN = "localhost"
+SESSION_COOKIE_DOMAIN = None  # Allow both localhost and 127.0.0.1
+CSRF_COOKIE_DOMAIN = None  # Allow both localhost and 127.0.0.1
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 #SESSION_COOKIE_AGE = 150

@@ -38,7 +38,7 @@ api.interceptors.response.use(
     // Handle 403 errors (could be due to CSRF or authentication issues)
     if (error.response && error.response.status === 403) {
       console.error('Authentication error:', error.response.data);
-      
+
       // If we get a 403 on auth-status, we might need to redirect to login
       if (error.config.url.includes('auth-status')) {
         // Check if we're already on the login page to avoid redirect loops
@@ -51,7 +51,7 @@ api.interceptors.response.use(
         }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
