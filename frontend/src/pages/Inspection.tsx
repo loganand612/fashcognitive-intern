@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle } from "lucide-react"
 import { fetchData, postData } from "../utils/api"
+import "./Inspection.css"
 
 // Types
 type ResponseType =
@@ -558,10 +559,10 @@ const QuestionAnswering: React.FC = () => {
   // If template is still loading or not available, show loading state
   if (!template) {
     return (
-      <div className="question-answering-container">
-        <div className="section-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <div className="inspection-question-answering-container">
+        <div className="inspection-section-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
           <div style={{ textAlign: 'center' }}>
-            <div className="loading-spinner" style={{ width: '40px', height: '40px', borderWidth: '4px', margin: '0 auto 20px' }}></div>
+            <div className="inspection-loading-spinner" style={{ width: '40px', height: '40px', borderWidth: '4px', margin: '0 auto 20px' }}></div>
             <p>Loading inspection template...</p>
           </div>
         </div>
@@ -792,27 +793,27 @@ const QuestionAnswering: React.FC = () => {
     const message = activeMessages[question.id]
 
     return (
-      <div className="question-container" key={question.id}>
-        <div className="question-header">
-          <div className="question-text">
+      <div className="inspection-question-container" key={question.id}>
+        <div className="inspection-question-header">
+          <div className="inspection-question-text">
             {question.text}
-            {question.required && <span className="required-indicator">*</span>}
-            {question.flagged && <span className="flagged-indicator">⚑</span>}
+            {question.required && <span className="inspection-required-indicator">*</span>}
+            {question.flagged && <span className="inspection-flagged-indicator">⚑</span>}
           </div>
         </div>
 
-        <div className="question-response">
+        <div className="inspection-question-response">
           {renderResponseInput(question)}
 
           {error && (
-            <div className="error-message">
+            <div className="inspection-error-message">
               <AlertTriangle size={16} />
               <span>{error}</span>
             </div>
           )}
 
           {message && (
-            <div className="warning-message">
+            <div className="inspection-warning-message">
               <AlertTriangle size={16} />
               <span>{message}</span>
             </div>
@@ -829,7 +830,7 @@ const QuestionAnswering: React.FC = () => {
       case "Text":
         return (
           <textarea
-            className="text-input"
+            className="inspection-text-input"
             value={value || ""}
             onChange={(e) => handleAnswerChange(question.id, e.target.value)}
             placeholder="Enter your answer"
@@ -840,7 +841,7 @@ const QuestionAnswering: React.FC = () => {
         return (
           <input
             type="number"
-            className="number-input"
+            className="inspection-number-input"
             value={value || ""}
             onChange={(e) => handleAnswerChange(question.id, Number(e.target.value))}
             placeholder="0"
@@ -849,33 +850,33 @@ const QuestionAnswering: React.FC = () => {
 
       case "Checkbox":
         return (
-          <label className="checkbox-input">
+          <label className="inspection-checkbox-input">
             <input
               type="checkbox"
               checked={!!value}
               onChange={(e) => handleAnswerChange(question.id, e.target.checked)}
             />
-            <span className="checkbox-label">Yes</span>
+            <span className="inspection-checkbox-label">Yes</span>
           </label>
         )
 
       case "Yes/No":
         return (
-          <div className="yes-no-options">
+          <div className="inspection-yes-no-options">
             <button
-              className={`option-button ${value === "Yes" ? "selected" : ""}`}
+              className={`inspection-option-button ${value === "Yes" ? "selected" : ""}`}
               onClick={() => handleAnswerChange(question.id, "Yes")}
             >
               Yes
             </button>
             <button
-              className={`option-button ${value === "No" ? "selected" : ""}`}
+              className={`inspection-option-button ${value === "No" ? "selected" : ""}`}
               onClick={() => handleAnswerChange(question.id, "No")}
             >
               No
             </button>
             <button
-              className={`option-button ${value === "N/A" ? "selected" : ""}`}
+              className={`inspection-option-button ${value === "N/A" ? "selected" : ""}`}
               onClick={() => handleAnswerChange(question.id, "N/A")}
             >
               N/A
@@ -885,9 +886,9 @@ const QuestionAnswering: React.FC = () => {
 
       case "Multiple choice":
         return (
-          <div className="multiple-choice-options">
+          <div className="inspection-multiple-choice-options">
             {question.options?.map((option, index) => (
-              <label key={index} className="choice-option">
+              <label key={index} className="inspection-choice-option">
                 <input
                   type={question.multipleSelection ? "checkbox" : "radio"}
                   name={`question-${question.id}`}
@@ -918,22 +919,22 @@ const QuestionAnswering: React.FC = () => {
 
       case "Slider":
         return (
-          <div className="slider-container">
+          <div className="inspection-slider-container">
             <input
               type="range"
               min="0"
               max="100"
               value={value || 50}
               onChange={(e) => handleAnswerChange(question.id, Number(e.target.value))}
-              className="slider-input"
+              className="inspection-slider-input"
             />
-            <div className="slider-value">{value || 0}</div>
+            <div className="inspection-slider-value">{value || 0}</div>
           </div>
         )
 
       case "Media":
         return (
-          <div className="media-upload-container">
+          <div className="inspection-media-upload-container">
             <input
               type="file"
               accept="image/*,video/*"
@@ -943,14 +944,14 @@ const QuestionAnswering: React.FC = () => {
             />
 
             {!value ? (
-              <label htmlFor={`media-${question.id}`} className="media-upload-button">
+              <label htmlFor={`media-${question.id}`} className="inspection-media-upload-button">
                 <ImageIcon size={20} />
                 <span>Upload media</span>
               </label>
             ) : (
-              <div className="media-preview">
-                <img src={value || "/placeholder.svg"} alt="Uploaded media" className="media-image" />
-                <button className="media-remove-button" onClick={() => handleAnswerChange(question.id, null)}>
+              <div className="inspection-media-preview">
+                <img src={value || "/placeholder.svg"} alt="Uploaded media" className="inspection-media-image" />
+                <button className="inspection-media-remove-button" onClick={() => handleAnswerChange(question.id, null)}>
                   <X size={16} />
                 </button>
               </div>
@@ -960,7 +961,7 @@ const QuestionAnswering: React.FC = () => {
 
       case "Annotation":
         return (
-          <div className="annotation-container">
+          <div className="inspection-annotation-container">
             <input
               type="file"
               accept="image/*"
@@ -970,14 +971,14 @@ const QuestionAnswering: React.FC = () => {
             />
 
             {!value ? (
-              <label htmlFor={`annotation-${question.id}`} className="annotation-upload-button">
+              <label htmlFor={`annotation-${question.id}`} className="inspection-annotation-upload-button">
                 <ImageIcon size={20} />
                 <span>Upload image to annotate</span>
               </label>
             ) : (
-              <div className="annotation-preview">
-                <img src={value || "/placeholder.svg"} alt="Annotation" className="annotation-image" />
-                <button className="annotation-remove-button" onClick={() => handleAnswerChange(question.id, null)}>
+              <div className="inspection-annotation-preview">
+                <img src={value || "/placeholder.svg"} alt="Annotation" className="inspection-annotation-image" />
+                <button className="inspection-annotation-remove-button" onClick={() => handleAnswerChange(question.id, null)}>
                   <X size={16} />
                 </button>
               </div>
@@ -988,12 +989,12 @@ const QuestionAnswering: React.FC = () => {
       case "Date & Time":
       case "Inspection date":
         return (
-          <div className="date-time-container">
+          <div className="inspection-date-time-container">
             <input
               type="datetime-local"
               value={value || ""}
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              className="date-time-input"
+              className="inspection-date-time-input"
             />
           </div>
         )
@@ -1001,11 +1002,11 @@ const QuestionAnswering: React.FC = () => {
       case "Site":
         const siteOptions = ["Main Site", "Secondary Site", "Remote Location", "Headquarters"]
         return (
-          <div className="dropdown-container">
+          <div className="inspection-dropdown-container">
             <select
               value={value || ""}
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              className="dropdown-input"
+              className="inspection-dropdown-input"
             >
               <option value="" disabled>
                 Select site
@@ -1016,7 +1017,7 @@ const QuestionAnswering: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="dropdown-icon" />
+            <ChevronDown className="inspection-dropdown-icon" />
           </div>
         )
 
@@ -1037,11 +1038,11 @@ const QuestionAnswering: React.FC = () => {
           }
 
           return (
-            <div className="dropdown-container">
+            <div className="inspection-dropdown-container">
               <select
                 value={value || ""}
                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                className="dropdown-input"
+                className="inspection-dropdown-input"
               >
                 <option value="" disabled>
                   Select inspector
@@ -1052,18 +1053,18 @@ const QuestionAnswering: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="dropdown-icon" />
+              <ChevronDown className="inspection-dropdown-icon" />
             </div>
           );
         } else {
           // For other person fields, use default options
           const personOptions = ["John Doe", "Jane Smith", "Alex Johnson", "Sam Wilson"]
           return (
-            <div className="dropdown-container">
+            <div className="inspection-dropdown-container">
               <select
                 value={value || ""}
                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                className="dropdown-input"
+                className="inspection-dropdown-input"
               >
                 <option value="" disabled>
                   Select person
@@ -1074,7 +1075,7 @@ const QuestionAnswering: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="dropdown-icon" />
+              <ChevronDown className="inspection-dropdown-icon" />
             </div>
           );
         }
@@ -1082,11 +1083,11 @@ const QuestionAnswering: React.FC = () => {
       case "Inspection location":
         const locationOptions = ["Main Building", "Warehouse", "Office", "Factory Floor", "Parking Lot"]
         return (
-          <div className="dropdown-container">
+          <div className="inspection-dropdown-container">
             <select
               value={value || ""}
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              className="dropdown-input"
+              className="inspection-dropdown-input"
             >
               <option value="" disabled>
                 Select location
@@ -1097,7 +1098,7 @@ const QuestionAnswering: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="dropdown-icon" />
+            <ChevronDown className="inspection-dropdown-icon" />
           </div>
         )
 
@@ -1110,16 +1111,16 @@ const QuestionAnswering: React.FC = () => {
 
   if (isComplete) {
     return (
-      <div className="question-answering-container">
-        <div className="completion-screen">
-          <div className="completion-icon">
+      <div className="inspection-question-answering-container">
+        <div className="inspection-completion-screen">
+          <div className="inspection-completion-icon">
             <CheckCircle size={64} />
           </div>
           <h2>Inspection Complete!</h2>
           <p>Thank you for completing this inspection. Your responses have been submitted successfully.</p>
           <p>Redirecting to dashboard...</p>
           <button
-            className="primary-button"
+            className="inspection-primary-button"
             onClick={() => navigate('/dashboard')}
           >
             Go to Dashboard
@@ -1132,15 +1133,15 @@ const QuestionAnswering: React.FC = () => {
   // Show assignment error if there is one
   if (assignmentError) {
     return (
-      <div className="question-answering-container">
-        <div className="error-screen">
-          <div className="error-icon">
+      <div className="inspection-question-answering-container">
+        <div className="inspection-error-screen">
+          <div className="inspection-error-icon">
             <AlertTriangle size={64} />
           </div>
           <h2>Assignment Error</h2>
           <p>{assignmentError}</p>
           <button
-            className="primary-button"
+            className="inspection-primary-button"
             onClick={() => navigate('/dashboard')}
           >
             Go to Dashboard
@@ -1151,50 +1152,50 @@ const QuestionAnswering: React.FC = () => {
   }
 
   return (
-    <div className="question-answering-container">
-      <div className="template-header">
-        <div className="template-logo-container">
+    <div className="inspection-question-answering-container">
+      <div className="inspection-template-header">
+        <div className="inspection-template-logo-container">
           {template.logo && (
-            <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="template-logo" />
+            <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="inspection-template-logo" />
           )}
         </div>
-        <div className="template-info">
-          <h1 className="template-title">{template.title}</h1>
-          <p className="template-description">{template.description}</p>
+        <div className="inspection-template-info">
+          <h1 className="inspection-template-title">{template.title}</h1>
+          <p className="inspection-template-description">{template.description}</p>
         </div>
       </div>
 
-      <div className="progress-indicator">
-        <div className="progress-bar">
+      <div className="inspection-progress-indicator">
+        <div className="inspection-progress-bar">
           <div
-            className="progress-fill"
+            className="inspection-progress-fill"
             style={{ width: `${((currentSectionIndex + 1) / template.sections.length) * 100}%` }}
           ></div>
         </div>
-        <div className="progress-text">
+        <div className="inspection-progress-text">
           Section {currentSectionIndex + 1} of {template.sections.length}
         </div>
       </div>
 
-      <div className="section-container">
-        <h2 className="section-title">{currentSection.title}</h2>
-        {currentSection.description && <p className="section-description">{currentSection.description}</p>}
+      <div className="inspection-section-container">
+        <h2 className="inspection-section-title">{currentSection.title}</h2>
+        {currentSection.description && <p className="inspection-section-description">{currentSection.description}</p>}
 
-        <div className="questions-list">
+        <div className="inspection-questions-list">
           {currentSection.questions.map((question) => renderQuestionResponse(question))}
         </div>
 
-        <div className="navigation-buttons">
+        <div className="inspection-navigation-buttons">
           {currentSectionIndex > 0 && (
-            <button className="secondary-button" onClick={goToPreviousSection}>
+            <button className="inspection-secondary-button" onClick={goToPreviousSection}>
               <ArrowLeft size={16} />
               Previous
             </button>
           )}
 
-          <button className="primary-button" onClick={goToNextSection} disabled={isSubmitting}>
+          <button className="inspection-primary-button" onClick={goToNextSection} disabled={isSubmitting}>
             {isSubmitting ? (
-              <span className="loading-spinner"></span>
+              <span className="inspection-loading-spinner"></span>
             ) : currentSectionIndex < template.sections.length - 1 ? (
               "Next"
             ) : (
@@ -1203,6 +1204,8 @@ const QuestionAnswering: React.FC = () => {
           </button>
         </div>
       </div>
+
+
     </div>
   )
 }
