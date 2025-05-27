@@ -1,4 +1,267 @@
 /* Template Assignment Manager Styles */
+
+/* Header Styles */
+.tam-header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0;
+}
+
+.tam-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 16px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.tam-header-text h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tam-header-text p {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Form Styles */
+.tam-assign-form {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  margin-bottom: 32px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.tam-assign-form:hover {
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.tam-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tam-form-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6366f1;
+}
+
+.tam-form-title h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.tam-close-button {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tam-close-button:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.tam-form-content {
+  padding: 32px;
+}
+
+.tam-form-group {
+  margin-bottom: 24px;
+}
+
+.tam-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.tam-form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.tam-inspector-select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background-color: #fff;
+  color: #111827;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+}
+
+.tam-inspector-select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  outline: none;
+}
+
+.tam-notes-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background-color: #fff;
+  color: #111827;
+  transition: all 0.2s ease;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.tam-notes-textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  outline: none;
+}
+
+.tam-notes-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.tam-no-inspectors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.tam-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.tam-cancel-button,
+.tam-assign-button {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.tam-cancel-button {
+  background-color: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+}
+
+.tam-cancel-button:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.tam-assign-button {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.tam-assign-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.tam-assign-button:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Main Assign Button */
+.tam-main-assign-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  min-width: 140px;
+  justify-content: center;
+}
+
+.tam-main-assign-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.tam-main-assign-button:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .error-message {
   display: flex;
   align-items: center;
@@ -6,9 +269,10 @@
   background-color: #fee2e2;
   color: #b91c1c;
   padding: 12px 16px;
-  border-radius: 4px;
+  border-radius: 8px;
   margin-bottom: 16px;
   font-size: 14px;
+  border-left: 4px solid #ef4444;
 }
 
 .error-message button {
@@ -29,9 +293,10 @@
   background-color: #e0f2fe;
   color: #0369a1;
   padding: 12px 16px;
-  border-radius: 4px;
+  border-radius: 8px;
   margin-bottom: 16px;
   font-size: 14px;
+  border-left: 4px solid #0ea5e9;
 }
 
 .inspector-select {
@@ -70,4 +335,58 @@
 .status-badge.revoked {
   background-color: #fee2e2;
   color: #b91c1c;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tam-header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .tam-header-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .tam-header-text h2 {
+    font-size: 24px;
+  }
+
+  .tam-form-header {
+    padding: 20px 24px;
+  }
+
+  .tam-form-content {
+    padding: 24px;
+  }
+
+  .tam-form-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tam-cancel-button,
+  .tam-assign-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .tam-header-text h2 {
+    font-size: 20px;
+  }
+
+  .tam-form-header {
+    padding: 16px 20px;
+  }
+
+  .tam-form-content {
+    padding: 20px;
+  }
+
+  .tam-form-title h3 {
+    font-size: 18px;
+  }
 }
