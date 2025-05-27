@@ -17,6 +17,7 @@ import {
   LogOut
 } from 'lucide-react';
 import ConnectionsPanel, { Connection } from './components/ConnectionsPanel';
+import { fetchData } from '../utils/api';
 
 interface Template {
   id: number;
@@ -38,15 +39,11 @@ const Dashboard: React.FC = () => {
   // Get the logged-in user from localStorage
   const loggedInUser = localStorage.getItem("username");
 
-  // API endpoints to try
+  // API endpoints to try (relative to the base URL in api.ts)
   const endpointsToTry = [
-    "/api/templates/",
-    "/templates_api/",
-    "/templates/",
-    "/api/v1/templates/",
-    "/api/user/templates/",
-    "/dashboard/templates/",
-    "/api/users/templates/",
+    "users/dashboard/templates/",
+    "users/templates/",
+    "templates/",
   ];
 
   useEffect(() => {
@@ -75,22 +72,57 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
+  // Check authentication status first
+  const checkAuthStatus = async (retryCount = 0): Promise<boolean> => {
+    try {
+      // Add a small delay to ensure session is fully established
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const authData = await fetchData('users/auth-status/');
+      console.log('Auth status:', authData);
+
+      // If not authenticated and we haven't retried yet, try once more
+      if (!authData.authenticated && retryCount === 0) {
+        console.log('Auth check failed, retrying once...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return checkAuthStatus(1);
+      }
+
+      return authData.authenticated === true;
+    } catch (error) {
+      console.error('Auth check error:', error);
+
+      // If there's an error and we haven't retried yet, try once more
+      if (retryCount === 0) {
+        console.log('Auth check error, retrying once...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return checkAuthStatus(1);
+      }
+
+      return false;
+    }
+  };
+
   // Fetch templates from API
   useEffect(() => {
     const fetchTemplates = async () => {
       setLoading(true);
       setError("");
 
+      // Check if user is authenticated first
+      const isAuthenticated = await checkAuthStatus();
+      if (!isAuthenticated) {
+        setError("User not authenticated. Please log in.");
+        setLoading(false);
+        return;
+      }
+
       for (const endpoint of endpointsToTry) {
         try {
-          const fullUrl = `http://127.0.0.1:8000${endpoint}`;
-          const response = await fetch(fullUrl);
+          console.log(`Trying endpoint: ${endpoint}`);
 
-          if (response.ok) {
-            try {
-              console.log("Logged in user:", loggedInUser);
-
-              const data = await response.json();
+          const data = await fetchData(endpoint);
+          console.log("Logged in user:", loggedInUser);
               console.log("Full response data:", data);
               console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
 
@@ -115,10 +147,7 @@ const Dashboard: React.FC = () => {
               setTemplates(sortedTemplates);
               setLoading(false);
               return;
-            } catch (err) {
-              console.error("Error parsing JSON:", err);
-            }
-          }
+
         } catch (err) {
           console.error("Error fetching from endpoint:", endpoint, err);
         }

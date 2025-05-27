@@ -13,7 +13,7 @@ class AccessVerificationMiddleware(MiddlewareMixin):
     Middleware to consistently check permissions across different views.
     This centralizes permission logic to avoid duplication.
     """
-    
+
     # Define URL patterns that require permission checks
     TEMPLATE_URL_PATTERNS = [
         r'^/users/templates/(?P<template_id>\d+)/$',
@@ -21,7 +21,7 @@ class AccessVerificationMiddleware(MiddlewareMixin):
         r'^/users/templates/(?P<template_id>\d+)/access/$',
         r'^/users/templates/(?P<template_id>\d+)/access/(?P<access_id>\d+)/$',
     ]
-    
+
     # Define which methods require which permission levels for each URL pattern
     PERMISSION_REQUIREMENTS = {
         r'^/users/templates/(?P<template_id>\d+)/$': {
@@ -46,7 +46,7 @@ class AccessVerificationMiddleware(MiddlewareMixin):
             'DELETE': 'admin',
         },
     }
-    
+
     # URLs that should bypass this middleware
     EXEMPT_URLS = [
         r'^/admin/',
@@ -56,26 +56,46 @@ class AccessVerificationMiddleware(MiddlewareMixin):
         r'^/users/register/',
         r'^/users/auth-status/',
         r'^/users/get-csrf-token/',
+        r'^/users/templates-with-shared/',
+        r'^/users/shared-templates/',
+        r'^/users/all-templates/',
+        r'^/api/templates/',
+        r'^/api/users/current-user/',
+        r'^/api/users/logout/',
+        r'^/api/users/login/',
+        r'^/api/users/register/',
+        r'^/api/users/auth-status/',
+        r'^/api/users/get-csrf-token/',
+        r'^/api/users/templates-with-shared/',
+        r'^/api/users/shared-templates/',
+        r'^/api/users/all-templates/',
+        r'^/api/users/templates/$',
     ]
-    
+
     def process_view(self, request, view_func, view_args, view_kwargs):
         """
         Check permissions before the view is called.
         """
+        path = request.path
+        print(f"🔍 AccessVerificationMiddleware: Processing {request.method} {path}")
+        print(f"🔍 User authenticated: {request.user.is_authenticated}")
+        print(f"🔍 User: {request.user}")
+
         # Skip if user is not authenticated
         if not request.user.is_authenticated:
+            print(f"🔍 User not authenticated, skipping middleware for {path}")
             return None
-            
+
         # Skip for exempt URLs
-        path = request.path
         for exempt_pattern in self.EXEMPT_URLS:
             if re.match(exempt_pattern, path):
+                print(f"🔍 URL {path} is exempt, skipping middleware")
                 return None
-                
+
         # Check if this URL requires permission verification
         template_id = None
         required_permission = None
-        
+
         for pattern in self.TEMPLATE_URL_PATTERNS:
             match = re.match(pattern, path)
             if match:
@@ -83,18 +103,18 @@ class AccessVerificationMiddleware(MiddlewareMixin):
                 method_requirements = self.PERMISSION_REQUIREMENTS.get(pattern, {})
                 required_permission = method_requirements.get(request.method)
                 break
-                
+
         # If no template_id or required_permission found, proceed to the view
         if not template_id or not required_permission:
             return None
-            
+
         # Check if the user has the required permission
         has_permission = has_template_permission(
-            request.user, 
-            template_id, 
+            request.user,
+            template_id,
             required_level=required_permission
         )
-        
+
         if not has_permission:
             # Log the failed access attempt
             try:
@@ -117,12 +137,12 @@ class AccessVerificationMiddleware(MiddlewareMixin):
                 )
             except Template.DoesNotExist:
                 pass
-                
+
             return HttpResponseForbidden(
                 json.dumps({'detail': 'You do not have permission to perform this action.'}),
                 content_type='application/json'
             )
-            
+
         # Log the successful access
         try:
             template = Template.objects.get(id=template_id)
@@ -144,10 +164,10 @@ class AccessVerificationMiddleware(MiddlewareMixin):
             )
         except Template.DoesNotExist:
             pass
-            
+
         # Proceed to the view
         return None
-        
+
     def get_client_ip(self, request):
         """
         Get the client's IP address from the request.
