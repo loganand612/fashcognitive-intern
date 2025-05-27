@@ -80,6 +80,10 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // Check if template has been saved to database (has numeric ID)
+  const isTemplateSaved = String(templateId).match(/^\d+$/);
+  const templateNotSavedMessage = "This template must be saved before it can be assigned to inspectors. Please save the template first.";
+
   // Fetch current user data
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -142,10 +146,11 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
       }
     };
 
-    if (!isLoading && currentUser) {
+    // Only fetch assignments if template is saved and user is loaded
+    if (!isLoading && currentUser && isTemplateSaved) {
       fetchAssignments();
     }
-  }, [isLoading, currentUser, templateId]);
+  }, [isLoading, currentUser, templateId, isTemplateSaved]);
 
   // Fetch inspectors
   useEffect(() => {
@@ -179,15 +184,22 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
       }
     };
 
-    if (!isLoading && currentUser) {
+    // Only fetch inspectors if template is saved and user is loaded
+    if (!isLoading && currentUser && isTemplateSaved) {
       fetchInspectors();
     }
-  }, [isLoading, currentUser]);
+  }, [isLoading, currentUser, isTemplateSaved]);
 
   // Create a new assignment
   const handleCreateAssignment = async () => {
     if (!selectedInspector) {
       setError('Please select an inspector');
+      return;
+    }
+
+    // Check if template is saved before allowing assignment
+    if (!isTemplateSaved) {
+      setError(templateNotSavedMessage);
       return;
     }
 
@@ -336,12 +348,21 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
           </div>
         )}
 
-        {!isLoading && currentUser?.user_role !== 'admin' && (
+        {!isLoading && !isTemplateSaved && (
+          <div className="info-message">
+            <Info size={16} />
+            <span>{templateNotSavedMessage}</span>
+          </div>
+        )}
+
+        {!isLoading && isTemplateSaved && currentUser?.user_role !== 'admin' && (
           <div className="info-message">
             <Info size={16} />
             <span>Only admin users can assign templates to inspectors. Contact an admin if you need to assign this template.</span>
           </div>
         )}
+
+
 
         {error && (
           <div className="error-message">
@@ -369,7 +390,8 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
             <button
               className="invite-button"
               onClick={() => setShowAssignForm(!showAssignForm)}
-              disabled={currentUser?.user_role !== 'admin'}
+              disabled={!isTemplateSaved || currentUser?.user_role !== 'admin'}
+              title={!isTemplateSaved ? templateNotSavedMessage : undefined}
             >
               <UserPlus size={16} />
               Assign Template
@@ -434,7 +456,8 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
                 <button
                   className="send-invite-button"
                   onClick={handleCreateAssignment}
-                  disabled={!selectedInspector}
+                  disabled={!selectedInspector || !isTemplateSaved}
+                  title={!isTemplateSaved ? templateNotSavedMessage : undefined}
                 >
                   Assign Template
                 </button>
@@ -452,7 +475,12 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
           </div>
 
           <div className="users-list">
-            {assignments.length === 0 ? (
+            {!isTemplateSaved ? (
+              <div className="no-users">
+                <ClipboardCheck size={24} />
+                <p>Save the template to view and manage assignments</p>
+              </div>
+            ) : assignments.length === 0 ? (
               <div className="no-users">
                 <ClipboardCheck size={24} />
                 <p>No assignments found for this template</p>

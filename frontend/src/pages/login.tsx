@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import './login.css';
-import { postData } from '../utils/api';
+import { postData, fetchData } from '../utils/api';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -34,7 +34,7 @@ const Login: React.FC = () => {
 
             // Verify authentication immediately after login
             try {
-                const authStatus = await postData("users/auth-status/", {});
+                const authStatus = await fetchData("users/auth-status/");
                 console.log("Authentication verified:", authStatus);
             } catch (authError) {
                 console.warn("Auth verification warning:", authError);

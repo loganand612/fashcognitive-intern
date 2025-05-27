@@ -127,7 +127,15 @@ def templates_api(request):
                         order=question_data.get("order", 0),
                     )
 
-            return Response({"message": "Template created successfully!"}, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Template created successfully!",
+                "id": template.id,
+                "template": {
+                    "id": template.id,
+                    "title": template.title,
+                    "description": template.description
+                }
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             print(f"Internal Server Error: {e}")  # Useful for server logs
@@ -153,10 +161,23 @@ class DashboardAPI(APIView):
         return Response(data)
 
 
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """
+    SessionAuthentication that doesn't enforce CSRF for GET requests
+    """
+    def enforce_csrf(self, request):
+        # Skip CSRF check for GET requests
+        if request.method == 'GET':
+            return
+        return super().enforce_csrf(request)
+
 class TemplateAPI(APIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        #print("🧭 HIT: templates_api view")
-        templates = Template.objects.all()
+        # Only return templates that the user has access to
+        templates = Template.objects.filter(user=request.user)
         serializer = TemplateSerializer(templates, many=True)
         return Response(serializer.data)
 
@@ -292,7 +313,15 @@ class TemplateCreateView(APIView):
                             multiple_selection=question_data.get("multipleSelection", False),
                         )
 
-            return Response({"message": "Template saved successfully!"}, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Template saved successfully!",
+                "id": template.id,
+                "template": {
+                    "id": template.id,
+                    "title": template.title,
+                    "description": template.description
+                }
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             print(f"❌ Exception Traceback:\n{e}")
@@ -424,19 +453,59 @@ class TemplateDetailView(RetrieveAPIView):
                     print(f"Error processing sections: {e}")
                     return Response({"error": f"Error processing sections: {str(e)}"}, status=400)
 
-            return Response({"message": "Template updated successfully!"}, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Template updated successfully!",
+                "id": template.id,
+                "template": {
+                    "id": template.id,
+                    "title": template.title,
+                    "description": template.description
+                }
+            }, status=status.HTTP_200_OK)
 
         except Exception as e:
             print(f"❌ Exception in PATCH: {e}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DashboardTemplateView(View):
+class DashboardTemplateView(APIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        templates = Template.objects.all()
-        return render(request, 'dashboard/templates.html', {'templates': templates})
+        # Return templates for the dashboard - only user's templates
+        templates = Template.objects.filter(user=request.user)
+        serializer = TemplateSerializer(templates, many=True)
+        return Response(serializer.data)
 
 # Add this new view to check authentication status
+class AuthStatusView(APIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [AllowAny]  # Allow any user to check auth status
+
+    def get(self, request):
+        print(f"🔍 AuthStatusView: User authenticated: {request.user.is_authenticated}")
+        print(f"🔍 AuthStatusView: User: {request.user}")
+        print(f"🔍 AuthStatusView: Session key: {request.session.session_key}")
+        print(f"🔍 AuthStatusView: Cookies: {request.COOKIES}")
+
+        if request.user.is_authenticated:
+            return Response({
+                "authenticated": True,
+                "user": {
+                    "id": request.user.id,
+                    "username": request.user.username,
+                    "email": request.user.email,
+                    "user_role": request.user.user_role
+                }
+            })
+        else:
+            return Response({
+                "authenticated": False,
+                "user": None
+            })
+
+# Keep the function-based view for backward compatibility
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def auth_status(request):
@@ -449,6 +518,31 @@ def auth_status(request):
             "user_role": request.user.user_role
         }
     })
+
+# Debug auth status endpoint that doesn't require authentication
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def debug_auth_status(request):
+    print(f"🔍 DebugAuthStatus: User authenticated: {request.user.is_authenticated}")
+    print(f"🔍 DebugAuthStatus: User: {request.user}")
+    print(f"🔍 DebugAuthStatus: Session key: {request.session.session_key}")
+    print(f"🔍 DebugAuthStatus: Cookies: {request.COOKIES}")
+
+    if request.user.is_authenticated:
+        return Response({
+            "authenticated": True,
+            "user": {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "user_role": request.user.user_role
+            }
+        })
+    else:
+        return Response({
+            "authenticated": False,
+            "user": None
+        })
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

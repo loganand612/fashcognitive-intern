@@ -50,6 +50,7 @@ import {
   Building,
   Flag,
   ClipboardCheck,
+  Save,
 } from "lucide-react"
 import jsPDF from "jspdf"
 
@@ -2083,7 +2084,10 @@ const CreateTemplate: React.FC = () => {
 
   // Backend API functions
   const handleSave = async () => {
-    const isNew = !id;
+    // Check if template is new: no URL id AND template.id is not a numeric database ID
+    const hasNumericId = String(template.id).match(/^\d+$/);
+    const isNew = !id && !hasNumericId;
+    const templateDbId = hasNumericId ? template.id : id;
 
     if (!template.title) {
       alert("Please enter a template title");
@@ -2116,7 +2120,7 @@ const CreateTemplate: React.FC = () => {
 
       const url = isNew
         ? "http://localhost:8000/api/users/create_templates/"
-        : `http://localhost:8000/api/users/templates/${id}/`;
+        : `http://localhost:8000/api/users/templates/${templateDbId}/`;
 
       const method = isNew ? "POST" : "PATCH";
 
@@ -2132,6 +2136,23 @@ const CreateTemplate: React.FC = () => {
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json();
         throw new Error(errorData.error || "Failed to save template");
+      }
+
+      // Get the response data to update the template ID
+      const responseData = await saveResponse.json();
+
+      // Update the template with the database ID if it's a new template
+      if (isNew && responseData.id) {
+        setTemplate((prev) => ({
+          ...prev,
+          id: responseData.id.toString(), // Convert to string to match frontend interface
+          lastSaved: new Date(),
+        }));
+      } else {
+        setTemplate((prev) => ({
+          ...prev,
+          lastSaved: new Date(),
+        }));
       }
 
       alert("Template saved successfully!");
@@ -2164,13 +2185,21 @@ const CreateTemplate: React.FC = () => {
       }
 
       // 4. Add sections data
-      const isNew = !id;
+      const hasNumericId = String(template.id).match(/^\d+$/);
+      const isNew = !id && !hasNumericId;
+      const templateDbId = hasNumericId ? template.id : id;
       const cleanedTemplate = cleanTemplateForSave(template, isNew)
       formData.append("sections", JSON.stringify(cleanedTemplate.sections))
 
       // 5. Make the API request with the fresh CSRF token
-      const publishResponse = await fetch("http://localhost:8000/api/users/create_templates/", {
-        method: "POST",
+      const url = isNew
+        ? "http://localhost:8000/api/users/create_templates/"
+        : `http://localhost:8000/api/users/templates/${templateDbId}/`;
+
+      const method = isNew ? "POST" : "PATCH";
+
+      const publishResponse = await fetch(url, {
+        method,
         headers: {
           "X-CSRFToken": csrfToken,
         },
@@ -2183,12 +2212,24 @@ const CreateTemplate: React.FC = () => {
         throw new Error(errorData.error || "Failed to publish template")
       }
 
-      // Success handling
-      setTemplate((prev) => ({
-        ...prev,
-        lastSaved: new Date(),
-        lastPublished: new Date(),
-      }))
+      // Get the response data to update the template ID
+      const publishResponseData = await publishResponse.json();
+
+      // Success handling - update template with database ID if it's new
+      if (isNew && publishResponseData.id) {
+        setTemplate((prev) => ({
+          ...prev,
+          id: publishResponseData.id.toString(), // Convert to string to match frontend interface
+          lastSaved: new Date(),
+          lastPublished: new Date(),
+        }));
+      } else {
+        setTemplate((prev) => ({
+          ...prev,
+          lastSaved: new Date(),
+          lastPublished: new Date(),
+        }));
+      }
 
       console.log("Template published successfully!")
       alert("Template published and saved successfully!")
@@ -2532,32 +2573,16 @@ const CreateTemplate: React.FC = () => {
       case "Annotation":
         return (
           <div className="response-field annotation-field">
-            {!question.value ? (
-              <div
-                className="annotation-area"
-                onClick={() => {
-                  setActiveQuestion(question);
-                  setShowSignatureModal(true);
-                }}
-              >
-                <Edit size={20} />
-                <span>Add annotation</span>
-              </div>
-            ) : (
-              <div className="annotation-preview">
-                <img
-                  src={question.value as string}
-                  alt="Signature"
-                  className="annotation-image"
-                />
-                <button
-                  className="annotation-remove-button"
-                  onClick={() => updateQuestion(sectionId, question.id, { value: null })}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
+            <div
+              className="annotation-area"
+              onClick={() => {
+                setActiveQuestion(question);
+                setShowSignatureModal(true);
+              }}
+            >
+              <Edit size={20} />
+              <span>{question.value ? "Edit annotation" : "Add annotation"}</span>
+            </div>
           </div>
         )
       case "Date & Time":
@@ -3570,10 +3595,10 @@ const CreateTemplate: React.FC = () => {
         )
       case "Annotation":
         return (
-          <div className="mobile-annotation">
+          <div className="create-template-mobile-annotation">
             {!question.value ? (
               <div
-                className="mobile-annotation-placeholder"
+                className="create-template-mobile-annotation-placeholder"
                 onClick={() => {
                   // Open a modal with signature pad
                   setActiveQuestion(question);
@@ -3584,11 +3609,11 @@ const CreateTemplate: React.FC = () => {
                 <span>Tap to sign</span>
               </div>
             ) : (
-              <div className="mobile-annotation-preview">
+              <div className="create-template-mobile-annotation-preview">
                 <img
                   src={(question.value as string) || "/placeholder.svg"}
                   alt="Signature"
-                  className="mobile-annotation-image"
+                  className="create-template-mobile-annotation-image"
                 />
                 <button
                   className="mobile-annotation-remove"
@@ -3784,7 +3809,14 @@ const CreateTemplate: React.FC = () => {
           </div>
         </div>
         <div className="nav-right">
-          {/* Save button removed */}
+          <button
+            className="save-button"
+            onClick={handleSave}
+            disabled={!template.title}
+          >
+            <Save size={16} />
+            Save
+          </button>
         </div>
       </div>
 
@@ -3981,6 +4013,174 @@ const CreateTemplate: React.FC = () => {
         )}
       </div>
 
+      {/* Signature Modal */}
+      {showSignatureModal && activeQuestion && (
+        <div className="create-template-signature-modal-overlay" onClick={() => setShowSignatureModal(false)}>
+          <div className="create-template-signature-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="create-template-signature-modal-header">
+              <h3>Add Signature</h3>
+              <button
+                className="create-template-signature-modal-close"
+                onClick={() => setShowSignatureModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="create-template-signature-modal-content">
+              <div className="create-template-signature-canvas-container">
+                <canvas
+                  ref={(canvas) => {
+                    if (!canvas) return;
+
+                    // Prevent re-initialization
+                    if ((canvas as any).__signatureInitialized) return;
+                    (canvas as any).__signatureInitialized = true;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+
+                    // Set canvas dimensions for mobile-friendly size
+                    canvas.width = 280;
+                    canvas.height = 140;
+
+                    // Set canvas styles
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = '#000000';
+
+                    // Clear canvas with white background
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Drawing state
+                    let isDrawing = false;
+                    let lastX = 0;
+                    let lastY = 0;
+
+                    // Get coordinates from mouse or touch event
+                    const getCoordinates = (e: MouseEvent | TouchEvent) => {
+                      const rect = canvas.getBoundingClientRect();
+                      const scaleX = canvas.width / rect.width;
+                      const scaleY = canvas.height / rect.height;
+
+                      let clientX, clientY;
+                      if (e instanceof TouchEvent) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                      } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                      }
+
+                      return {
+                        x: (clientX - rect.left) * scaleX,
+                        y: (clientY - rect.top) * scaleY
+                      };
+                    };
+
+                    // Start drawing
+                    const startDrawing = (e: MouseEvent | TouchEvent) => {
+                      isDrawing = true;
+                      const coords = getCoordinates(e);
+                      lastX = coords.x;
+                      lastY = coords.y;
+
+                      if (e instanceof TouchEvent) {
+                        e.preventDefault();
+                      }
+                    };
+
+                    // Draw
+                    const draw = (e: MouseEvent | TouchEvent) => {
+                      if (!isDrawing) return;
+
+                      const coords = getCoordinates(e);
+
+                      ctx.beginPath();
+                      ctx.moveTo(lastX, lastY);
+                      ctx.lineTo(coords.x, coords.y);
+                      ctx.stroke();
+
+                      lastX = coords.x;
+                      lastY = coords.y;
+
+                      if (e instanceof TouchEvent) {
+                        e.preventDefault();
+                      }
+                    };
+
+                    // Stop drawing
+                    const stopDrawing = () => {
+                      isDrawing = false;
+                    };
+
+                    // Add event listeners
+                    canvas.addEventListener('mousedown', startDrawing);
+                    canvas.addEventListener('mousemove', draw);
+                    canvas.addEventListener('mouseup', stopDrawing);
+                    canvas.addEventListener('mouseleave', stopDrawing);
+
+                    // Touch events
+                    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+                    canvas.addEventListener('touchmove', draw, { passive: false });
+                    canvas.addEventListener('touchend', stopDrawing);
+                    canvas.addEventListener('touchcancel', stopDrawing);
+
+                    // Store canvas reference for clearing
+                    (canvas as any).__clearCanvas = () => {
+                      ctx.fillStyle = '#ffffff';
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    };
+
+                    // Store canvas reference for saving
+                    (canvas as any).__saveSignature = () => {
+                      return canvas.toDataURL('image/png');
+                    };
+                  }}
+                  className="create-template-signature-canvas"
+                />
+                <div className="create-template-signature-instructions">
+                  Sign or draw in the area above
+                </div>
+              </div>
+              <div className="create-template-signature-modal-actions">
+                <button
+                  className="create-template-signature-clear-btn"
+                  onClick={(e) => {
+                    const canvas = e.currentTarget.closest('.create-template-signature-modal-content')?.querySelector('canvas') as any;
+                    if (canvas && canvas.__clearCanvas) {
+                      canvas.__clearCanvas();
+                    }
+                  }}
+                >
+                  Clear
+                </button>
+                <button
+                  className="create-template-signature-save-btn"
+                  onClick={(e) => {
+                    const canvas = e.currentTarget.closest('.create-template-signature-modal-content')?.querySelector('canvas') as any;
+                    if (canvas && canvas.__saveSignature && activeQuestion) {
+                      const signatureData = canvas.__saveSignature();
+                      // Find the section containing the active question
+                      const section = template.sections.find(s =>
+                        s.questions.some(q => q.id === activeQuestion.id)
+                      );
+                      if (section) {
+                        updateQuestion(section.id, activeQuestion.id, { value: signatureData });
+                      }
+                      setShowSignatureModal(false);
+                      setActiveQuestion(null);
+                    }
+                  }}
+                >
+                  Save Signature
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck, Save } from 'lucide-react'
 import "./garment-template.css"
 import "./print-styles.css"
 import AccessManager from "./components/AccessManager"
@@ -567,18 +567,9 @@ const renderQuestionResponse = (
     case "Annotation":
       return (
         <div className="response-field annotation-field">
-          <div className="signature-container">
-            <div className="signature-canvas-wrapper">
-              {question.value && typeof question.value === 'string' && question.value.startsWith('data:image/png') ? (
-                <div className="signature-preview">
-                  <img src={question.value} alt="Signature" className="signature-image" />
-                </div>
-              ) : (
-                <div className="annotation-placeholder-box">
-                  Click to sign in the report page
-                </div>
-              )}
-            </div>
+          <div className="annotation-placeholder-box">
+            <Edit size={20} />
+            <span>Sign in the report page</span>
           </div>
         </div>
       );
@@ -1734,12 +1725,15 @@ const Garment_Template: React.FC = () => {
       formData.append("sections", JSON.stringify(sectionsData));
 
       // Determine if this is a new template or an edit
-      const isNew = !id;
+      // Check if template is new: no URL id AND template.id is not a numeric database ID
+      const hasNumericId = String(template.id).match(/^\d+$/);
+      const isNew = !id && !hasNumericId;
+      const templateDbId = hasNumericId ? template.id : id;
 
       // Set the appropriate URL and method based on whether we're creating or updating
       const url = isNew
         ? "http://localhost:8000/api/users/garment-template/"
-        : `http://localhost:8000/api/users/templates/${id}/`;
+        : `http://localhost:8000/api/users/templates/${templateDbId}/`;
 
       const method = isNew ? "POST" : "PATCH";
 
@@ -3531,144 +3525,286 @@ const Garment_Template: React.FC = () => {
         return (
           <div className="report-response-field">
             <div className="report-signature-container">
-              <div className="signature-canvas-wrapper">
-                <canvas
-                  ref={(canvas) => {
-                    if (!canvas) return;
+              {!value ? (
+                // Show professional "Click to add signature" button
+                <div
+                  className="report-signature-placeholder"
+                  onClick={() => {
+                    // Create a temporary signature area
+                    const signatureArea = document.createElement('div');
+                    signatureArea.className = 'report-signature-modal-overlay';
+                    signatureArea.innerHTML = `
+                      <div class="report-signature-modal">
+                        <div class="report-signature-modal-header">
+                          <h3>Add Signature</h3>
+                          <button class="report-signature-modal-close">×</button>
+                        </div>
+                        <div class="report-signature-modal-content">
+                          <canvas class="report-signature-modal-canvas" width="350" height="180"></canvas>
+                          <div class="report-signature-modal-instructions">
+                            Sign or draw in the area above
+                          </div>
+                          <div class="report-signature-modal-actions">
+                            <button class="report-signature-clear-btn">Clear</button>
+                            <button class="report-signature-save-btn">Save Signature</button>
+                          </div>
+                        </div>
+                      </div>
+                    `;
 
-                    // Store canvas in a ref to avoid recreating it
-                    if ((canvas as any).__initialized) return;
-                    (canvas as any).__initialized = true;
+                    document.body.appendChild(signatureArea);
 
+                    const canvas = signatureArea.querySelector('.report-signature-modal-canvas') as HTMLCanvasElement;
                     const ctx = canvas.getContext('2d');
                     if (!ctx) return;
-
-                    // Set canvas dimensions
-                    canvas.width = canvas.offsetWidth;
-                    canvas.height = canvas.offsetHeight;
 
                     // Set canvas styles
                     ctx.lineWidth = 2;
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
                     ctx.strokeStyle = '#000000';
-
-                    // Clear canvas
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                    // If there's already a saved signature, draw it
-                    if (value && typeof value === 'string' && value.startsWith('data:image/png')) {
-                      const img = new Image();
-                      img.onload = () => {
-                        ctx.drawImage(img, 0, 0);
-                      };
-                      img.src = value;
-                    }
-
-                    // Set up drawing variables
+                    // Drawing state
                     let isDrawing = false;
                     let lastX = 0;
                     let lastY = 0;
 
-                    // Store canvas and context in local variables that are definitely not null
-                    const canvasElement = canvas;
-                    const context = ctx;
+                    // Drawing functions
+                    const getCoordinates = (e: MouseEvent | TouchEvent) => {
+                      const rect = canvas.getBoundingClientRect();
+                      const scaleX = canvas.width / rect.width;
+                      const scaleY = canvas.height / rect.height;
 
-                    // Define drawing functions
-                    function startDrawing(e: MouseEvent | TouchEvent) {
+                      let clientX, clientY;
+                      if (e instanceof TouchEvent) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                      } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                      }
+
+                      return {
+                        x: (clientX - rect.left) * scaleX,
+                        y: (clientY - rect.top) * scaleY
+                      };
+                    };
+
+                    const startDrawing = (e: MouseEvent | TouchEvent) => {
                       isDrawing = true;
+                      const coords = getCoordinates(e);
+                      lastX = coords.x;
+                      lastY = coords.y;
+                      if (e instanceof TouchEvent) e.preventDefault();
+                    };
 
-                      const rect = canvasElement.getBoundingClientRect();
-                      let clientX, clientY;
-
-                      if (e instanceof TouchEvent) {
-                        clientX = e.touches[0].clientX;
-                        clientY = e.touches[0].clientY;
-                      } else {
-                        clientX = e.clientX;
-                        clientY = e.clientY;
-                      }
-
-                      lastX = clientX - rect.left;
-                      lastY = clientY - rect.top;
-                    }
-
-                    function draw(e: MouseEvent | TouchEvent) {
+                    const draw = (e: MouseEvent | TouchEvent) => {
                       if (!isDrawing) return;
+                      const coords = getCoordinates(e);
+                      ctx.beginPath();
+                      ctx.moveTo(lastX, lastY);
+                      ctx.lineTo(coords.x, coords.y);
+                      ctx.stroke();
+                      lastX = coords.x;
+                      lastY = coords.y;
+                      if (e instanceof TouchEvent) e.preventDefault();
+                    };
 
-                      const rect = canvasElement.getBoundingClientRect();
-                      let clientX, clientY;
-
-                      if (e instanceof TouchEvent) {
-                        clientX = e.touches[0].clientX;
-                        clientY = e.touches[0].clientY;
-                        e.preventDefault(); // Prevent scrolling on touch devices
-                      } else {
-                        clientX = e.clientX;
-                        clientY = e.clientY;
-                      }
-
-                      const x = clientX - rect.left;
-                      const y = clientY - rect.top;
-
-                      context.beginPath();
-                      context.moveTo(lastX, lastY);
-                      context.lineTo(x, y);
-                      context.stroke();
-
-                      lastX = x;
-                      lastY = y;
-                    }
-
-                    function endDrawing() {
-                      if (isDrawing) {
-                        // Only save the signature when the drawing is complete
-                        const signatureImage = canvasElement.toDataURL('image/png');
-                        updateQuestionAnswer(question.id, signatureImage);
-                        isDrawing = false;
-                      }
-                    }
+                    const stopDrawing = () => {
+                      isDrawing = false;
+                    };
 
                     // Add event listeners
-                    canvasElement.addEventListener('mousedown', startDrawing);
-                    canvasElement.addEventListener('mousemove', draw);
-                    canvasElement.addEventListener('mouseup', endDrawing);
-                    canvasElement.addEventListener('mouseleave', endDrawing);
-                    canvasElement.addEventListener('touchstart', startDrawing);
-                    canvasElement.addEventListener('touchmove', draw);
-                    canvasElement.addEventListener('touchend', endDrawing);
-                  }}
-                  className="report-signature-canvas"
-                  width={300}
-                  height={150}
-                />
-                <div className="report-signature-controls">
-                  <button
-                    className="report-clear-signature-button"
-                    onClick={(e) => {
-                      e.preventDefault();
+                    canvas.addEventListener('mousedown', startDrawing);
+                    canvas.addEventListener('mousemove', draw);
+                    canvas.addEventListener('mouseup', stopDrawing);
+                    canvas.addEventListener('mouseleave', stopDrawing);
+                    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+                    canvas.addEventListener('touchmove', draw, { passive: false });
+                    canvas.addEventListener('touchend', stopDrawing);
+                    canvas.addEventListener('touchcancel', stopDrawing);
 
-                      // Find the canvas element
-                      const canvasElement = e.currentTarget.closest('.signature-canvas-wrapper')?.querySelector('canvas') as HTMLCanvasElement;
-                      if (!canvasElement) return;
+                    // Close modal
+                    const closeModal = () => {
+                      document.body.removeChild(signatureArea);
+                    };
 
-                      const ctx = canvasElement.getContext('2d');
-                      if (!ctx) return;
-
-                      // Clear the canvas
+                    // Clear canvas
+                    const clearCanvas = () => {
                       ctx.fillStyle = '#ffffff';
-                      ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    };
 
-                      // Clear the saved value
-                      updateQuestionAnswer(question.id, null);
-                    }}
-                    type="button"
-                  >
-                    Clear Signature
-                  </button>
+                    // Save signature
+                    const saveSignature = () => {
+                      const signatureData = canvas.toDataURL('image/png');
+                      updateQuestionAnswer(question.id, signatureData);
+                      closeModal();
+                    };
+
+                    // Add button event listeners
+                    signatureArea.querySelector('.report-signature-modal-close')?.addEventListener('click', closeModal);
+                    signatureArea.querySelector('.report-signature-clear-btn')?.addEventListener('click', clearCanvas);
+                    signatureArea.querySelector('.report-signature-save-btn')?.addEventListener('click', saveSignature);
+                    signatureArea.addEventListener('click', (e) => {
+                      if (e.target === signatureArea) closeModal();
+                    });
+                  }}
+                >
+                  <Edit size={24} />
+                  <span>Click to add signature</span>
                 </div>
-              </div>
+              ) : (
+                // Show signature preview with edit option
+                <div className="report-signature-preview">
+                  <img
+                    src={value as string}
+                    alt="Signature"
+                    className="report-signature-image"
+                  />
+                  <div className="report-signature-actions">
+                    <button
+                      className="report-edit-signature-button"
+                      onClick={() => {
+                        // Same modal logic as above but pre-populate with existing signature
+                        const signatureArea = document.createElement('div');
+                        signatureArea.className = 'report-signature-modal-overlay';
+                        signatureArea.innerHTML = `
+                          <div class="report-signature-modal">
+                            <div class="report-signature-modal-header">
+                              <h3>Edit Signature</h3>
+                              <button class="report-signature-modal-close">×</button>
+                            </div>
+                            <div class="report-signature-modal-content">
+                              <canvas class="report-signature-modal-canvas" width="350" height="180"></canvas>
+                              <div class="report-signature-modal-instructions">
+                                Sign or draw in the area above
+                              </div>
+                              <div class="report-signature-modal-actions">
+                                <button class="report-signature-clear-btn">Clear</button>
+                                <button class="report-signature-save-btn">Save Signature</button>
+                              </div>
+                            </div>
+                          </div>
+                        `;
+
+                        document.body.appendChild(signatureArea);
+
+                        const canvas = signatureArea.querySelector('.report-signature-modal-canvas') as HTMLCanvasElement;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) return;
+
+                        // Set canvas styles and load existing signature
+                        ctx.lineWidth = 2;
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.strokeStyle = '#000000';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        // Load existing signature
+                        const img = new Image();
+                        img.onload = () => {
+                          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        img.src = value as string;
+
+                        // Same drawing logic as above...
+                        let isDrawing = false;
+                        let lastX = 0;
+                        let lastY = 0;
+
+                        const getCoordinates = (e: MouseEvent | TouchEvent) => {
+                          const rect = canvas.getBoundingClientRect();
+                          const scaleX = canvas.width / rect.width;
+                          const scaleY = canvas.height / rect.height;
+
+                          let clientX, clientY;
+                          if (e instanceof TouchEvent) {
+                            clientX = e.touches[0].clientX;
+                            clientY = e.touches[0].clientY;
+                          } else {
+                            clientX = e.clientX;
+                            clientY = e.clientY;
+                          }
+
+                          return {
+                            x: (clientX - rect.left) * scaleX,
+                            y: (clientY - rect.top) * scaleY
+                          };
+                        };
+
+                        const startDrawing = (e: MouseEvent | TouchEvent) => {
+                          isDrawing = true;
+                          const coords = getCoordinates(e);
+                          lastX = coords.x;
+                          lastY = coords.y;
+                          if (e instanceof TouchEvent) e.preventDefault();
+                        };
+
+                        const draw = (e: MouseEvent | TouchEvent) => {
+                          if (!isDrawing) return;
+                          const coords = getCoordinates(e);
+                          ctx.beginPath();
+                          ctx.moveTo(lastX, lastY);
+                          ctx.lineTo(coords.x, coords.y);
+                          ctx.stroke();
+                          lastX = coords.x;
+                          lastY = coords.y;
+                          if (e instanceof TouchEvent) e.preventDefault();
+                        };
+
+                        const stopDrawing = () => {
+                          isDrawing = false;
+                        };
+
+                        canvas.addEventListener('mousedown', startDrawing);
+                        canvas.addEventListener('mousemove', draw);
+                        canvas.addEventListener('mouseup', stopDrawing);
+                        canvas.addEventListener('mouseleave', stopDrawing);
+                        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+                        canvas.addEventListener('touchmove', draw, { passive: false });
+                        canvas.addEventListener('touchend', stopDrawing);
+                        canvas.addEventListener('touchcancel', stopDrawing);
+
+                        const closeModal = () => {
+                          document.body.removeChild(signatureArea);
+                        };
+
+                        const clearCanvas = () => {
+                          ctx.fillStyle = '#ffffff';
+                          ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        };
+
+                        const saveSignature = () => {
+                          const signatureData = canvas.toDataURL('image/png');
+                          updateQuestionAnswer(question.id, signatureData);
+                          closeModal();
+                        };
+
+                        signatureArea.querySelector('.report-signature-modal-close')?.addEventListener('click', closeModal);
+                        signatureArea.querySelector('.report-signature-clear-btn')?.addEventListener('click', clearCanvas);
+                        signatureArea.querySelector('.report-signature-save-btn')?.addEventListener('click', saveSignature);
+                        signatureArea.addEventListener('click', (e) => {
+                          if (e.target === signatureArea) closeModal();
+                        });
+                      }}
+                    >
+                      <Edit size={16} />
+                      Edit
+                    </button>
+                    <button
+                      className="report-remove-signature-button"
+                      onClick={() => updateQuestionAnswer(question.id, null)}
+                    >
+                      <X size={16} />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -4741,6 +4877,24 @@ const Garment_Template: React.FC = () => {
               />
             </div>
           </div>
+
+          <div className="garment-template-access-tab">
+            <div className="garment-template-permissions-section">
+              <h2>
+                <ClipboardCheck size={22} className="garment-template-section-icon" />
+                Template Assignments
+              </h2>
+              <p>Assign this template to inspectors who will complete the inspections.</p>
+
+              <TemplateAssignmentManager
+                templateId={template.id}
+                templateTitle={template.title || "Untitled Template"}
+                onAssignmentUpdated={() => {
+                  console.log("Template assignments updated")
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="garment-template-access-footer">
@@ -4787,15 +4941,33 @@ const Garment_Template: React.FC = () => {
         </div>
         <div className="nav-right">
           {activeTab === 0 && (
-            <button className="nav-next-button" onClick={() => setActiveTab(1)}>
-              Next: Report
-              <ArrowRight size={16} />
-            </button>
+            <>
+              <button className="nav-save-button" onClick={handleSave}>
+                <Save size={16} />
+                Save Template
+              </button>
+              <button className="nav-next-button" onClick={() => setActiveTab(1)}>
+                Next: Report
+                <ArrowRight size={16} />
+              </button>
+            </>
           )}
           {activeTab === 1 && (
-            <button className="nav-next-button" onClick={() => setActiveTab(2)}>
-              Next: Access
-              <ArrowRight size={16} />
+            <>
+              <button className="nav-save-button" onClick={handleSave}>
+                <Save size={16} />
+                Save Template
+              </button>
+              <button className="nav-next-button" onClick={() => setActiveTab(2)}>
+                Next: Access
+                <ArrowRight size={16} />
+              </button>
+            </>
+          )}
+          {activeTab === 2 && (
+            <button className="nav-save-button" onClick={handleSave}>
+              <Save size={16} />
+              Save Template
             </button>
           )}
         </div>
@@ -4947,6 +5119,8 @@ const Garment_Template: React.FC = () => {
         {activeTab === 1 && renderReportTab()}
         {activeTab === 2 && renderAccessTab()}
       </div>
+
+
     </div>
   )
 }

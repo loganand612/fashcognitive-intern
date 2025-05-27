@@ -233,7 +233,7 @@ const TemplatePage: React.FC = () => {
 
       for (const endpoint of endpointsToTry) {
         try {
-          const fullUrl = `http://127.0.0.1:8000${endpoint}`
+          const fullUrl = `http://localhost:8000${endpoint}`
           const response = await fetch(fullUrl, {
             credentials: 'include' // Include cookies for authentication
           })
