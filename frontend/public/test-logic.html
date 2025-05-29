@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Rules Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section.success {
+            border-color: #4caf50;
+            background-color: #f1f8e9;
+        }
+        .test-section.error {
+            border-color: #f44336;
+            background-color: #ffebee;
+        }
+        .test-section.warning {
+            border-color: #ff9800;
+            background-color: #fff3e0;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        .status {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196f3; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .test-button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #1976d2;
+        }
+        .template-link {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        .template-link:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Logic Rules Test Dashboard</h1>
+        
+        <div class="test-section success">
+            <h2>✅ Backend Status</h2>
+            <p class="status success">Logic rules are properly stored and serialized in the database</p>
+            <p>Templates with working logic rules found:</p>
+            <ul>
+                <li>Template 8: "Fashcognitive template" - Has require_evidence logic</li>
+                <li>Template 9: "Untitled template" - Has require_evidence logic</li>
+                <li>Template 18: "Untitled template" - Has require_evidence logic</li>
+                <li>Template 19: "Test Logic Template" - Has require_evidence logic</li>
+                <li>Template 20: "logic check" - Has multiple logic types</li>
+                <li>Template 21: "logic test" - Has all logic types</li>
+                <li>Template 22: "Untitled template" - Has ask_questions logic</li>
+                <li>Template 23: "Logic Rules Test Template" - Has multiple logic types</li>
+            </ul>
+        </div>
+
+        <div class="test-section warning">
+            <h2>⚠️ Frontend Status</h2>
+            <p class="status warning">Logic rules processing has been enhanced to handle both camelCase and snake_case formats</p>
+            <p>Recent improvements:</p>
+            <ul>
+                <li>✅ Added support for snake_case field names from backend</li>
+                <li>✅ Enhanced conditional question creation</li>
+                <li>✅ Improved logic rule transformation</li>
+                <li>✅ Added comprehensive debugging</li>
+            </ul>
+        </div>
+
+        <div class="test-section info">
+            <h2>🧪 Test Templates</h2>
+            <p>Click on these templates to test the logic functionality:</p>
+            
+            <a href="/inspection?template=21" class="template-link">
+                Template 21: "logic test" - All Logic Types
+            </a>
+            <a href="/inspection?template=20" class="template-link">
+                Template 20: "logic check" - Multiple Logic
+            </a>
+            <a href="/inspection?template=23" class="template-link">
+                Template 23: "Logic Rules Test" - Test Template
+            </a>
+            <a href="/inspection" class="template-link">
+                Default Template - Built-in Logic
+            </a>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Testing Instructions</h2>
+            <ol>
+                <li><strong>Open Template 21:</strong> Click the "Template 21" link above</li>
+                <li><strong>Test display_message:</strong> Answer "Yes" to "Site conducted" - should show a display message</li>
+                <li><strong>Test require_evidence:</strong> Answer "Yes" to "Conducted on" - should require evidence upload</li>
+                <li><strong>Test ask_questions:</strong> Answer "Yes" to "Prepared by" - should show conditional question</li>
+                <li><strong>Test notify:</strong> Answer "Yes" to "Location" - should show notification</li>
+                <li><strong>Check browser console:</strong> Open DevTools (F12) and check console for detailed logs</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>🐛 Debugging</h2>
+            <p>If logic rules are not working:</p>
+            <ol>
+                <li>Open browser DevTools (F12)</li>
+                <li>Go to Console tab</li>
+                <li>Look for logs starting with "=== CONDITIONAL LOGIC USEEFFECT TRIGGERED ==="</li>
+                <li>Check if logic rules are being detected and processed</li>
+                <li>Verify that conditions are being met correctly</li>
+            </ol>
+            
+            <button class="test-button" onclick="testAPI()">Test API Connection</button>
+            <button class="test-button" onclick="checkConsole()">Check Console Logs</button>
+        </div>
+    </div>
+
+    <script>
+        function testAPI() {
+            fetch('/api/users/templates/21/')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('API Test Result:', data);
+                    alert('API test successful! Check console for details.');
+                })
+                .catch(error => {
+                    console.error('API Test Error:', error);
+                    alert('API test failed! Check console for details.');
+                });
+        }
+
+        function checkConsole() {
+            console.log('=== LOGIC RULES TEST ===');
+            console.log('If you see this message, console logging is working.');
+            console.log('Now navigate to an inspection page and check for logic rule logs.');
+            alert('Console test complete! Check the console tab in DevTools.');
+        }
+
+        // Auto-refresh status every 30 seconds
+        setTimeout(() => {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

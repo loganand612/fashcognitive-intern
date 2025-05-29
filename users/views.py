@@ -280,6 +280,7 @@ class TemplateCreateView(APIView):
                 for question_data in section_data.get("questions", []):
                     # Check for response_type or responseType (handle both for compatibility)
                     print(f"🔍 Processing question: {question_data}")
+                    print(f"🔍 Logic rules in question_data: {question_data.get('logicRules')}")
                     response_type = question_data.get("response_type") or question_data.get("responseType")
                     if not response_type:
                         print(f"❌ Missing response_type for question: {question_data}")
@@ -293,25 +294,41 @@ class TemplateCreateView(APIView):
                             question.response_type = response_type
                             question.required = question_data.get("required", question.required)
                             question.order = question_data.get("order", question.order)
-                            question.logic_rules = question_data.get("logicRules", question.logic_rules)
+                            # Handle both camelCase and snake_case for logic_rules
+                            logic_rules = question_data.get("logic_rules") or question_data.get("logicRules")
+                            if logic_rules is not None:
+                                question.logic_rules = logic_rules
                             question.flagged = question_data.get("flagged", question.flagged)
                             question.multiple_selection = question_data.get("multipleSelection", question.multiple_selection)
+                            print(f"🔍 Saving question with logic_rules: {question.logic_rules}")
                             question.save()
                         else:
                             print(f"❌ Question with id {question_id} not found in section {section.id}")
                             return Response({"error": f"Question with id {question_id} not found."}, status=400)
 
                     else:
-                        Question.objects.create(
+                        # Handle both camelCase and snake_case for logic_rules
+                        logic_rules_data = question_data.get("logic_rules") or question_data.get("logicRules")
+                        print(f"🔍 Creating new question with logic_rules: {logic_rules_data}")
+                        question = Question.objects.create(
                             section=section,
                             text=question_data.get("text"),
                             response_type=response_type,
                             required=question_data.get("required", False),
                             order=question_data.get("order", 0),
-                            logic_rules=question_data.get("logicRules"),
+                            logic_rules=logic_rules_data,
                             flagged=question_data.get("flagged", False),
                             multiple_selection=question_data.get("multipleSelection", False),
                         )
+                        print(f"🔍 Created question with ID {question.id}, logic_rules: {question.logic_rules}")
+
+                        # Create options for multiple choice questions
+                        for o_index, option in enumerate(question_data.get("options", [])):
+                            QuestionOption.objects.create(
+                                question=question,
+                                text=option,
+                                order=o_index
+                            )
 
             return Response({
                 "message": "Template saved successfully!",
@@ -342,6 +359,23 @@ class TemplateCreateView(APIView):
 class TemplateDetailView(RetrieveAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        print(f"🔍 Template API Response for ID {kwargs.get('pk')}:")
+        print(f"🔍 Response data: {response.data}")
+
+        # Debug logic rules specifically
+        if 'sections' in response.data:
+            for section in response.data['sections']:
+                if 'questions' in section:
+                    for question in section['questions']:
+                        if question.get('logic_rules'):
+                            print(f"🔍 Question '{question.get('text')}' has logic_rules: {question.get('logic_rules')}")
+                        else:
+                            print(f"🔍 Question '{question.get('text')}' has NO logic_rules")
+
+        return response
 
     def patch(self, request, pk=None):
         template = self.get_object()
@@ -423,32 +457,60 @@ class TemplateDetailView(RetrieveAPIView):
                                     question.response_type = response_type
                                     question.required = question_data.get("required", question.required)
                                     question.order = question_data.get("order", question.order)
-                                    question.logic_rules = question_data.get("logicRules", question.logic_rules)
+                                    # Handle both camelCase and snake_case for logic_rules
+                                    logic_rules = question_data.get("logic_rules") or question_data.get("logicRules")
+                                    if logic_rules is not None:
+                                        question.logic_rules = logic_rules
                                     question.flagged = question_data.get("flagged", question.flagged)
                                     question.multiple_selection = question_data.get("multipleSelection", question.multiple_selection)
                                     question.save()
+
+                                    # Update options for existing question
+                                    question.options.all().delete()  # Remove existing options
+                                    for o_index, option in enumerate(question_data.get("options", [])):
+                                        QuestionOption.objects.create(
+                                            question=question,
+                                            text=option,
+                                            order=o_index
+                                        )
                                 else:
-                                    Question.objects.create(
+                                    question = Question.objects.create(
                                         section=section,
                                         text=question_data.get("text"),
                                         response_type=response_type,
                                         required=question_data.get("required", False),
                                         order=question_data.get("order", 0),
-                                        logic_rules=question_data.get("logicRules"),
+                                        logic_rules=question_data.get("logic_rules") or question_data.get("logicRules"),
                                         flagged=question_data.get("flagged", False),
                                         multiple_selection=question_data.get("multipleSelection", False),
                                     )
+
+                                    # Create options for new question
+                                    for o_index, option in enumerate(question_data.get("options", [])):
+                                        QuestionOption.objects.create(
+                                            question=question,
+                                            text=option,
+                                            order=o_index
+                                        )
                             else:
-                                Question.objects.create(
+                                question = Question.objects.create(
                                     section=section,
                                     text=question_data.get("text"),
                                     response_type=response_type,
                                     required=question_data.get("required", False),
                                     order=question_data.get("order", 0),
-                                    logic_rules=question_data.get("logicRules"),
+                                    logic_rules=question_data.get("logic_rules") or question_data.get("logicRules"),
                                     flagged=question_data.get("flagged", False),
                                     multiple_selection=question_data.get("multipleSelection", False),
                                 )
+
+                                # Create options for new question
+                                for o_index, option in enumerate(question_data.get("options", [])):
+                                    QuestionOption.objects.create(
+                                        question=question,
+                                        text=option,
+                                        order=o_index
+                                    )
                 except Exception as e:
                     print(f"Error processing sections: {e}")
                     return Response({"error": f"Error processing sections: {str(e)}"}, status=400)
@@ -676,7 +738,7 @@ class GarmentTemplateCreateView(APIView):
                             response_type=question_data.get("responseType"),
                             required=question_data.get("required", False),
                             order=q_index,
-                            logic_rules=question_data.get("logicRules"),
+                            logic_rules=question_data.get("logic_rules") or question_data.get("logicRules"),
                             flagged=question_data.get("flagged", False),
                             multiple_selection=question_data.get("multipleSelection", False),
                         )

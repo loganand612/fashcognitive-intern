@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle } from "lucide-react"
+import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle } from "lucide-react"
 import { fetchData, postData } from "../utils/api"
 import "./Inspection.css"
 
@@ -29,6 +29,11 @@ interface LogicRule {
   value: string | number | string[] | [number, number] | null
   trigger: string | null
   message?: string
+  subQuestion?: {
+    text: string
+    responseType: ResponseType
+    options?: string[]
+  }
 }
 
 interface Question {
@@ -90,7 +95,12 @@ const resizeImage = (base64: string): Promise<string> => {
 
 // Helper function to check if a condition is met
 const isConditionMet = (question: Question, rule: LogicRule): boolean => {
-  if (question.value === null || question.value === undefined) return false
+  console.log(`    isConditionMet: Checking question value "${question.value}" against rule value "${rule.value}" with condition "${rule.condition}"`)
+
+  if (question.value === null || question.value === undefined) {
+    console.log(`    isConditionMet: Question value is null/undefined, returning false`)
+    return false
+  }
 
   const value = question.value
   let conditionMet = false
@@ -104,6 +114,7 @@ const isConditionMet = (question: Question, rule: LogicRule): boolean => {
     compareValue = typeof value === "string" ? Number.parseFloat(value) : typeof value === "number" ? value : 0
     ruleValue =
       typeof rule.value === "string" ? Number.parseFloat(rule.value) : typeof rule.value === "number" ? rule.value : 0
+    console.log(`    isConditionMet: Number comparison - compareValue: ${compareValue}, ruleValue: ${ruleValue}`)
   }
 
   switch (rule.condition) {
@@ -149,6 +160,7 @@ const isConditionMet = (question: Question, rule: LogicRule): boolean => {
       conditionMet = false
   }
 
+  console.log(`    isConditionMet: Final result for "${rule.condition}" comparison: ${conditionMet}`)
   return conditionMet
 }
 
@@ -159,6 +171,7 @@ const QuestionAnswering: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentInspector, setCurrentInspector] = useState<Inspector | null>(null)
+  const [templateLoaded, setTemplateLoaded] = useState(false) // Track if template is already loaded
 
   // Get template ID from URL if available
   const getTemplateIdFromUrl = () => {
@@ -248,63 +261,182 @@ const QuestionAnswering: React.FC = () => {
 
   // Fetch template data from API
   useEffect(() => {
+    // Prevent multiple template loads
+    if (templateLoaded) {
+      console.log('Template already loaded, skipping fetch')
+      return
+    }
+
     const fetchTemplate = async () => {
+      console.log('=== STARTING TEMPLATE FETCH ===')
       setIsLoading(true)
       setError(null)
 
       const templateId = getTemplateIdFromUrl()
+      console.log('Template ID from URL:', templateId)
 
       if (templateId) {
         try {
+          console.log('Fetching template from API...')
           // First try to fetch with access check (for shared templates)
           let data;
           try {
+            console.log('Trying access-check endpoint...')
             data = await fetchData(`users/templates/${templateId}/access-check/`);
+            console.log('Access-check successful')
           } catch (error) {
-            console.log('Access check failed, trying regular endpoint');
+            console.log('Access check failed, trying regular endpoint...')
             data = await fetchData(`users/templates/${templateId}/`);
+            console.log('Regular endpoint successful')
           }
-          console.log('Loaded template data:', data)
 
-          // Transform the data to match our expected format if needed
+          console.log('Raw API response:', data)
+          console.log('Number of sections in API response:', data.sections?.length)
+
+          // Debug: Log the entire raw data structure
+          console.log('=== FULL API RESPONSE DEBUG ===')
+          console.log(JSON.stringify(data, null, 2))
+
+          // Validate the API response
+          if (!data.sections || !Array.isArray(data.sections)) {
+            throw new Error('Invalid template data: sections missing or not an array')
+          }
+
+          // Transform the data to match our expected format
           const transformedTemplate: Template = {
             id: data.id.toString(),
             title: data.title,
             description: data.description || "Complete all required fields in this inspection",
             logo: data.logo || "/placeholder.svg?height=80&width=80",
-            sections: data.sections.map((section: any) => ({
-              id: section.id.toString(),
-              title: section.title,
-              description: section.description || "",
-              questions: section.questions.map((question: any) => ({
-                id: question.id.toString(),
-                text: question.text,
-                responseType: mapResponseType(question.response_type),
-                required: question.required || false,
-                flagged: question.flagged || false,
-                options: question.options || [],
-                value: question.value || null,
-                logicRules: question.logic_rules || [],
-                multipleSelection: question.multiple_selection || false
-              }))
-            }))
+            sections: data.sections.map((section: any, index: number) => {
+              console.log(`Processing section ${index + 1}: "${section.title}" (ID: ${section.id})`)
+
+              if (!section.questions || !Array.isArray(section.questions)) {
+                console.warn(`Section ${section.title} has no questions or invalid questions array`)
+                return {
+                  id: section.id.toString(),
+                  title: section.title,
+                  description: section.description || "",
+                  questions: []
+                }
+              }
+
+              return {
+                id: section.id.toString(),
+                title: section.title,
+                description: section.description || "",
+                questions: section.questions.map((question: any) => {
+                  console.log(`  - Processing question: "${question.text}" with response_type: "${question.response_type}"`)
+
+                  // Transform options from backend format to frontend format
+                  let options: string[] = [];
+                  if (question.options && Array.isArray(question.options)) {
+                    if (question.options.length > 0 && typeof question.options[0] === 'object' && question.options[0] !== null) {
+                      // Backend format: array of {id, text, order} objects
+                      options = question.options
+                        .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+                        .map((option: any) => option.text);
+                    } else {
+                      // Already in frontend format: array of strings
+                      options = question.options;
+                    }
+                  }
+
+                  console.log(`    - Options for "${question.text}":`, options)
+
+                  // Debug logic rules
+                  console.log(`    - Logic rules for "${question.text}":`, question.logic_rules)
+                  console.log(`    - Raw question object:`, question)
+                  console.log(`    - All question keys:`, Object.keys(question))
+
+                  // Check if logic rules exist in different formats
+                  if (question.logic_rules) {
+                    console.log(`    - Found logic_rules (snake_case):`, question.logic_rules)
+                  }
+                  if ((question as any).logicRules) {
+                    console.log(`    - Found logicRules (camelCase):`, (question as any).logicRules)
+                  }
+
+                  // Transform logic rules to ensure consistent format
+                  let logicRules: LogicRule[] = []
+                  if (question.logic_rules && Array.isArray(question.logic_rules)) {
+                    logicRules = question.logic_rules.map((rule: any) => ({
+                      id: rule.id,
+                      condition: rule.condition,
+                      value: rule.value,
+                      trigger: rule.trigger,
+                      message: rule.message || '',
+                      // Handle both camelCase and snake_case for subQuestion
+                      subQuestion: rule.subQuestion || rule.sub_question ? {
+                        text: (rule.subQuestion || rule.sub_question)?.text || '',
+                        responseType: (rule.subQuestion || rule.sub_question)?.responseType ||
+                                     (rule.subQuestion || rule.sub_question)?.response_type || 'Text',
+                        options: (rule.subQuestion || rule.sub_question)?.options
+                      } : undefined
+                    }))
+                  }
+
+                  const transformedQuestion = {
+                    id: question.id.toString(),
+                    text: question.text,
+                    responseType: mapResponseType(question.response_type),
+                    required: question.required || false,
+                    flagged: question.flagged || false,
+                    options: options,
+                    value: question.value || null,
+                    logicRules: logicRules,
+                    multipleSelection: question.multiple_selection || false
+                  }
+
+                  console.log(`    - Transformed question:`, transformedQuestion)
+                  console.log(`    - Raw question from backend:`, question)
+                  console.log(`    - Logic rules for "${question.text}":`, transformedQuestion.logicRules)
+                  console.log(`    - Raw logic_rules field:`, question.logic_rules)
+                  console.log(`    - Raw logicRules field:`, (question as any).logicRules)
+                  if (transformedQuestion.logicRules && transformedQuestion.logicRules.length > 0) {
+                    console.log(`    - ✅ Question "${question.text}" has ${transformedQuestion.logicRules.length} logic rules`)
+                    transformedQuestion.logicRules.forEach((rule: LogicRule, index: number) => {
+                      console.log(`      Rule ${index + 1}:`, rule)
+                    })
+                  } else {
+                    console.log(`    - ❌ Question "${question.text}" has NO logic rules`)
+                  }
+                  return transformedQuestion
+                })
+              }
+            })
           }
 
+          console.log('Final transformed template:')
+          console.log('- Sections count:', transformedTemplate.sections.length)
+          console.log('- Section titles:', transformedTemplate.sections.map(s => s.title))
+          console.log('- Section IDs:', transformedTemplate.sections.map(s => s.id))
+
           setTemplate(transformedTemplate)
+          setTemplateLoaded(true) // Mark template as loaded
+          console.log('=== TEMPLATE SET SUCCESSFULLY ===')
 
           // After loading the template, fetch the inspector info
           await fetchInspectorInfo();
         } catch (error) {
-          console.error('Error loading template:', error)
+          console.error('Error loading template from API:', error)
+          console.log('Falling back to default template...')
           setError('Failed to load template. Using default template.')
-          setTemplate(getDefaultTemplate())
+          const defaultTemplate = getDefaultTemplate()
+          console.log('Default template sections:', defaultTemplate.sections.length)
+          setTemplate(defaultTemplate)
+          setTemplateLoaded(true) // Mark template as loaded even for default
         }
       } else {
-        // No template ID provided, use default template
-        setTemplate(getDefaultTemplate())
+        console.log('No template ID provided, using default template...')
+        const defaultTemplate = getDefaultTemplate()
+        console.log('Default template sections:', defaultTemplate.sections.length)
+        setTemplate(defaultTemplate)
+        setTemplateLoaded(true) // Mark template as loaded
       }
 
       setIsLoading(false)
+      console.log('=== TEMPLATE FETCH COMPLETE ===')
     }
 
     fetchTemplate()
@@ -313,6 +445,7 @@ const QuestionAnswering: React.FC = () => {
   // Map backend response_type to frontend ResponseType
   const mapResponseType = (type: string): ResponseType => {
     const typeMap: {[key: string]: ResponseType} = {
+      // Backend format variations
       'site': 'Site',
       'inspection_date': 'Inspection date',
       'person': 'Person',
@@ -325,10 +458,37 @@ const QuestionAnswering: React.FC = () => {
       'slider': 'Slider',
       'media': 'Media',
       'annotation': 'Annotation',
-      'date_time': 'Date & Time'
+      'date_time': 'Date & Time',
+
+      // Alternative formats that might come from backend
+      'Site': 'Site',
+      'Inspection date': 'Inspection date',
+      'Person': 'Person',
+      'Inspection location': 'Inspection location',
+      'Text': 'Text',
+      'Number': 'Number',
+      'Checkbox': 'Checkbox',
+      'Yes/No': 'Yes/No',
+      'Multiple choice': 'Multiple choice',
+      'Slider': 'Slider',
+      'Media': 'Media',
+      'Annotation': 'Annotation',
+      'Date & Time': 'Date & Time',
+
+      // Additional possible variations
+      'yes/no': 'Yes/No',
+      'yesno': 'Yes/No',
+      'multiplechoice': 'Multiple choice',
+      'multi_choice': 'Multiple choice',
+      'datetime': 'Date & Time',
+      'date_and_time': 'Date & Time',
+      'signature': 'Annotation',
+      'sign': 'Annotation'
     }
 
-    return typeMap[type.toLowerCase()] || 'Text'
+    const mappedType = typeMap[type] || typeMap[type.toLowerCase()] || 'Text'
+    console.log(`Mapping response type: "${type}" -> "${mappedType}"`)
+    return mappedType
   }
 
   // Default template to use if API fetch fails or no template ID is provided
@@ -414,6 +574,50 @@ const QuestionAnswering: React.FC = () => {
                 trigger: "display_message",
                 message: "Warning: There should be at least 2 fire extinguishers",
               },
+              {
+                id: "rule3",
+                condition: "equal to",
+                value: 3,
+                trigger: "notify",
+                message: "Maintenance team has been notified about the fire extinguisher count",
+              },
+              {
+                id: "rule4",
+                condition: "equal to",
+                value: 4,
+                trigger: "take_action",
+                message: "Schedule maintenance check for all fire extinguishers",
+              },
+              {
+                id: "rule5",
+                condition: "equal to",
+                value: 5,
+                trigger: "require_evidence",
+                message: "Please upload proof of the 5 fire extinguishers",
+              },
+              {
+                id: "rule6",
+                condition: "equal to",
+                value: 5,
+                trigger: "ask_questions",
+                message: "Additional question triggered",
+                subQuestion: {
+                  text: "Please provide additional details about the 5 fire extinguishers",
+                  responseType: "Text"
+                }
+              },
+              {
+                id: "rule7",
+                condition: "greater than",
+                value: 6,
+                trigger: "ask_questions",
+                message: "Multiple choice question triggered",
+                subQuestion: {
+                  text: "What type of fire extinguishers are they?",
+                  responseType: "Multiple choice",
+                  options: ["CO2", "Foam", "Water", "Dry Powder"]
+                }
+              },
             ],
           },
           {
@@ -428,8 +632,51 @@ const QuestionAnswering: React.FC = () => {
           },
           {
             id: "q8",
+            text: "Are emergency evacuation routes clearly marked?",
+            responseType: "Yes/No",
+            required: true,
+            flagged: true,
+            value: null,
+            logicRules: [
+              {
+                id: "rule8",
+                condition: "is",
+                value: "No",
+                trigger: "ask_questions",
+                message: "Additional information required",
+                subQuestion: {
+                  text: "Please describe what needs to be improved with the evacuation route markings",
+                  responseType: "Text"
+                }
+              },
+              {
+                id: "rule9",
+                condition: "is",
+                value: "No",
+                trigger: "require_evidence",
+                message: "Please upload a photo showing the unclear evacuation routes",
+              },
+              {
+                id: "rule10",
+                condition: "is",
+                value: "Yes",
+                trigger: "display_message",
+                message: "Great! Clear evacuation routes are essential for safety",
+              },
+            ],
+          },
+          {
+            id: "q9",
             text: "Upload a photo of the emergency assembly point",
             responseType: "Media",
+            required: true,
+            flagged: false,
+            value: null,
+          },
+          {
+            id: "q10",
+            text: "Inspector signature",
+            responseType: "Annotation",
             required: true,
             flagged: false,
             value: null,
@@ -441,7 +688,7 @@ const QuestionAnswering: React.FC = () => {
         title: "Additional Comments",
         questions: [
           {
-            id: "q9",
+            id: "q11",
             text: "Any additional comments or concerns?",
             responseType: "Text",
             required: false,
@@ -459,8 +706,15 @@ const QuestionAnswering: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [activeMessages, setActiveMessages] = useState<Record<string, string>>({})
+  const [conditionalEvidence, setConditionalEvidence] = useState<Record<string, any>>({})
+  const [activeConditionalFields, setActiveConditionalFields] = useState<Record<string, LogicRule[]>>({})
+  const [conditionalQuestions, setConditionalQuestions] = useState<Record<string, Question[]>>({})
+  const [conditionalAnswers, setConditionalAnswers] = useState<Record<string, any>>({})
+  const [notifications, setNotifications] = useState<Record<string, string>>({})
   const [assignment, setAssignment] = useState<any>(null)
   const [assignmentError, setAssignmentError] = useState<string | null>(null)
+  const [showSignatureModal, setShowSignatureModal] = useState(false)
+  const [activeQuestion, setActiveQuestion] = useState<Question | null>(null)
 
   // Update answers when template changes
   useEffect(() => {
@@ -481,6 +735,9 @@ const QuestionAnswering: React.FC = () => {
   useEffect(() => {
     if (!template || !currentInspector) return
 
+    console.log('=== INSPECTOR UPDATE EFFECT ===')
+    console.log('Template sections before inspector update:', template.sections.length)
+
     // Find the inspector question in the template
     let inspectorQuestionId: string | null = null;
 
@@ -495,51 +752,184 @@ const QuestionAnswering: React.FC = () => {
 
     // If we found the inspector question and it doesn't have a value yet, set it
     if (inspectorQuestionId && (!answers[inspectorQuestionId] || answers[inspectorQuestionId] === "")) {
-      // Use a direct state update to avoid circular dependencies
+      console.log('Auto-filling inspector field:', inspectorQuestionId, 'with:', currentInspector.name)
+
+      // Only update answers, don't modify the template structure
       setAnswers(prev => ({
         ...prev,
         [inspectorQuestionId as string]: currentInspector.name
       }));
 
-      // Also update the template
-      setTemplate(prev => {
-        if (!prev) return prev;
-
-        return {
-          ...prev,
-          sections: prev.sections.map(section => ({
-            ...section,
-            questions: section.questions.map(q =>
-              q.id === inspectorQuestionId ? { ...q, value: currentInspector.name } : q
-            )
-          }))
-        };
-      });
-
-      console.log('Auto-filled inspector name:', currentInspector.name);
+      console.log('Inspector field auto-filled, template sections remain:', template.sections.length);
     }
-  }, [currentInspector, template, answers])
+  }, [currentInspector, template?.id]) // Only depend on inspector and template ID, not the full template
 
-  // Check for triggered messages when answers change
+  // Check for triggered messages and conditional fields when answers change
   useEffect(() => {
-    if (!template) return
+    console.log('=== CONDITIONAL LOGIC USEEFFECT TRIGGERED ===')
+    console.log('Template exists:', !!template)
+    console.log('Current answers:', answers)
+
+    if (!template) {
+      console.log('No template, returning early')
+      return
+    }
+
+    console.log('=== CHECKING CONDITIONAL LOGIC ===')
+    console.log('Current answers:', answers)
 
     const messages: Record<string, string> = {}
+    const conditionalFields: Record<string, LogicRule[]> = {}
+    const dynamicQuestions: Record<string, Question[]> = {}
+    const notificationMessages: Record<string, string> = {}
 
     template.sections.forEach((section) => {
       section.questions.forEach((question) => {
+        // Use the current answer for this question
+        const currentAnswer = answers[question.id]
+        const questionWithAnswer = { ...question, value: currentAnswer }
+
+        console.log(`Checking question "${question.text}" (ID: ${question.id})`)
+        console.log(`  - Current answer: ${currentAnswer}`)
+        console.log(`  - Logic rules count: ${question.logicRules?.length || 0}`)
+        console.log(`  - Logic rules:`, question.logicRules)
+
         if (question.logicRules && question.logicRules.length > 0) {
+          const activeRules: LogicRule[] = []
+
           for (const rule of question.logicRules) {
-            if (rule.trigger === "display_message" && isConditionMet(question, rule) && rule.message) {
-              messages[question.id] = rule.message
+            console.log(`  - Checking rule: ${rule.condition} ${rule.value} (trigger: ${rule.trigger})`)
+            const conditionMet = isConditionMet(questionWithAnswer, rule)
+            console.log(`  - Condition met: ${conditionMet}`)
+
+            if (conditionMet) {
+              console.log(`  - ✅ Condition met! Executing trigger: ${rule.trigger}`)
+              console.log(`  - Rule details:`, JSON.stringify(rule, null, 2))
+
+              switch (rule.trigger) {
+                case "display_message":
+                  if (rule.message) {
+                    messages[question.id] = `💬 ${rule.message}`
+                    console.log(`  - ✅ Display message set: ${rule.message}`)
+                    console.log(`  - Messages object now:`, messages)
+                  } else {
+                    console.log(`  - ❌ Display message rule has no message`)
+                  }
+                  break
+
+                case "require_evidence":
+                  activeRules.push(rule)
+                  if (rule.message) {
+                    messages[question.id] = `📸 EVIDENCE REQUIRED: ${rule.message}`
+                    console.log(`  - ✅ Evidence required: ${rule.message}`)
+                  }
+                  break
+
+                case "require_action":
+                  if (rule.message) {
+                    messages[question.id] = `⚠️ ACTION REQUIRED: ${rule.message}`
+                    console.log(`  - ✅ Action required: ${rule.message}`)
+                    console.log(`  - Messages object now:`, messages)
+                  } else {
+                    console.log(`  - ❌ Action required rule has no message`)
+                  }
+                  break
+
+                case "notify":
+                  if (rule.message) {
+                    notificationMessages[question.id] = rule.message
+                    messages[question.id] = `🔔 NOTIFICATION: ${rule.message}`
+                    console.log(`  - ✅ Notification set: ${rule.message}`)
+                    console.log(`  - Messages object now:`, messages)
+                    console.log(`  - Notification messages:`, notificationMessages)
+                  } else {
+                    console.log(`  - ❌ Notify rule has no message`)
+                  }
+                  break
+
+                case "ask_questions":
+                  // Handle both camelCase and snake_case formats from backend
+                  const subQuestion = rule.subQuestion || (rule as any).sub_question
+                  if (subQuestion) {
+                    console.log(`  - ✅ Creating conditional question: ${subQuestion.text}`)
+
+                    // Handle both responseType and response_type
+                    const responseType = subQuestion.responseType || subQuestion.response_type || 'Text'
+
+                    // Create a dynamic question based on the rule
+                    const dynamicQuestion: Question = {
+                      id: `${question.id}_${rule.id}_conditional`,
+                      text: subQuestion.text,
+                      responseType: responseType,
+                      required: true, // Conditional questions are typically required
+                      flagged: false,
+                      options: subQuestion.options,
+                      value: conditionalAnswers[`${question.id}_${rule.id}_conditional`] || null,
+                      logicRules: [] // Conditional questions don't have their own logic rules
+                    }
+
+                    if (!dynamicQuestions[question.id]) {
+                      dynamicQuestions[question.id] = []
+                    }
+
+                    // Check if this dynamic question already exists to avoid duplicates
+                    const existingQuestion = dynamicQuestions[question.id].find(q => q.id === dynamicQuestion.id)
+                    if (!existingQuestion) {
+                      dynamicQuestions[question.id].push(dynamicQuestion)
+                      console.log(`  - ✅ Dynamic question added:`, dynamicQuestion)
+                    } else {
+                      console.log(`  - ℹ️ Dynamic question already exists, updating:`, dynamicQuestion.id)
+                      // Update the existing question with current value
+                      existingQuestion.value = dynamicQuestion.value
+                    }
+                    console.log(`  - Dynamic questions object now:`, dynamicQuestions)
+
+                    // Also add a message to indicate the conditional question
+                    if (!messages[question.id]) {
+                      messages[question.id] = `❓ Additional question required based on your answer`
+                    }
+                  } else {
+                    console.log(`  - ❌ Ask questions rule has no subQuestion or sub_question`)
+                    console.log(`  - Rule object:`, rule)
+                  }
+                  break
+
+                case "take_action":
+                  if (rule.message) {
+                    messages[question.id] = `🎯 TAKE ACTION: ${rule.message}`
+                    console.log(`  - ✅ Take action message set: ${rule.message}`)
+                  } else {
+                    console.log(`  - ❌ Take action rule has no message`)
+                  }
+                  break
+
+                default:
+                  console.log(`  - ❌ Unknown trigger type: ${rule.trigger}`)
+                  break
+              }
+            } else {
+              console.log(`  - ❌ Condition NOT met for trigger: ${rule.trigger}`)
             }
+          }
+
+          if (activeRules.length > 0) {
+            conditionalFields[question.id] = activeRules
           }
         }
       })
     })
 
     setActiveMessages(messages)
-  }, [answers, template])
+    setActiveConditionalFields(conditionalFields)
+    setConditionalQuestions(dynamicQuestions)
+    setNotifications(notificationMessages)
+
+    console.log('=== FINAL RESULTS ===')
+    console.log('Active messages:', messages)
+    console.log('Active conditional fields:', conditionalFields)
+    console.log('Dynamic questions:', dynamicQuestions)
+    console.log('Notifications:', notificationMessages)
+  }, [answers, conditionalAnswers, template])
 
   // Redirect to dashboard after 2 seconds when inspection is complete
   useEffect(() => {
@@ -573,23 +963,22 @@ const QuestionAnswering: React.FC = () => {
   const currentSection = template.sections[currentSectionIndex]
 
   const handleAnswerChange = (questionId: string, value: any) => {
+    console.log('=== ANSWER CHANGE ===')
+    console.log('Question ID:', questionId, 'New value:', value)
+    console.log('Event triggered successfully - selection is working!')
+
+    // Add alert for testing
+    if (value === 5 || value === "5") {
+      alert(`DEBUG: You entered 5! This should trigger logic rules.`)
+    }
+
     setAnswers((prev) => ({
       ...prev,
       [questionId]: value,
     }))
 
-    // Update the template with the new value
-    setTemplate((prev) => {
-      if (!prev) return prev
-
-      return {
-        ...prev,
-        sections: prev.sections.map((section) => ({
-          ...section,
-          questions: section.questions.map((q) => (q.id === questionId ? { ...q, value } : q)),
-        }))
-      }
-    })
+    // Don't update the template structure - just store answers separately
+    // This prevents any potential duplication issues from template modifications
 
     // Clear validation error if value is provided
     if (value !== null && value !== undefined && value !== "") {
@@ -598,6 +987,96 @@ const QuestionAnswering: React.FC = () => {
         delete newErrors[questionId]
         return newErrors
       })
+    }
+
+    console.log('Answer updated, template structure unchanged')
+  }
+
+  const handleConditionalAnswerChange = (questionId: string, value: any) => {
+    console.log('=== CONDITIONAL ANSWER CHANGE ===')
+    console.log('Conditional Question ID:', questionId, 'New value:', value)
+
+    setConditionalAnswers((prev) => ({
+      ...prev,
+      [questionId]: value,
+    }))
+
+    // Clear validation error if value is provided
+    if (value !== null && value !== undefined && value !== "") {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[questionId]
+        return newErrors
+      })
+    }
+
+    console.log('Conditional answer updated')
+  }
+
+  // Helper function to get appropriate CSS class for message type
+  const getMessageClassName = (message: string): string => {
+    if (message.startsWith('💬')) {
+      return 'inspection-display-message'
+    } else if (message.startsWith('🔔 NOTIFICATION:')) {
+      return 'inspection-notification-message'
+    } else if (message.startsWith('📸 EVIDENCE REQUIRED:')) {
+      return 'inspection-evidence-message'
+    } else if (message.startsWith('⚠️ ACTION REQUIRED:')) {
+      return 'inspection-action-message'
+    } else if (message.startsWith('🎯 TAKE ACTION:')) {
+      return 'inspection-action-message'
+    } else if (message.startsWith('❓')) {
+      return 'inspection-display-message'
+    } else {
+      return 'inspection-warning-message'
+    }
+  }
+
+  // Helper function to get appropriate icon for message type
+  const getMessageIcon = (message: string): React.ReactElement => {
+    if (message.startsWith('💬')) {
+      return <MessageCircle size={16} />
+    } else if (message.startsWith('🔔 NOTIFICATION:')) {
+      return <Bell size={16} />
+    } else if (message.startsWith('📸 EVIDENCE REQUIRED:')) {
+      return <Camera size={16} />
+    } else if (message.startsWith('⚠️ ACTION REQUIRED:')) {
+      return <AlertTriangle size={16} />
+    } else if (message.startsWith('🎯 TAKE ACTION:')) {
+      return <AlertTriangle size={16} />
+    } else if (message.startsWith('❓')) {
+      return <HelpCircle size={16} />
+    } else {
+      return <AlertTriangle size={16} />
+    }
+  }
+
+  const handleConditionalMediaUpload = async (questionId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    try {
+      const file = files[0]
+      const reader = new FileReader()
+
+      reader.onload = async (event) => {
+        if (event.target?.result) {
+          try {
+            // Resize image if it's an image
+            const resizedImage = file.type.startsWith("image/")
+              ? await resizeImage(event.target.result as string)
+              : (event.target.result as string)
+
+            handleConditionalAnswerChange(questionId, resizedImage)
+          } catch (error) {
+            console.error("Error processing conditional media file:", error)
+          }
+        }
+      }
+
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error uploading conditional media:", error)
     }
   }
 
@@ -630,6 +1109,39 @@ const QuestionAnswering: React.FC = () => {
     }
   }
 
+  const handleConditionalEvidenceUpload = async (questionId: string, ruleId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    try {
+      const file = files[0]
+      const reader = new FileReader()
+
+      reader.onload = async (event) => {
+        if (event.target?.result) {
+          try {
+            // Resize image if it's an image
+            const resizedImage = file.type.startsWith("image/")
+              ? await resizeImage(event.target.result as string)
+              : (event.target.result as string)
+
+            // Store the evidence for this specific rule
+            setConditionalEvidence((prev) => ({
+              ...prev,
+              [`${questionId}_${ruleId}`]: resizedImage
+            }))
+          } catch (error) {
+            console.error("Error processing evidence file:", error)
+          }
+        }
+      }
+
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error uploading evidence:", error)
+    }
+  }
+
   const validateSection = (): boolean => {
     const errors: Record<string, string> = {}
 
@@ -639,6 +1151,33 @@ const QuestionAnswering: React.FC = () => {
         if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
           errors[question.id] = "This field is required"
         }
+      }
+
+      // Check if conditional evidence is required for this question
+      const conditionalRules = activeConditionalFields[question.id]
+      if (conditionalRules && conditionalRules.length > 0) {
+        conditionalRules.forEach((rule) => {
+          if (rule.trigger === "require_evidence") {
+            const evidenceKey = `${question.id}_${rule.id}`
+            const evidence = conditionalEvidence[evidenceKey]
+            if (!evidence) {
+              errors[question.id] = `Evidence is required: ${rule.message || 'Please upload proof'}`
+            }
+          }
+        })
+      }
+
+      // Check conditional questions for this question
+      const dynamicQuestions = conditionalQuestions[question.id]
+      if (dynamicQuestions && dynamicQuestions.length > 0) {
+        dynamicQuestions.forEach((conditionalQuestion) => {
+          if (conditionalQuestion.required) {
+            const value = conditionalAnswers[conditionalQuestion.id]
+            if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
+              errors[conditionalQuestion.id] = "This conditional field is required"
+            }
+          }
+        })
       }
     })
 
@@ -702,6 +1241,35 @@ const QuestionAnswering: React.FC = () => {
             hasErrors = true
           }
         }
+
+        // Check if conditional evidence is required for this question
+        const conditionalRules = activeConditionalFields[question.id]
+        if (conditionalRules && conditionalRules.length > 0) {
+          conditionalRules.forEach((rule) => {
+            if (rule.trigger === "require_evidence") {
+              const evidenceKey = `${question.id}_${rule.id}`
+              const evidence = conditionalEvidence[evidenceKey]
+              if (!evidence) {
+                allErrors[question.id] = `Evidence is required: ${rule.message || 'Please upload proof'}`
+                hasErrors = true
+              }
+            }
+          })
+        }
+
+        // Check conditional questions for this question
+        const dynamicQuestions = conditionalQuestions[question.id]
+        if (dynamicQuestions && dynamicQuestions.length > 0) {
+          dynamicQuestions.forEach((conditionalQuestion) => {
+            if (conditionalQuestion.required) {
+              const value = conditionalAnswers[conditionalQuestion.id]
+              if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
+                allErrors[conditionalQuestion.id] = "This conditional field is required"
+                hasErrors = true
+              }
+            }
+          })
+        }
       })
     })
 
@@ -740,6 +1308,8 @@ const QuestionAnswering: React.FC = () => {
       const submissionData = {
         template_id: templateId,
         answers: answers,
+        conditional_answers: conditionalAnswers,
+        conditional_evidence: conditionalEvidence,
         completed_by: currentInspector?.id || null,
         assignment_id: assignmentId
       }
@@ -787,6 +1357,249 @@ const QuestionAnswering: React.FC = () => {
     }
   }
 
+  const renderConditionalResponseInput = (question: Question) => {
+    const value = conditionalAnswers[question.id]
+    console.log(`Rendering conditional input for question "${question.text}" with responseType: "${question.responseType}"`)
+
+    switch (question.responseType) {
+      case "Text":
+        return (
+          <textarea
+            className="inspection-text-input inspection-conditional-input"
+            value={value || ""}
+            onChange={(e) => handleConditionalAnswerChange(question.id, e.target.value)}
+            placeholder="Enter your answer"
+          />
+        )
+
+      case "Number":
+        return (
+          <input
+            type="number"
+            className="inspection-number-input inspection-conditional-input"
+            value={value || ""}
+            onChange={(e) => handleConditionalAnswerChange(question.id, Number(e.target.value))}
+            placeholder="0"
+          />
+        )
+
+      case "Slider":
+        return (
+          <div className="inspection-slider-container">
+            <input
+              type="range"
+              className="inspection-slider-input inspection-conditional-input"
+              min="0"
+              max="100"
+              value={value || 0}
+              onChange={(e) => handleConditionalAnswerChange(question.id, Number(e.target.value))}
+            />
+            <div className="inspection-slider-value">{value || 0}</div>
+          </div>
+        )
+
+      case "Yes/No":
+        return (
+          <div className="inspection-yes-no-options">
+            <button
+              className={`inspection-option-button ${value === "Yes" ? "selected" : ""}`}
+              onClick={() => handleConditionalAnswerChange(question.id, "Yes")}
+            >
+              Yes
+            </button>
+            <button
+              className={`inspection-option-button ${value === "No" ? "selected" : ""}`}
+              onClick={() => handleConditionalAnswerChange(question.id, "No")}
+            >
+              No
+            </button>
+            <button
+              className={`inspection-option-button ${value === "N/A" ? "selected" : ""}`}
+              onClick={() => handleConditionalAnswerChange(question.id, "N/A")}
+            >
+              N/A
+            </button>
+          </div>
+        )
+
+      case "Multiple choice":
+        if (!question.options || !Array.isArray(question.options) || question.options.length === 0) {
+          return (
+            <div className="inspection-multiple-choice-options">
+              <div style={{ color: 'red', fontStyle: 'italic' }}>
+                No options available for this question
+              </div>
+            </div>
+          )
+        }
+
+        return (
+          <div className="inspection-multiple-choice-options">
+            {question.options.map((option, index) => (
+              <label key={index} className="inspection-choice-option">
+                <input
+                  type={question.multipleSelection ? "checkbox" : "radio"}
+                  name={`conditional-question-${question.id}`}
+                  checked={
+                    question.multipleSelection ? Array.isArray(value) && value.includes(option) : value === option
+                  }
+                  onChange={() => {
+                    if (question.multipleSelection) {
+                      const currentValues = Array.isArray(value) ? [...value] : []
+                      if (currentValues.includes(option)) {
+                        handleConditionalAnswerChange(
+                          question.id,
+                          currentValues.filter((v) => v !== option),
+                        )
+                      } else {
+                        handleConditionalAnswerChange(question.id, [...currentValues, option])
+                      }
+                    } else {
+                      handleConditionalAnswerChange(question.id, option)
+                    }
+                  }}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        )
+
+      case "Media":
+        return (
+          <div className="inspection-media-upload-container">
+            <input
+              type="file"
+              accept="image/*,video/*"
+              id={`conditional-media-${question.id}`}
+              onChange={(e) => handleConditionalMediaUpload(question.id, e)}
+              className="sr-only"
+            />
+
+            {!value ? (
+              <label htmlFor={`conditional-media-${question.id}`} className="inspection-media-upload-button">
+                <ImageIcon size={20} />
+                <span>Upload media</span>
+              </label>
+            ) : (
+              <div className="inspection-media-preview">
+                <img src={value || "/placeholder.svg"} alt="Uploaded media" className="inspection-media-image" />
+                <button className="inspection-media-remove-button" onClick={() => handleConditionalAnswerChange(question.id, null)}>
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        )
+
+      case "Site":
+        const siteOptions = ["Main Site", "Secondary Site", "Remote Location", "Headquarters"]
+        return (
+          <div className="inspection-dropdown-container">
+            <select
+              value={value || ""}
+              onChange={(e) => handleConditionalAnswerChange(question.id, e.target.value)}
+              className="inspection-dropdown-input inspection-conditional-input"
+            >
+              <option value="" disabled>
+                Select site
+              </option>
+              {siteOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="inspection-dropdown-icon" />
+          </div>
+        )
+
+      case "Person":
+        const personOptions = ["John Doe", "Jane Smith", "Alex Johnson", "Sam Wilson"]
+        return (
+          <div className="inspection-dropdown-container">
+            <select
+              value={value || ""}
+              onChange={(e) => handleConditionalAnswerChange(question.id, e.target.value)}
+              className="inspection-dropdown-input inspection-conditional-input"
+            >
+              <option value="" disabled>
+                Select person
+              </option>
+              {personOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="inspection-dropdown-icon" />
+          </div>
+        )
+
+      case "Inspection location":
+        const locationOptions = ["Main Building", "Warehouse", "Office", "Factory Floor", "Parking Lot"]
+        return (
+          <div className="inspection-dropdown-container">
+            <select
+              value={value || ""}
+              onChange={(e) => handleConditionalAnswerChange(question.id, e.target.value)}
+              className="inspection-dropdown-input inspection-conditional-input"
+            >
+              <option value="" disabled>
+                Select location
+              </option>
+              {locationOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="inspection-dropdown-icon" />
+          </div>
+        )
+
+      case "Inspection date":
+        return (
+          <input
+            type="datetime-local"
+            className="inspection-date-time-input inspection-conditional-input"
+            value={value || ""}
+            onChange={(e) => handleConditionalAnswerChange(question.id, e.target.value)}
+          />
+        )
+
+      default:
+        return <div>Unsupported response type for conditional question: {question.responseType}</div>
+    }
+  }
+
+  const renderConditionalQuestion = (conditionalQuestion: Question) => {
+    const error = validationErrors[conditionalQuestion.id]
+
+    return (
+      <div className="inspection-conditional-question-container" key={conditionalQuestion.id}>
+        <div className="inspection-conditional-question-header">
+          <div className="inspection-conditional-question-text">
+            ↳ {conditionalQuestion.text}
+            {conditionalQuestion.required && <span className="inspection-required-indicator">*</span>}
+            {conditionalQuestion.flagged && <span className="inspection-flagged-indicator">⚑</span>}
+          </div>
+        </div>
+
+        <div className="inspection-conditional-question-response">
+          {renderConditionalResponseInput(conditionalQuestion)}
+
+          {error && (
+            <div className="inspection-error-message">
+              <AlertTriangle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const renderQuestionResponse = (question: Question) => {
     // We don't need to use value here as it's used in renderResponseInput
     const error = validationErrors[question.id]
@@ -805,6 +1618,57 @@ const QuestionAnswering: React.FC = () => {
         <div className="inspection-question-response">
           {renderResponseInput(question)}
 
+          {/* Render conditional evidence upload fields */}
+          {activeConditionalFields[question.id] && activeConditionalFields[question.id].map((rule) => {
+            if (rule.trigger === "require_evidence") {
+              const evidenceKey = `${question.id}_${rule.id}`
+              const evidence = conditionalEvidence[evidenceKey]
+
+              return (
+                <div key={rule.id} className="inspection-conditional-evidence-container">
+                  <div className="inspection-conditional-evidence-label">
+                    📸 Evidence Required: {rule.message || 'Please upload proof'}
+                  </div>
+
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    id={`evidence-${evidenceKey}`}
+                    onChange={(e) => handleConditionalEvidenceUpload(question.id, rule.id, e)}
+                    className="sr-only"
+                  />
+
+                  {!evidence ? (
+                    <label htmlFor={`evidence-${evidenceKey}`} className="inspection-evidence-upload-button">
+                      <ImageIcon size={20} />
+                      <span>Upload Evidence</span>
+                    </label>
+                  ) : (
+                    <div className="inspection-evidence-preview">
+                      <img src={evidence} alt="Evidence" className="inspection-evidence-image" />
+                      <button
+                        className="inspection-evidence-remove-button"
+                        onClick={() => setConditionalEvidence(prev => {
+                          const newEvidence = { ...prev }
+                          delete newEvidence[evidenceKey]
+                          return newEvidence
+                        })}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            return null
+          })}
+
+          {/* Render conditional questions */}
+          {conditionalQuestions[question.id] && conditionalQuestions[question.id].map((conditionalQuestion) =>
+            renderConditionalQuestion(conditionalQuestion)
+          )}
+
           {error && (
             <div className="inspection-error-message">
               <AlertTriangle size={16} />
@@ -813,8 +1677,8 @@ const QuestionAnswering: React.FC = () => {
           )}
 
           {message && (
-            <div className="inspection-warning-message">
-              <AlertTriangle size={16} />
+            <div className={getMessageClassName(message)}>
+              {getMessageIcon(message)}
               <span>{message}</span>
             </div>
           )}
@@ -825,6 +1689,7 @@ const QuestionAnswering: React.FC = () => {
 
   const renderResponseInput = (question: Question) => {
     const value = answers[question.id]
+    console.log(`Rendering input for question "${question.text}" with responseType: "${question.responseType}"`)
 
     switch (question.responseType) {
       case "Text":
@@ -865,19 +1730,28 @@ const QuestionAnswering: React.FC = () => {
           <div className="inspection-yes-no-options">
             <button
               className={`inspection-option-button ${value === "Yes" ? "selected" : ""}`}
-              onClick={() => handleAnswerChange(question.id, "Yes")}
+              onClick={() => {
+                console.log('Yes button clicked for question:', question.id)
+                handleAnswerChange(question.id, "Yes")
+              }}
             >
               Yes
             </button>
             <button
               className={`inspection-option-button ${value === "No" ? "selected" : ""}`}
-              onClick={() => handleAnswerChange(question.id, "No")}
+              onClick={() => {
+                console.log('No button clicked for question:', question.id)
+                handleAnswerChange(question.id, "No")
+              }}
             >
               No
             </button>
             <button
               className={`inspection-option-button ${value === "N/A" ? "selected" : ""}`}
-              onClick={() => handleAnswerChange(question.id, "N/A")}
+              onClick={() => {
+                console.log('N/A button clicked for question:', question.id)
+                handleAnswerChange(question.id, "N/A")
+              }}
             >
               N/A
             </button>
@@ -885,9 +1759,19 @@ const QuestionAnswering: React.FC = () => {
         )
 
       case "Multiple choice":
+        if (!question.options || !Array.isArray(question.options) || question.options.length === 0) {
+          return (
+            <div className="inspection-multiple-choice-options">
+              <div style={{ color: 'red', fontStyle: 'italic' }}>
+                No options available for this question
+              </div>
+            </div>
+          )
+        }
+
         return (
           <div className="inspection-multiple-choice-options">
-            {question.options?.map((option, index) => (
+            {question.options.map((option, index) => (
               <label key={index} className="inspection-choice-option">
                 <input
                   type={question.multipleSelection ? "checkbox" : "radio"}
@@ -896,6 +1780,7 @@ const QuestionAnswering: React.FC = () => {
                     question.multipleSelection ? Array.isArray(value) && value.includes(option) : value === option
                   }
                   onChange={() => {
+                    console.log('Multiple choice option clicked:', option, 'for question:', question.id)
                     if (question.multipleSelection) {
                       const currentValues = Array.isArray(value) ? [...value] : []
                       if (currentValues.includes(option)) {
@@ -962,23 +1847,28 @@ const QuestionAnswering: React.FC = () => {
       case "Annotation":
         return (
           <div className="inspection-annotation-container">
-            <input
-              type="file"
-              accept="image/*"
-              id={`annotation-${question.id}`}
-              onChange={(e) => handleMediaUpload(question.id, e)}
-              className="sr-only"
-            />
-
             {!value ? (
-              <label htmlFor={`annotation-${question.id}`} className="inspection-annotation-upload-button">
-                <ImageIcon size={20} />
-                <span>Upload image to annotate</span>
-              </label>
+              <div
+                className="inspection-annotation-placeholder"
+                onClick={() => {
+                  setActiveQuestion(question)
+                  setShowSignatureModal(true)
+                }}
+              >
+                <Edit size={20} />
+                <span>Tap to sign</span>
+              </div>
             ) : (
               <div className="inspection-annotation-preview">
-                <img src={value || "/placeholder.svg"} alt="Annotation" className="inspection-annotation-image" />
-                <button className="inspection-annotation-remove-button" onClick={() => handleAnswerChange(question.id, null)}>
+                <img
+                  src={value}
+                  alt="Signature"
+                  className="inspection-annotation-image"
+                />
+                <button
+                  className="inspection-annotation-remove-button"
+                  onClick={() => handleAnswerChange(question.id, null)}
+                >
                   <X size={16} />
                 </button>
               </div>
@@ -1175,10 +2065,19 @@ const QuestionAnswering: React.FC = () => {
         <div className="inspection-progress-text">
           Section {currentSectionIndex + 1} of {template.sections.length}
         </div>
+        {/* Debug info */}
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+          Debug: Template has {template.sections.length} sections, Current: {currentSectionIndex + 1}
+        </div>
       </div>
 
       <div className="inspection-section-container">
-        <h2 className="inspection-section-title">{currentSection.title}</h2>
+        <h2 className="inspection-section-title">
+          {currentSection.title}
+          <span style={{ fontSize: '12px', color: '#666', marginLeft: '10px' }}>
+            (Section ID: {currentSection.id})
+          </span>
+        </h2>
         {currentSection.description && <p className="inspection-section-description">{currentSection.description}</p>}
 
         <div className="inspection-questions-list">
@@ -1205,6 +2104,135 @@ const QuestionAnswering: React.FC = () => {
         </div>
       </div>
 
+      {/* Signature Modal */}
+      {showSignatureModal && activeQuestion && (
+        <div className="inspection-signature-modal-overlay" onClick={() => setShowSignatureModal(false)}>
+          <div className="inspection-signature-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="inspection-signature-modal-header">
+              <h3>Add Signature</h3>
+              <button
+                className="inspection-signature-modal-close"
+                onClick={() => setShowSignatureModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="inspection-signature-modal-content">
+              <div className="inspection-signature-canvas-container">
+                <canvas
+                  ref={(canvas) => {
+                    if (!canvas) return;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+
+                    // Set canvas size
+                    canvas.width = 400;
+                    canvas.height = 200;
+
+                    // Set canvas style
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+
+                    let isDrawing = false;
+                    let lastX = 0;
+                    let lastY = 0;
+
+                    const startDrawing = (e: MouseEvent | TouchEvent) => {
+                      isDrawing = true;
+                      const rect = canvas.getBoundingClientRect();
+                      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+                      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+                      lastX = clientX - rect.left;
+                      lastY = clientY - rect.top;
+                    };
+
+                    const draw = (e: MouseEvent | TouchEvent) => {
+                      if (!isDrawing) return;
+                      e.preventDefault();
+
+                      const rect = canvas.getBoundingClientRect();
+                      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+                      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+                      const currentX = clientX - rect.left;
+                      const currentY = clientY - rect.top;
+
+                      ctx.beginPath();
+                      ctx.moveTo(lastX, lastY);
+                      ctx.lineTo(currentX, currentY);
+                      ctx.stroke();
+
+                      lastX = currentX;
+                      lastY = currentY;
+                    };
+
+                    const stopDrawing = () => {
+                      isDrawing = false;
+                    };
+
+                    // Mouse events
+                    canvas.addEventListener('mousedown', startDrawing);
+                    canvas.addEventListener('mousemove', draw);
+                    canvas.addEventListener('mouseup', stopDrawing);
+                    canvas.addEventListener('mouseout', stopDrawing);
+
+                    // Touch events
+                    canvas.addEventListener('touchstart', startDrawing);
+                    canvas.addEventListener('touchmove', draw);
+                    canvas.addEventListener('touchend', stopDrawing);
+
+                    // Clear function
+                    const clearCanvas = () => {
+                      ctx.fillStyle = '#ffffff';
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    };
+
+                    // Save function
+                    const saveSignature = () => {
+                      return canvas.toDataURL('image/png');
+                    };
+
+                    // Attach functions to canvas for external access
+                    (canvas as any).__clearCanvas = clearCanvas;
+                    (canvas as any).__saveSignature = saveSignature;
+                  }}
+                  className="inspection-signature-canvas"
+                />
+              </div>
+              <div className="inspection-signature-modal-actions">
+                <button
+                  className="inspection-signature-clear-btn"
+                  onClick={(e) => {
+                    const canvas = e.currentTarget.closest('.inspection-signature-modal-content')?.querySelector('canvas') as any;
+                    if (canvas && canvas.__clearCanvas) {
+                      canvas.__clearCanvas();
+                    }
+                  }}
+                >
+                  Clear
+                </button>
+                <button
+                  className="inspection-signature-save-btn"
+                  onClick={(e) => {
+                    const canvas = e.currentTarget.closest('.inspection-signature-modal-content')?.querySelector('canvas') as any;
+                    if (canvas && canvas.__saveSignature && activeQuestion) {
+                      const signatureData = canvas.__saveSignature();
+                      handleAnswerChange(activeQuestion.id, signatureData);
+                      setShowSignatureModal(false);
+                      setActiveQuestion(null);
+                    }
+                  }}
+                >
+                  Save Signature
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
