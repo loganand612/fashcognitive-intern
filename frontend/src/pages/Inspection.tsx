@@ -46,6 +46,7 @@ interface Question {
   value?: string | string[] | boolean | number | null
   logicRules?: LogicRule[]
   multipleSelection?: boolean
+  siteOptions?: string[]  // Custom site names for Site response type
 }
 
 interface Section {
@@ -385,7 +386,8 @@ const QuestionAnswering: React.FC = () => {
                     options: options,
                     value: question.value || null,
                     logicRules: logicRules,
-                    multipleSelection: question.multiple_selection || false
+                    multipleSelection: question.multiple_selection || false,
+                    siteOptions: question.site_options || question.siteOptions || undefined
                   }
 
                   console.log(`    - Transformed question:`, transformedQuestion)
@@ -1493,7 +1495,7 @@ const QuestionAnswering: React.FC = () => {
         )
 
       case "Site":
-        const siteOptions = ["Main Site", "Secondary Site", "Remote Location", "Headquarters"]
+        const siteOptions = question.siteOptions || ["Main Site", "Secondary Site", "Remote Location", "Headquarters"]
         return (
           <div className="inspection-dropdown-container">
             <select
@@ -1890,7 +1892,7 @@ const QuestionAnswering: React.FC = () => {
         )
 
       case "Site":
-        const siteOptions = ["Main Site", "Secondary Site", "Remote Location", "Headquarters"]
+        const siteOptions = question.siteOptions || ["Main Site", "Secondary Site", "Remote Location", "Headquarters"]
         return (
           <div className="inspection-dropdown-container">
             <select

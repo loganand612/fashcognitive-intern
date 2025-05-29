@@ -473,19 +473,7 @@
   gap: 12px;
 }
 
-.question-drag-handle {
-  cursor: grab;
-  color: var(--color-text-secondary);
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.question-drag-handle:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
+/* Question drag handle styles removed for cleaner design */
 
 .question-number {
   font-size: 14px;
@@ -1381,14 +1369,7 @@
   margin: 8px auto 12px;
 }
 
-.dragging {
-  opacity: 0.5;
-}
-
-.drop-target {
-  background-color: #f0f0f0;
-  border: 1px dashed #000;
-}
+/* Drag and drop styles removed for cleaner design */
 
 .section-actions {
   display: flex;

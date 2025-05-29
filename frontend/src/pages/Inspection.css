@@ -468,14 +468,14 @@
 .inspection-conditional-evidence-container {
   margin-top: 16px;
   padding: 16px;
-  border: 2px solid #fbbf24;
+  border: 2px solid var(--border-gray);
   border-radius: 8px;
-  background-color: #fffbeb;
+  background-color: var(--bg-light);
 }
 
 .inspection-conditional-evidence-label {
   font-weight: 600;
-  color: #92400e;
+  color: var(--text-dark);
   margin-bottom: 12px;
   font-size: 14px;
 }
@@ -486,10 +486,10 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 16px;
-  border: 2px dashed #fbbf24;
+  border: 2px dashed var(--border-gray);
   border-radius: 8px;
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: var(--bg-white);
+  color: var(--text-gray);
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
@@ -497,9 +497,9 @@
 }
 
 .inspection-evidence-upload-button:hover {
-  border-color: #f59e0b;
-  background-color: #fde68a;
-  color: #78350f;
+  border-color: var(--primary-blue);
+  background-color: var(--bg-light);
+  color: var(--primary-blue);
 }
 
 /* Conditional question styles */
@@ -553,7 +553,7 @@
   max-height: 200px;
   object-fit: contain;
   display: block;
-  border: 2px solid #fbbf24;
+  border: 2px solid var(--border-gray);
   border-radius: 8px;
 }
 
@@ -1023,10 +1023,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background-color: #fff3e0;
-  border: 2px solid #ffcc02;
+  background-color: var(--bg-light);
+  border: 2px solid var(--primary-blue);
   border-radius: 8px;
-  color: #e65100;
+  color: var(--primary-blue);
   font-size: 14px;
   font-weight: 600;
   margin-top: 12px;
@@ -1064,27 +1064,27 @@
   0% {
     opacity: 0;
     transform: translateY(-10px) scale(0.95);
-    border-color: #ffcc02;
+    border-color: var(--primary-blue);
   }
   25% {
     opacity: 1;
     transform: translateY(0) scale(1.05);
-    border-color: #ff9800;
+    border-color: var(--primary-blue-hover);
   }
   50% {
     opacity: 1;
     transform: translateY(0) scale(1);
-    border-color: #ffcc02;
+    border-color: var(--primary-blue);
   }
   75% {
     opacity: 1;
     transform: translateY(0) scale(1.02);
-    border-color: #ff9800;
+    border-color: var(--primary-blue-hover);
   }
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
-    border-color: #ffcc02;
+    border-color: var(--primary-blue);
   }
 }
 
@@ -1094,10 +1094,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background-color: #fff3cd;
-  border: 2px solid #ffeaa7;
+  background-color: var(--bg-light);
+  border: 2px solid var(--warning-orange);
   border-radius: 8px;
-  color: #856404;
+  color: var(--warning-orange);
   font-size: 14px;
   font-weight: 500;
   margin-top: 12px;

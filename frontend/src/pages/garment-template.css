@@ -737,19 +737,7 @@
   gap: 12px;
 }
 
-.question-drag-handle {
-  cursor: grab;
-  color: var(--color-text-secondary);
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.question-drag-handle:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
+/* Question drag handle styles removed for cleaner design */
 
 .question-number {
   font-size: 14px;
@@ -2247,93 +2235,7 @@
   max-width: 800px;
 }
 
-.garment-template-date-fields {
-  display: flex;
-  gap: 32px;
-  margin-top: 24px;
-  width: 100%;
-  max-width: 800px;
-}
-
-.garment-template-date-field {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.garment-template-date-field label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.garment-template-required-indicator {
-  color: #e53e3e;
-  font-size: 14px;
-}
-
-.garment-template-date-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.garment-template-date-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--color-text-secondary);
-  pointer-events: none;
-}
-
-.garment-template-date-input {
-  padding: 14px 14px 14px 40px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 14px;
-  background-color: #f9f9f9;
-  width: 100%;
-  transition: all 0.2s ease;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.garment-template-date-input:hover {
-  border-color: #b0b0b0;
-}
-
-.garment-template-date-input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-  background-color: white;
-}
-
-.garment-template-date-input-error {
-  border-color: #e53e3e;
-  background-color: #fff5f5;
-}
-
-.garment-template-date-input-error:focus {
-  border-color: #e53e3e;
-  box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.2);
-}
-
-.garment-template-date-error-message {
-  color: #e53e3e;
-  font-size: 12px;
-  margin-top: 6px;
-  font-weight: 500;
-}
-
-.garment-template-date-helper-text {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 6px;
-}
+/* Date-related styles removed since scheduling functionality was removed */
 
 /* Workflow Navigation Styling */
 .garment-template-workflow-navigation {
@@ -2383,11 +2285,6 @@
 
   .garment-template-access-tab {
     padding: 24px 20px;
-  }
-
-  .garment-template-date-fields {
-    flex-direction: column;
-    gap: 24px;
   }
 }
 
