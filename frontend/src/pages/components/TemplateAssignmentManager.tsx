@@ -219,6 +219,11 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
         notes: assignmentNotes
       };
 
+      console.log('🔍 Frontend assignment data:', assignmentData);
+      console.log('🔍 Template ID:', templateId, 'Type:', typeof templateId);
+      console.log('🔍 Selected Inspector:', selectedInspector, 'Type:', typeof selectedInspector);
+      console.log('🔍 Is template saved:', isTemplateSaved);
+
       // Make the request with the CSRF token
       const response = await axios.post(
         'http://localhost:8000/api/users/template-assignments/',

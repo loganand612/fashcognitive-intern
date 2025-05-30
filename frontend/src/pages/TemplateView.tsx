@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, Edit, FileText, User, Settings, Home, Bell, ClipboardCheck, Calendar, Play, BookOpen, Package, AlertCircle, Search, LogOut } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, User, Settings, Home, Bell, ClipboardCheck, Calendar, Play, BookOpen, Package, AlertCircle, Search, LogOut, AlertTriangle } from 'lucide-react';
 import './TemplateView.css';
 import '../assets/Dashboard.css';
 
@@ -30,6 +30,8 @@ const TemplateView = () => {
   const { id } = useParams();
   const [template, setTemplate] = useState<TemplateData | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [accessError, setAccessError] = useState<string | null>(null);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -62,7 +64,58 @@ const TemplateView = () => {
     };
   }, [isDropdownOpen]);
 
+  // Fetch current user first
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/users/current-user/', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser || !id) return;
+
+    // For inspectors, check if they have access to this template
+    if (currentUser.user_role === 'inspector') {
+      const checkInspectorAccess = async () => {
+        try {
+          const assignments = await fetch('http://localhost:8000/api/users/my-assignments/', {
+            credentials: 'include'
+          });
+
+          if (assignments.ok) {
+            const assignmentData = await assignments.json();
+            const hasAssignment = assignmentData.some((assignment: any) =>
+              assignment.template.toString() === id &&
+              ['assigned', 'in_progress'].includes(assignment.status)
+            );
+
+            if (!hasAssignment) {
+              setAccessError('You do not have access to this template. Please contact your administrator.');
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking inspector access:', error);
+          setAccessError('Error checking template access.');
+          return;
+        }
+      };
+
+      checkInspectorAccess();
+    }
+
     console.log("TemplateView: Fetching template with ID:", id);
     axios
       .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
@@ -72,8 +125,55 @@ const TemplateView = () => {
         console.log("Logo URL:", res.data.logo);
         setTemplate(res.data);
       })
-      .catch((err) => console.error("Failed to load template", err));
-  }, [id]);
+      .catch((err) => {
+        console.error("Failed to load template", err);
+        if (currentUser?.user_role === 'inspector') {
+          setAccessError('You do not have access to this template. Please contact your administrator.');
+        }
+      });
+  }, [id, currentUser]);
+
+  if (accessError) {
+    return (
+      <div className="tp-app-container">
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '50vh',
+          textAlign: 'center',
+          padding: '2rem'
+        }}>
+          <AlertTriangle size={64} color="#ef4444" style={{ marginBottom: '1rem' }} />
+          <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Access Denied</h2>
+          <p style={{ marginBottom: '2rem', maxWidth: '500px' }}>{accessError}</p>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <a href="/dashboard" style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '0.5rem',
+              fontWeight: '500'
+            }}>
+              Go to Dashboard
+            </a>
+            <a href="/schedule" style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#10b981',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '0.5rem',
+              fontWeight: '500'
+            }}>
+              Go to Schedule
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!template) return <div className="tp-app-container"><p>Loading...</p></div>;
 

@@ -3924,23 +3924,7 @@ const CreateTemplate: React.FC = () => {
                 </div>
               </div>
 
-              <div className="create-template-access-tab">
-                <div className="create-template-permissions-section">
-                  <h2>
-                    <ClipboardCheck size={22} className="create-template-section-icon" />
-                    Template Assignments
-                  </h2>
-                  <p>Assign this template to inspectors who will complete the inspections.</p>
 
-                  <TemplateAssignmentManager
-                    templateId={template.id}
-                    templateTitle={template.title || "Untitled Template"}
-                    onAssignmentUpdated={() => {
-                      console.log("Template assignments updated")
-                    }}
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="create-template-access-footer">

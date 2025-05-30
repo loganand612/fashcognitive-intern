@@ -93,7 +93,25 @@ def template_detail_with_access_check(request, template_id):
         serializer = TemplateSerializer(template)
         return Response(serializer.data)
 
-    # Check if user has access to the template
+    # If user is inspector, check if template is assigned to them
+    if user.user_role == 'inspector':
+        from .models import TemplateAssignment
+        has_assignment = TemplateAssignment.objects.filter(
+            template=template,
+            inspector=user,
+            status__in=['assigned', 'in_progress']
+        ).exists()
+
+        if has_assignment:
+            serializer = TemplateSerializer(template)
+            return Response(serializer.data)
+        else:
+            return Response(
+                {"detail": "You do not have access to this template. Please contact your administrator."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+    # Check if user has access to the template (for non-inspectors)
     try:
         access = TemplateAccess.objects.get(
             template=template,

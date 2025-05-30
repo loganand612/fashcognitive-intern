@@ -361,6 +361,23 @@ class TemplateDetailView(RetrieveAPIView):
     serializer_class = TemplateSerializer
 
     def get(self, request, *args, **kwargs):
+        # Check if user is inspector and if they have access to this template
+        template_id = kwargs.get('pk')
+        if request.user.user_role == 'inspector':
+            from .models import TemplateAssignment
+            # Check if this template is assigned to the inspector
+            has_assignment = TemplateAssignment.objects.filter(
+                template_id=template_id,
+                inspector=request.user,
+                status__in=['assigned', 'in_progress']
+            ).exists()
+
+            if not has_assignment:
+                return Response(
+                    {"detail": "You do not have access to this template. Please contact your administrator."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
         response = super().get(request, *args, **kwargs)
         print(f"🔍 Template API Response for ID {kwargs.get('pk')}:")
         print(f"🔍 Response data: {response.data}")
@@ -621,6 +638,7 @@ def current_user(request):
 
 # Add logout view
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def logout_user(request):
     logout(request)
     return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)

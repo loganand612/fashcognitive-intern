@@ -78,6 +78,7 @@ const TemplatePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
   const [showCreateDropdown, setShowCreateDropdown] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   const loggedInUser = localStorage.getItem("username")
 
@@ -223,10 +224,51 @@ const TemplatePage: React.FC = () => {
     };
   }, [isDropdownOpen]);
 
+  // Fetch current user
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/users/auth-status/', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        // Set a default user for demo purposes
+        setCurrentUser({
+          id: 1,
+          username: "demouser",
+          email: "demo@example.com",
+          user_role: "admin"
+        });
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
   useEffect(() => {
     const testAllEndpoints = async () => {
       setLoading(true)
       setError("")
+
+      // If user is not loaded yet, wait
+      if (!currentUser) {
+        setLoading(false)
+        return
+      }
+
+      // For inspectors, show only assigned templates (redirect to dashboard)
+      if (currentUser.user_role === 'inspector') {
+        setError("Inspectors can only view assigned templates on the Dashboard and Schedule pages.")
+        setTemplates([])
+        setLoading(false)
+        return
+      }
+
       const results: { [endpoint: string]: EndpointResult } = {}
 
       for (const endpoint of endpointsToTry) {
@@ -290,7 +332,7 @@ const TemplatePage: React.FC = () => {
     }
 
     testAllEndpoints()
-  }, [])
+  }, [currentUser])
 
   return (
     <div className="tp-app-container">
@@ -398,6 +440,27 @@ const TemplatePage: React.FC = () => {
           <section className="tp-templates-section">
             <div className="tp-templates-header">
               <h2>Templates <span className="tp-count">(1 - {filteredTemplates.length} of {templates.length})</span></h2>
+
+              {/* Test button to switch user role - FOR TESTING ONLY */}
+              <button
+                onClick={() => {
+                  const newRole = currentUser?.user_role === 'inspector' ? 'admin' : 'inspector';
+                  setCurrentUser({...currentUser, user_role: newRole});
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  marginRight: '1rem',
+                  backgroundColor: currentUser?.user_role === 'inspector' ? '#ef4444' : '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Test as {currentUser?.user_role === 'inspector' ? 'Admin' : 'Inspector'}
+              </button>
+
               <div className="tp-create-dropdown" ref={dropdownRef}>
                 <button className="tp-create-button" onClick={toggleCreateDropdown}>
                   <Plus size={16} />
@@ -422,8 +485,25 @@ const TemplatePage: React.FC = () => {
             {loading && <div className="tp-loading">Loading templates...</div>}
             {error && (
               <div className="tp-error-message">
-                {error}<p>Showing demo data for display purposes.</p>
-                <details><summary>API Debug Info (Click to expand)</summary><pre>{JSON.stringify(debugInfo, null, 2)}</pre></details>
+                {error}
+                {currentUser?.user_role === 'inspector' ? (
+                  <div style={{ marginTop: '1rem' }}>
+                    <p>Please visit the following pages to view your assigned templates:</p>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                      <a href="/dashboard" className="tp-create-button" style={{ textDecoration: 'none' }}>
+                        Go to Dashboard
+                      </a>
+                      <a href="/schedule" className="tp-create-button" style={{ textDecoration: 'none' }}>
+                        Go to Schedule
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p>Showing demo data for display purposes.</p>
+                    <details><summary>API Debug Info (Click to expand)</summary><pre>{JSON.stringify(debugInfo, null, 2)}</pre></details>
+                  </>
+                )}
               </div>
             )}
 

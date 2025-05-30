@@ -213,8 +213,51 @@
   transition: background-color 0.2s;
 }
 
-.schedule-create-button:hover {
+.schedule-create-button:hover:not(:disabled) {
   background-color: #5856eb;
+}
+
+.schedule-create-button:disabled,
+.schedule-cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.schedule-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.schedule-textarea:focus {
+  border-color: #2563eb;
+}
+
+.schedule-error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.schedule-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  font-size: 16px;
 }
 
 /* Responsive Design */
@@ -223,15 +266,15 @@
     width: 95%;
     margin: 20px;
   }
-  
+
   .schedule-time-row {
     grid-template-columns: 1fr;
   }
-  
+
   .schedule-modal-footer {
     flex-direction: column;
   }
-  
+
   .schedule-cancel-button,
   .schedule-create-button {
     width: 100%;

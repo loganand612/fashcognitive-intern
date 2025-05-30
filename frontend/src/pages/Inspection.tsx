@@ -233,6 +233,10 @@ const QuestionAnswering: React.FC = () => {
         } else {
           // No assignment found for this template
           setAssignmentError('You do not have an active assignment for this template. Please contact an admin for assignment.');
+          setError('Access Denied: This template is not assigned to you.');
+          // Prevent template from loading by setting a flag
+          setTemplateLoaded(true);
+          return;
         }
       } else {
         // Try to get assignment info for the template
@@ -278,6 +282,24 @@ const QuestionAnswering: React.FC = () => {
 
       if (templateId) {
         try {
+          // First check if user is inspector and if template is assigned
+          const userData = await fetchData('users/current-user/');
+          if (userData.user_role === 'inspector') {
+            console.log('User is inspector, checking assignments...');
+            const assignments = await fetchData('users/my-assignments/');
+            const hasAssignment = assignments.some((a: any) => a.template.toString() === templateId);
+
+            if (!hasAssignment) {
+              console.log('Inspector does not have assignment for this template');
+              setError('Access Denied: This template is not assigned to you.');
+              setAssignmentError('You do not have an active assignment for this template. Please contact an admin for assignment.');
+              setIsLoading(false);
+              setTemplateLoaded(true);
+              return;
+            }
+            console.log('Inspector has valid assignment for this template');
+          }
+
           console.log('Fetching template from API...')
           // First try to fetch with access check (for shared templates)
           let data;

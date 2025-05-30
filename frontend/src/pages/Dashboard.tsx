@@ -30,11 +30,32 @@ interface Template {
   date?: string;
 }
 
+interface Assignment {
+  id: number;
+  template: number;
+  template_title: string;
+  inspector: number;
+  inspector_name: string;
+  inspector_email: string;
+  assigned_by: number;
+  assigned_by_name: string;
+  assigned_by_email: string;
+  status: string;
+  status_display: string;
+  assigned_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  revoked_at: string | null;
+  due_date: string | null;
+  notes: string | null;
+}
+
 const Dashboard: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Get the logged-in user from localStorage
   const loggedInUser = localStorage.getItem("username");
@@ -103,6 +124,28 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Fetch current user
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const data = await fetchData("users/auth-status/");
+        console.log("Auth status response:", data);
+        setCurrentUser(data);
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+        // Set a default user for demo purposes
+        setCurrentUser({
+          id: 1,
+          username: "demouser",
+          email: "demo@example.com",
+          user_role: "admin"
+        });
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
   // Fetch templates from API
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -117,39 +160,80 @@ const Dashboard: React.FC = () => {
         return;
       }
 
-      for (const endpoint of endpointsToTry) {
+      // If we don't have current user info yet, wait
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      // For inspectors, fetch assigned templates
+      if (currentUser.user_role === 'inspector') {
         try {
-          console.log(`Trying endpoint: ${endpoint}`);
+          console.log("Fetching assigned templates for inspector");
+          const assignments = await fetchData("users/my-assignments/");
+          console.log("Assignments data:", assignments);
 
-          const data = await fetchData(endpoint);
-          console.log("Logged in user:", loggedInUser);
-              console.log("Full response data:", data);
-              console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
+          // Convert assignments to template format for display
+          const formattedTemplates = assignments.map((assignment: Assignment) => ({
+            id: assignment.template,
+            title: assignment.template_title,
+            lastModified: assignment.assigned_at,
+            access: "Assigned",
+            createdBy: assignment.assigned_by_name,
+            type: "Assigned Template",
+            status: assignment.status_display || assignment.status,
+            date: assignment.assigned_at
+          }));
 
-              // Filter templates by the logged-in user
-              const userTemplates = data.filter((template: Template) => template.createdBy === loggedInUser);
+          // Sort by assignment date (most recent first) and take only the 3 most recent
+          const sortedTemplates = [...formattedTemplates].sort((a, b) => {
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
+          }).slice(0, 3);
 
-              // Add type and status for display in the dashboard
-              const formattedTemplates = userTemplates.map((template: Template) => ({
-                ...template,
-                type: "Template",
-                status: "Completed",
-                date: template.lastModified || new Date().toISOString().split('T')[0]
-              }));
-
-              // Sort templates by date (most recent first) and take only the 3 most recent
-              const sortedTemplates = [...formattedTemplates].sort((a, b) => {
-                const dateA = a.date ? new Date(a.date).getTime() : 0;
-                const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA;
-              }).slice(0, 3);
-
-              setTemplates(sortedTemplates);
-              setLoading(false);
-              return;
-
+          setTemplates(sortedTemplates);
+          setLoading(false);
+          return;
         } catch (err) {
-          console.error("Error fetching from endpoint:", endpoint, err);
+          console.error("Error fetching assigned templates:", err);
+        }
+      } else {
+        // For admin users, fetch created templates
+        for (const endpoint of endpointsToTry) {
+          try {
+            console.log(`Trying endpoint: ${endpoint}`);
+
+            const data = await fetchData(endpoint);
+            console.log("Logged in user:", loggedInUser);
+            console.log("Full response data:", data);
+            console.log("Template creators:", data.map((t: Template) => t.createdBy || 'Unknown'));
+
+            // Filter templates by the logged-in user
+            const userTemplates = data.filter((template: Template) => template.createdBy === loggedInUser);
+
+            // Add type and status for display in the dashboard
+            const formattedTemplates = userTemplates.map((template: Template) => ({
+              ...template,
+              type: "Template",
+              status: "Completed",
+              date: template.lastModified || new Date().toISOString().split('T')[0]
+            }));
+
+            // Sort templates by date (most recent first) and take only the 3 most recent
+            const sortedTemplates = [...formattedTemplates].sort((a, b) => {
+              const dateA = a.date ? new Date(a.date).getTime() : 0;
+              const dateB = b.date ? new Date(b.date).getTime() : 0;
+              return dateB - dateA;
+            }).slice(0, 3);
+
+            setTemplates(sortedTemplates);
+            setLoading(false);
+            return;
+
+          } catch (err) {
+            console.error("Error fetching from endpoint:", endpoint, err);
+          }
         }
       }
 
@@ -202,7 +286,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchTemplates();
-  }, [loggedInUser]);
+  }, [loggedInUser, currentUser]);
 
   const [connections, setConnections] = useState<Connection[]>([{
     id: '1', name: 'Grace Miller', email: 'grace.miller@example.com', initials: 'GM', status: 'active'
@@ -382,7 +466,9 @@ const Dashboard: React.FC = () => {
         </div>
 
         <section className="dashboard-recent-activity dashboard-animate-on-scroll">
-          <h2 className="dashboard-section-title">Recent Templates</h2>
+          <h2 className="dashboard-section-title">
+            {currentUser?.user_role === 'inspector' ? 'Recent Assigned Templates' : 'Recent Templates'}
+          </h2>
 
           {loading && (
             <div className="dashboard-loading">Loading recent templates...</div>
