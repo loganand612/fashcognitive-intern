@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck, Save } from 'lucide-react'
 import "./garment-template.css"
@@ -375,6 +375,80 @@ const resizeImage = (base64: string): Promise<string> => {
 // Type guard function to check if content is GarmentDetailsContent
 function isGarmentDetailsContent(content: StandardSectionContent | GarmentDetailsContent): content is GarmentDetailsContent {
   return 'aqlSettings' in content && 'sizes' in content && 'colors' in content;
+}
+
+// Function to convert camelCase to snake_case (similar to Create_template.tsx)
+function toSnakeCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(toSnakeCase);
+  } else if (obj !== null && typeof obj === "object") {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (!obj.hasOwnProperty(key)) continue;
+      const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+      newObj[snakeKey] = toSnakeCase(obj[key]);
+    }
+    return newObj;
+  }
+  return obj;
+}
+
+// Function to clean template data for saving (similar to Create_template.tsx)
+function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
+  return {
+    ...(isNew ? {} : { id: template.id }),
+    title: template.title,
+    description: template.description,
+    logo: template.logo,
+    sections: template.sections.map((section) => {
+      const newSectionId = isNew || typeof section.id === "number" ? generateId() : section.id;
+
+      if (section.type === "garmentDetails" && isGarmentDetailsContent(section.content)) {
+        return {
+          id: newSectionId,
+          title: section.title,
+          type: section.type,
+          isCollapsed: section.isCollapsed,
+          content: {
+            aqlSettings: section.content.aqlSettings,
+            sizes: section.content.sizes,
+            colors: section.content.colors,
+            includeCartonOffered: section.content.includeCartonOffered,
+            includeCartonInspected: section.content.includeCartonInspected,
+            defaultDefects: section.content.defaultDefects
+          }
+        };
+      } else {
+        // For standard sections, properly structure the questions and logic rules
+        const standardContent = section.content as StandardSectionContent;
+        return {
+          id: newSectionId,
+          title: section.title,
+          type: section.type,
+          isCollapsed: section.isCollapsed,
+          content: {
+            description: standardContent.description,
+            questions: standardContent.questions.map((q) => {
+              const newQuestionId = isNew || typeof q.id === "number" ? generateId() : q.id;
+
+              return {
+                id: newQuestionId,
+                text: q.text,
+                responseType: q.responseType ?? "Text", // ensure fallback
+                required: q.required,
+                flagged: q.flagged,
+                options: q.options,
+                value: q.value,
+                logicRules: q.logicRules, // Preserve logic rules with subQuestion and message
+                multipleSelection: q.multipleSelection,
+                siteOptions: q.siteOptions,
+              };
+            }),
+          }
+        };
+      }
+    }),
+  };
 }
 
 
@@ -1309,9 +1383,14 @@ const EnhancedLogicRuleBuilder: React.FC<{
 
   // Use questions parameter for future implementation of cross-question logic
 
+  // Use useCallback to memoize the onRuleChange call
+  const handleRuleChange = useCallback((updatedRule: LogicRule) => {
+    onRuleChange(updatedRule)
+  }, [onRuleChange])
+
   useEffect(() => {
-    onRuleChange(localRule)
-  }, [localRule, onRuleChange])
+    handleRuleChange(localRule)
+  }, [localRule, handleRuleChange])
 
   useEffect(() => {
     setLocalRule(rule)
@@ -1416,7 +1495,11 @@ const EnhancedLogicRulesContainer: React.FC<{
       value: null,
       trigger: null,
     }
-    onRulesChange([...rules, newRule])
+    console.log('Adding new rule:', newRule)
+    console.log('Current rules before adding:', rules.length)
+    const updatedRules = [...rules, newRule]
+    console.log('Updated rules after adding:', updatedRules.length)
+    onRulesChange(updatedRules)
   }
 
   const updateRule = (index: number, updatedRule: LogicRule) => {
@@ -1426,9 +1509,13 @@ const EnhancedLogicRulesContainer: React.FC<{
   }
 
   const deleteRule = (index: number) => {
-    const newRules = [...rules]
-    newRules.splice(index, 1)
-    onRulesChange(newRules)
+    // Add confirmation dialog to prevent accidental deletions
+    if (window.confirm('Are you sure you want to delete this logic rule?')) {
+      const newRules = [...rules]
+      newRules.splice(index, 1)
+      console.log(`Deleting rule at index ${index}. Rules before:`, rules.length, 'Rules after:', newRules.length)
+      onRulesChange(newRules)
+    }
   }
 
   return (
@@ -1766,41 +1853,17 @@ const Garment_Template: React.FC = () => {
         }
       }
 
-      // Prepare sections data
-      const sectionsData = template.sections.map(section => {
-        if (section.type === "garmentDetails" && isGarmentDetailsContent(section.content)) {
-          return {
-            id: section.id,
-            title: section.title,
-            type: section.type,
-            isCollapsed: section.isCollapsed,
-            content: {
-              aqlSettings: section.content.aqlSettings,
-              sizes: section.content.sizes,
-              colors: section.content.colors,
-              includeCartonOffered: section.content.includeCartonOffered,
-              includeCartonInspected: section.content.includeCartonInspected,
-              defaultDefects: section.content.defaultDefects
-            }
-          };
-        } else {
-          return {
-            id: section.id,
-            title: section.title,
-            type: section.type,
-            isCollapsed: section.isCollapsed,
-            content: section.content
-          };
-        }
-      });
-
-      // Add sections data
-      formData.append("sections", JSON.stringify(sectionsData));
-
       // Determine if this is a new template or an edit
       // Check if template is new: no URL id AND template.id is not a numeric database ID
       const hasNumericId = String(template.id).match(/^\d+$/);
       const isNew = !id && !hasNumericId;
+
+      // Prepare sections data using cleanTemplateForSave and toSnakeCase
+      const cleaned = cleanTemplateForSave(template, isNew);
+      const snakeCaseSections = toSnakeCase(cleaned.sections);
+
+      // Add sections data
+      formData.append("sections", JSON.stringify(snakeCaseSections));
       const templateDbId = hasNumericId ? template.id : id;
 
       // Set the appropriate URL and method based on whether we're creating or updating

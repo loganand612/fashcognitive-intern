@@ -465,20 +465,31 @@ const QuestionAnswering: React.FC = () => {
                   // Transform logic rules to ensure consistent format
                   let logicRules: LogicRule[] = []
                   if (question.logic_rules && Array.isArray(question.logic_rules)) {
-                    logicRules = question.logic_rules.map((rule: any) => ({
-                      id: rule.id,
-                      condition: rule.condition,
-                      value: rule.value,
-                      trigger: rule.trigger,
-                      message: rule.message || '',
-                      // Handle both camelCase and snake_case for subQuestion
-                      subQuestion: rule.subQuestion || rule.sub_question ? {
-                        text: (rule.subQuestion || rule.sub_question)?.text || '',
-                        responseType: (rule.subQuestion || rule.sub_question)?.responseType ||
-                                     (rule.subQuestion || rule.sub_question)?.response_type || 'Text',
-                        options: (rule.subQuestion || rule.sub_question)?.options
-                      } : undefined
-                    }))
+                    logicRules = question.logic_rules.map((rule: any) => {
+                      // Get message from multiple possible sources
+                      const message = rule.message || rule.triggerConfig?.message || ''
+
+                      // Get subQuestion from multiple possible sources
+                      const subQuestion = rule.subQuestion || rule.sub_question || rule.triggerConfig?.subQuestion || rule.triggerConfig?.sub_question
+
+                      console.log(`      - Processing rule ${rule.id} with trigger: ${rule.trigger}`)
+                      console.log(`      - Rule message: "${message}"`)
+                      console.log(`      - SubQuestion found:`, subQuestion)
+
+                      return {
+                        id: rule.id,
+                        condition: rule.condition,
+                        value: rule.value,
+                        trigger: rule.trigger,
+                        message: message,
+                        // Handle both camelCase and snake_case for subQuestion
+                        subQuestion: subQuestion ? {
+                          text: subQuestion.text || subQuestion.question_text || '',
+                          responseType: subQuestion.responseType || subQuestion.response_type || subQuestion.type || 'Text',
+                          options: subQuestion.options || subQuestion.choices || []
+                        } : undefined
+                      }
+                    })
                   }
 
                   const transformedQuestion = {
@@ -634,46 +645,66 @@ const QuestionAnswering: React.FC = () => {
   // Default template to use if API fetch fails or no template ID is provided
   const getDefaultTemplate = (): Template => ({
     id: "default-template",
-    title: "Safety Inspection Template",
-    description: "Complete all required fields in this safety inspection",
+    title: "Logic Rules Test Template",
+    description: "Template to test logic rules functionality - Enter 5 in the number field to see logic rules trigger",
     logo: "/placeholder.svg?height=80&width=80",
     sections: [
       {
         id: "section-1",
-        title: "General Information",
-        description: "Please provide basic information about this inspection",
+        title: "Logic Rules Test Section",
+        description: "Test section to verify logic rules functionality",
         questions: [
           {
-            id: "q1",
-            text: "Site conducted",
-            responseType: "Site",
+            id: "test-q1",
+            text: "Enter a test number (try 5 to trigger logic rules)",
+            responseType: "Number",
             required: true,
             flagged: false,
             value: null,
+            logicRules: [
+              {
+                id: "test-rule1",
+                condition: "equal to",
+                value: 5,
+                trigger: "display_message",
+                message: "🎉 Great! You entered 5 - this logic rule is working!",
+              },
+              {
+                id: "test-rule2",
+                condition: "greater than",
+                value: 10,
+                trigger: "require_evidence",
+                message: "Please upload evidence for values greater than 10",
+              },
+              {
+                id: "test-rule3",
+                condition: "equal to",
+                value: 7,
+                trigger: "ask_questions",
+                message: "Additional question triggered",
+                subQuestion: {
+                  text: "Why did you enter 7?",
+                  responseType: "Text"
+                }
+              },
+            ],
           },
           {
-            id: "q2",
-            text: "Inspection date",
-            responseType: "Inspection date",
+            id: "test-q2",
+            text: "Select Yes or No (try No to see logic)",
+            responseType: "Yes/No",
             required: true,
             flagged: false,
             value: null,
-          },
-          {
-            id: "q3",
-            text: "Inspector name",
-            responseType: "Person",
-            required: true,
-            flagged: false,
-            value: null,
-          },
-          {
-            id: "q4",
-            text: "Location",
-            responseType: "Inspection location",
-            required: true,
-            flagged: false,
-            value: null,
+            logicRules: [
+              {
+                id: "test-rule4",
+                condition: "is",
+                value: "No",
+                trigger: "notify",
+                message: "Admin has been notified about the No response",
+              },
+            ],
           },
         ],
       },
@@ -1242,22 +1273,32 @@ const QuestionAnswering: React.FC = () => {
 
     console.log('=== CHECKING CONDITIONAL LOGIC ===')
     console.log('Current answers:', answers)
+    console.log('Template sections count:', template.sections.length)
 
     const messages: Record<string, string> = {}
     const conditionalFields: Record<string, LogicRule[]> = {}
     const dynamicQuestions: Record<string, Question[]> = {}
     const notificationMessages: Record<string, string> = {}
 
-    template.sections.forEach((section) => {
-      section.questions.forEach((question) => {
+    template.sections.forEach((section, sectionIndex) => {
+      console.log(`Processing section ${sectionIndex + 1}: "${section.title}" with ${section.questions.length} questions`)
+
+      section.questions.forEach((question, questionIndex) => {
         // Use the current answer for this question
         const currentAnswer = answers[question.id]
         const questionWithAnswer = { ...question, value: currentAnswer }
 
-        console.log(`Checking question "${question.text}" (ID: ${question.id})`)
+        console.log(`Checking question ${questionIndex + 1}: "${question.text}" (ID: ${question.id})`)
         console.log(`  - Current answer: ${currentAnswer}`)
         console.log(`  - Logic rules count: ${question.logicRules?.length || 0}`)
         console.log(`  - Logic rules:`, question.logicRules)
+        console.log(`  - Question object keys:`, Object.keys(question))
+
+        // Check if this question has any logic rules at all
+        if (!question.logicRules || !Array.isArray(question.logicRules) || question.logicRules.length === 0) {
+          console.log(`  - ❌ No logic rules found for question "${question.text}"`)
+          return
+        }
 
         if (question.logicRules && question.logicRules.length > 0) {
           const activeRules: LogicRule[] = []
@@ -1273,62 +1314,92 @@ const QuestionAnswering: React.FC = () => {
 
               switch (rule.trigger) {
                 case "display_message":
-                  if (rule.message) {
-                    messages[question.id] = `💬 ${rule.message}`
+                  if (rule.message && rule.message.trim() !== "") {
+                    // Show only the custom message without any prefix
+                    messages[question.id] = rule.message.trim()
                     console.log(`  - ✅ Display message set: ${rule.message}`)
                     console.log(`  - Messages object now:`, messages)
                   } else {
-                    console.log(`  - ❌ Display message rule has no message`)
+                    // Fallback message if empty
+                    messages[question.id] = `Logic rule triggered for answer: ${currentAnswer}`
+                    console.log(`  - ⚠️ Display message rule has empty message, using fallback`)
                   }
                   break
 
                 case "require_evidence":
                   activeRules.push(rule)
-                  if (rule.message) {
-                    messages[question.id] = `📸 EVIDENCE REQUIRED: ${rule.message}`
+                  if (rule.message && rule.message.trim() !== "") {
+                    messages[question.id] = `📸 EVIDENCE REQUIRED: ${rule.message.trim()}`
                     console.log(`  - ✅ Evidence required: ${rule.message}`)
+                  } else {
+                    // Fallback message if empty
+                    messages[question.id] = `📸 EVIDENCE REQUIRED: Please upload proof for answer: ${currentAnswer}`
+                    console.log(`  - ⚠️ Evidence rule has empty message, using fallback`)
                   }
                   break
 
                 case "require_action":
-                  if (rule.message) {
-                    messages[question.id] = `⚠️ ACTION REQUIRED: ${rule.message}`
+                  if (rule.message && rule.message.trim() !== "") {
+                    messages[question.id] = `⚠️ ACTION REQUIRED: ${rule.message.trim()}`
                     console.log(`  - ✅ Action required: ${rule.message}`)
                     console.log(`  - Messages object now:`, messages)
                   } else {
-                    console.log(`  - ❌ Action required rule has no message`)
+                    // Fallback message if empty
+                    messages[question.id] = `⚠️ ACTION REQUIRED: Please take action for answer: ${currentAnswer}`
+                    console.log(`  - ⚠️ Action required rule has empty message, using fallback`)
                   }
                   break
 
                 case "notify":
-                  if (rule.message) {
-                    notificationMessages[question.id] = rule.message
-                    messages[question.id] = `🔔 NOTIFICATION: ${rule.message}`
+                  if (rule.message && rule.message.trim() !== "") {
+                    notificationMessages[question.id] = rule.message.trim()
+                    messages[question.id] = `🔔 NOTIFICATION: ${rule.message.trim()}`
                     console.log(`  - ✅ Notification set: ${rule.message}`)
                     console.log(`  - Messages object now:`, messages)
                     console.log(`  - Notification messages:`, notificationMessages)
                   } else {
-                    console.log(`  - ❌ Notify rule has no message`)
+                    // Fallback message if empty
+                    const fallbackMessage = `Admin has been notified about answer: ${currentAnswer}`
+                    notificationMessages[question.id] = fallbackMessage
+                    messages[question.id] = `🔔 NOTIFICATION: ${fallbackMessage}`
+                    console.log(`  - ⚠️ Notify rule has empty message, using fallback`)
                   }
                   break
 
                 case "ask_questions":
                   // Handle both camelCase and snake_case formats from backend
                   const subQuestion = rule.subQuestion || (rule as any).sub_question
+                  console.log(`  - ✅ Processing ask_questions trigger`)
+                  console.log(`  - Rule object:`, rule)
+                  console.log(`  - SubQuestion found:`, subQuestion)
+
                   if (subQuestion) {
-                    console.log(`  - ✅ Creating conditional question: ${subQuestion.text}`)
+                    // Use the subQuestion text directly, or rule message as fallback
+                    const questionText = subQuestion.text && subQuestion.text.trim() !== ""
+                      ? subQuestion.text.trim()
+                      : rule.message && rule.message.trim() !== ""
+                        ? rule.message.trim()
+                        : `Please provide additional information about your answer: ${currentAnswer}`
+
+                    console.log(`  - ✅ Creating conditional question: ${questionText}`)
 
                     // Handle both responseType and response_type
-                    const responseType = subQuestion.responseType || subQuestion.response_type || 'Text'
+                    let responseType = subQuestion.responseType || subQuestion.response_type || 'Text'
+
+                    // Map the responseType to ensure it matches our expected format
+                    responseType = mapResponseType(responseType)
+
+                    console.log(`  - ✅ Creating conditional question with responseType: "${responseType}" (original: "${subQuestion.responseType || subQuestion.response_type}")`)
+                    console.log(`  - ✅ SubQuestion options:`, subQuestion.options)
 
                     // Create a dynamic question based on the rule
                     const dynamicQuestion: Question = {
                       id: `${question.id}_${rule.id}_conditional`,
-                      text: subQuestion.text,
+                      text: questionText,
                       responseType: responseType,
                       required: true, // Conditional questions are typically required
                       flagged: false,
-                      options: subQuestion.options,
+                      options: subQuestion.options || [],
                       value: conditionalAnswers[`${question.id}_${rule.id}_conditional`] || null,
                       logicRules: [] // Conditional questions don't have their own logic rules
                     }
@@ -1342,26 +1413,40 @@ const QuestionAnswering: React.FC = () => {
                     if (!existingQuestion) {
                       dynamicQuestions[question.id].push(dynamicQuestion)
                       console.log(`  - ✅ Dynamic question added:`, dynamicQuestion)
+                      console.log(`  - ✅ Dynamic question responseType: "${dynamicQuestion.responseType}"`)
+                      console.log(`  - ✅ Dynamic question text: "${dynamicQuestion.text}"`)
+                      console.log(`  - ✅ Dynamic question options: "${JSON.stringify(dynamicQuestion.options)}"`)
                     } else {
                       console.log(`  - ℹ️ Dynamic question already exists, updating:`, dynamicQuestion.id)
-                      // Update the existing question with current value
+                      // Update the existing question with current value and ensure all properties are updated
                       existingQuestion.value = dynamicQuestion.value
+                      existingQuestion.responseType = dynamicQuestion.responseType
+                      existingQuestion.text = dynamicQuestion.text
+                      existingQuestion.options = dynamicQuestion.options
+                      console.log(`  - ℹ️ Updated question responseType: "${existingQuestion.responseType}"`)
+                      console.log(`  - ℹ️ Updated question text: "${existingQuestion.text}"`)
+                      console.log(`  - ℹ️ Updated question options: "${JSON.stringify(existingQuestion.options)}"`)
                     }
                     console.log(`  - Dynamic questions object now:`, dynamicQuestions)
 
-                    // Also add a message to indicate the conditional question
-                    if (!messages[question.id]) {
-                      messages[question.id] = `❓ Additional question required based on your answer`
-                    }
+                    // Don't add a generic message for ask_questions - let the conditional question speak for itself
                   } else {
                     console.log(`  - ❌ Ask questions rule has no subQuestion or sub_question`)
                     console.log(`  - Rule object:`, rule)
+                    console.log(`  - Rule keys:`, Object.keys(rule))
+                    // If there's a rule message but no subQuestion, show the rule message
+                    if (rule.message && rule.message.trim() !== "") {
+                      messages[question.id] = rule.message.trim()
+                    } else {
+                      // Still show a message even if subQuestion is missing
+                      messages[question.id] = `Additional information required for answer: ${currentAnswer}`
+                    }
                   }
                   break
 
                 case "take_action":
-                  if (rule.message) {
-                    messages[question.id] = `🎯 TAKE ACTION: ${rule.message}`
+                  if (rule.message && rule.message.trim() !== "") {
+                    messages[question.id] = `🎯 TAKE ACTION: ${rule.message.trim()}`
                     console.log(`  - ✅ Take action message set: ${rule.message}`)
                   } else {
                     console.log(`  - ❌ Take action rule has no message`)
@@ -1425,22 +1510,53 @@ const QuestionAnswering: React.FC = () => {
     )
   }
 
-  const currentSection = template.sections[currentSectionIndex]
+  const currentSection = template?.sections?.[currentSectionIndex]
+
+  // Additional safety check - if currentSection is undefined, return loading state
+  if (!currentSection) {
+    return (
+      <div className="inspection-question-answering-container">
+        <div className="inspection-section-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div className="inspection-loading-spinner" style={{ width: '40px', height: '40px', borderWidth: '4px', margin: '0 auto 20px' }}></div>
+            <p>Loading section...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const handleAnswerChange = (questionId: string, value: any) => {
     console.log('=== ANSWER CHANGE ===')
     console.log('Question ID:', questionId, 'New value:', value)
     console.log('Event triggered successfully - selection is working!')
 
+    // Find the question to check its logic rules
+    const question = template?.sections
+      .flatMap(s => s.questions)
+      .find(q => q.id === questionId)
+
+    if (question) {
+      console.log(`Question found: "${question.text}"`)
+      console.log(`Logic rules for this question:`, question.logicRules)
+      console.log(`Logic rules count:`, question.logicRules?.length || 0)
+    } else {
+      console.log(`❌ Question not found for ID: ${questionId}`)
+    }
+
     // Add alert for testing
     if (value === 5 || value === "5") {
       alert(`DEBUG: You entered 5! This should trigger logic rules.`)
     }
 
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: value,
-    }))
+    setAnswers((prev) => {
+      const newAnswers = {
+        ...prev,
+        [questionId]: value,
+      }
+      console.log('Updated answers state:', newAnswers)
+      return newAnswers
+    })
 
     // Don't update the template structure - just store answers separately
     // This prevents any potential duplication issues from template modifications
@@ -1480,7 +1596,7 @@ const QuestionAnswering: React.FC = () => {
 
   // Helper function to get appropriate CSS class for message type
   const getMessageClassName = (message: string): string => {
-    if (message.startsWith('💬')) {
+    if (message.startsWith('💬 DISPLAY MESSAGE:') || message.startsWith('💬')) {
       return 'inspection-display-message'
     } else if (message.startsWith('🔔 NOTIFICATION:')) {
       return 'inspection-notification-message'
@@ -1493,13 +1609,14 @@ const QuestionAnswering: React.FC = () => {
     } else if (message.startsWith('❓')) {
       return 'inspection-display-message'
     } else {
-      return 'inspection-warning-message'
+      // For display messages without prefixes, use display message styling
+      return 'inspection-display-message'
     }
   }
 
   // Helper function to get appropriate icon for message type
   const getMessageIcon = (message: string): React.ReactElement => {
-    if (message.startsWith('💬')) {
+    if (message.startsWith('💬 DISPLAY MESSAGE:') || message.startsWith('💬')) {
       return <MessageCircle size={16} />
     } else if (message.startsWith('🔔 NOTIFICATION:')) {
       return <Bell size={16} />
@@ -1512,7 +1629,8 @@ const QuestionAnswering: React.FC = () => {
     } else if (message.startsWith('❓')) {
       return <HelpCircle size={16} />
     } else {
-      return <AlertTriangle size={16} />
+      // For display messages without prefixes, use message circle icon
+      return <MessageCircle size={16} />
     }
   }
 
@@ -1610,6 +1728,11 @@ const QuestionAnswering: React.FC = () => {
   const validateSection = (): boolean => {
     const errors: Record<string, string> = {}
 
+    // Safety check for currentSection
+    if (!currentSection || !currentSection.questions) {
+      return true // If no section or questions, consider it valid
+    }
+
     currentSection.questions.forEach((question) => {
       if (question.required) {
         const value = answers[question.id]
@@ -1652,7 +1775,7 @@ const QuestionAnswering: React.FC = () => {
 
   const goToNextSection = () => {
     if (validateSection()) {
-      if (template && currentSectionIndex < template.sections.length - 1) {
+      if (template && template.sections && currentSectionIndex < template.sections.length - 1) {
         setCurrentSectionIndex(currentSectionIndex + 1)
         window.scrollTo(0, 0)
       } else {
@@ -1877,7 +2000,12 @@ const QuestionAnswering: React.FC = () => {
 
   const renderConditionalResponseInput = (question: Question) => {
     const value = conditionalAnswers[question.id]
-    console.log(`Rendering conditional input for question "${question.text}" with responseType: "${question.responseType}"`)
+    console.log(`🔧 CONDITIONAL INPUT DEBUG:`)
+    console.log(`  - Question text: "${question.text}"`)
+    console.log(`  - Question responseType: "${question.responseType}"`)
+    console.log(`  - Question ID: "${question.id}"`)
+    console.log(`  - Current value: ${JSON.stringify(value)}`)
+    console.log(`  - Question object:`, question)
 
     switch (question.responseType) {
       case "Text":
@@ -2145,7 +2273,7 @@ const QuestionAnswering: React.FC = () => {
               return (
                 <div key={rule.id} className="inspection-conditional-evidence-container">
                   <div className="inspection-conditional-evidence-label">
-                    📸 Evidence Required: {rule.message || 'Please upload proof'}
+                    📸 Evidence Required: {rule.message && rule.message.trim() !== "" ? rule.message : `Please upload proof for your answer: ${answers[question.id]}`}
                   </div>
 
                   <input
@@ -2198,6 +2326,28 @@ const QuestionAnswering: React.FC = () => {
             <div className={getMessageClassName(message)}>
               {getMessageIcon(message)}
               <span>{message}</span>
+            </div>
+          )}
+
+          {/* Debug section - remove in production */}
+          {false && process.env.NODE_ENV === 'development' && (
+            <div style={{
+              marginTop: '10px',
+              padding: '10px',
+              backgroundColor: '#f0f0f0',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontFamily: 'monospace'
+            }}>
+              <div><strong>Debug Info for Question: {question.text}</strong></div>
+              <div>Question ID: {question.id}</div>
+              <div>Current Answer: {JSON.stringify(answers[question.id])}</div>
+              <div>Logic Rules Count: {question.logicRules?.length || 0}</div>
+              <div>Logic Rules: {JSON.stringify(question.logicRules, null, 2)}</div>
+              <div>Active Message: {message || 'None'}</div>
+              <div>Active Conditional Fields: {JSON.stringify(activeConditionalFields[question.id] || [], null, 2)}</div>
+              <div>Conditional Questions: {JSON.stringify(conditionalQuestions[question.id] || [], null, 2)}</div>
             </div>
           )}
         </div>
@@ -3010,39 +3160,66 @@ const QuestionAnswering: React.FC = () => {
         </div>
       </div>
 
+      {/* Global Debug Section - remove in production */}
+      {false && process.env.NODE_ENV === 'development' && template && currentSection && (
+        <div style={{
+          margin: '20px',
+          padding: '15px',
+          backgroundColor: '#e8f4fd',
+          border: '2px solid #0066cc',
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontFamily: 'monospace'
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#0066cc' }}>
+            🔍 GLOBAL DEBUG INFO - Logic Rules Status
+          </div>
+          <div><strong>Template ID:</strong> {template?.id || 'N/A'}</div>
+          <div><strong>Total Sections:</strong> {template?.sections?.length || 0}</div>
+          <div><strong>Current Section:</strong> {currentSectionIndex + 1} - {currentSection?.title || 'N/A'}</div>
+          <div><strong>Total Questions in Current Section:</strong> {currentSection?.questions?.length || 0}</div>
+          <div><strong>Questions with Logic Rules:</strong> {currentSection?.questions?.filter(q => q.logicRules && q.logicRules.length > 0)?.length || 0}</div>
+          <div><strong>Current Answers:</strong> {JSON.stringify(answers, null, 2)}</div>
+          <div><strong>Active Messages Count:</strong> {Object.keys(activeMessages).length}</div>
+          <div><strong>Active Messages:</strong> {JSON.stringify(activeMessages, null, 2)}</div>
+          <div><strong>Active Conditional Fields Count:</strong> {Object.keys(activeConditionalFields).length}</div>
+          <div><strong>Conditional Questions Count:</strong> {Object.keys(conditionalQuestions).length}</div>
+        </div>
+      )}
+
       <div className="inspection-progress-indicator">
         <div className="inspection-progress-bar">
           <div
             className="inspection-progress-fill"
-            style={{ width: `${((currentSectionIndex + 1) / template.sections.length) * 100}%` }}
+            style={{ width: `${((currentSectionIndex + 1) / (template?.sections?.length || 1)) * 100}%` }}
           ></div>
         </div>
         <div className="inspection-progress-text">
-          Section {currentSectionIndex + 1} of {template.sections.length}
+          Section {currentSectionIndex + 1} of {template?.sections?.length || 0}
         </div>
         {/* Debug info */}
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-          Debug: Template has {template.sections.length} sections, Current: {currentSectionIndex + 1}
+          Debug: Template has {template?.sections?.length || 0} sections, Current: {currentSectionIndex + 1}
         </div>
       </div>
 
       <div className="inspection-section-container">
         <h2 className="inspection-section-title">
-          {currentSection.title}
+          {currentSection?.title || 'Loading...'}
           <span style={{ fontSize: '12px', color: '#666', marginLeft: '10px' }}>
-            (Section ID: {currentSection.id})
+            (Section ID: {currentSection?.id || 'N/A'})
           </span>
         </h2>
-        {currentSection.description && <p className="inspection-section-description">{currentSection.description}</p>}
+        {currentSection?.description && <p className="inspection-section-description">{currentSection.description}</p>}
 
         {/* Render questions for standard sections or garment details for garment sections */}
-        {currentSection.type === "garmentDetails" ? (
+        {currentSection?.type === "garmentDetails" ? (
           <div className="inspection-garment-details-container">
             {renderGarmentDetails(currentSection)}
           </div>
         ) : (
           <div className="inspection-questions-list">
-            {currentSection.questions.map((question) => renderQuestionResponse(question))}
+            {currentSection?.questions?.map((question) => renderQuestionResponse(question)) || []}
           </div>
         )}
 
@@ -3057,7 +3234,7 @@ const QuestionAnswering: React.FC = () => {
           <button className="inspection-primary-button" onClick={goToNextSection} disabled={isSubmitting}>
             {isSubmitting ? (
               <span className="inspection-loading-spinner"></span>
-            ) : currentSectionIndex < template.sections.length - 1 ? (
+            ) : currentSectionIndex < (template?.sections?.length || 1) - 1 ? (
               "Next"
             ) : (
               "Submit"

@@ -698,6 +698,7 @@
 }
 
 .question-item {
+  position: relative; /* Required for absolute positioned logic panel */
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;

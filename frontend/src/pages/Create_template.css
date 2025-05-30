@@ -460,6 +460,7 @@
 }
 
 .question-item {
+  position: relative; /* Required for absolute positioned logic panel */
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -1224,7 +1225,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-right: 30px; /* Make space for delete button */
+  padding-right: 40px; /* Make space for delete button */
 }
 
 .enhanced-logic-condition-row {
@@ -1257,21 +1258,21 @@
   right: 12px;
   background: none;
   border: none;
-  padding: 6px;
-  border-radius: 50%;
+  padding: 8px;
   cursor: pointer;
-  color: #9ca3af;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
   transition: all 0.2s ease;
-  opacity: 0;
-}
-
-.enhanced-logic-rule-builder:hover .enhanced-delete-rule-button {
-  opacity: 1;
+  opacity: 0.7;
 }
 
 .enhanced-delete-rule-button:hover {
-  background-color: #fee2e2;
-  color: #ef4444;
+  background-color: #fef2f2;
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 .delete-icon {
@@ -4250,3 +4251,4 @@
   color: var(--primary-blue);
   background-color: var(--bg-light);
 }
+

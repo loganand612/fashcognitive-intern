@@ -954,9 +954,14 @@ const EnhancedLogicRuleBuilder: React.FC<{
   const [localRule, setLocalRule] = useState<LogicRule>(rule)
   const [showConfig, setShowConfig] = useState(false)
 
+  // Use useCallback to memoize the onRuleChange call
+  const handleRuleChange = useCallback((updatedRule: LogicRule) => {
+    onRuleChange(updatedRule)
+  }, [onRuleChange])
+
   useEffect(() => {
-    onRuleChange(localRule)
-  }, [localRule, onRuleChange])
+    handleRuleChange(localRule)
+  }, [localRule, handleRuleChange])
 
   useEffect(() => {
     setLocalRule(rule)
@@ -1061,7 +1066,11 @@ const EnhancedLogicRulesContainer: React.FC<{
       value: null,
       trigger: null,
     }
-    onRulesChange([...rules, newRule])
+    console.log('Adding new rule:', newRule)
+    console.log('Current rules before adding:', rules.length)
+    const updatedRules = [...rules, newRule]
+    console.log('Updated rules after adding:', updatedRules.length)
+    onRulesChange(updatedRules)
   }
 
   const updateRule = (index: number, updatedRule: LogicRule) => {
@@ -1071,9 +1080,13 @@ const EnhancedLogicRulesContainer: React.FC<{
   }
 
   const deleteRule = (index: number) => {
-    const newRules = [...rules]
-    newRules.splice(index, 1)
-    onRulesChange(newRules)
+    // Add confirmation dialog to prevent accidental deletions
+    if (window.confirm('Are you sure you want to delete this logic rule?')) {
+      const newRules = [...rules]
+      newRules.splice(index, 1)
+      console.log(`Deleting rule at index ${index}. Rules before:`, rules.length, 'Rules after:', newRules.length)
+      onRulesChange(newRules)
+    }
   }
 
   return (
@@ -1125,7 +1138,23 @@ const EnhancedAddLogicButton: React.FC<{
   className?: string
 }> = ({ hasRules, onClick, className = "" }) => {
   return (
-    <button className={`enhanced-add-logic-button ${hasRules ? "has-rules" : ""} ${className}`} onClick={onClick}>
+    <button
+      className={`enhanced-add-logic-button ${hasRules ? "has-rules" : ""} ${className}`}
+      onClick={(e) => {
+        console.log('Enhanced Add Logic Button clicked!');
+        console.log('Has rules:', hasRules);
+        e.preventDefault();
+        e.stopPropagation();
+        onClick();
+      }}
+      style={{
+        backgroundColor: hasRules ? '#e0f2fe' : '#f3f4f6',
+        border: hasRules ? '2px solid #0288d1' : '1px solid #d1d5db',
+        padding: '8px 12px',
+        borderRadius: '6px',
+        cursor: 'pointer'
+      }}
+    >
       <span>{hasRules ? "Edit logic" : "Add logic"}</span>
       {hasRules && <span className="rules-badge">!</span>}
     </button>
@@ -2731,8 +2760,16 @@ const CreateTemplate: React.FC = () => {
             <EnhancedAddLogicButton
               hasRules={question.logicRules?.length ? true : false}
               onClick={() => {
+                console.log('Add Logic button clicked for question:', question.id);
+                console.log('Current showLogicPanel state:', showLogicPanel);
+                console.log('Question response type:', question.responseType);
+                console.log('Is response type supported?', LOGIC_SUPPORTED_TYPES.includes(question.responseType));
+                console.log('Current logic rules:', question.logicRules);
+
                 // Only show logic panel for supported types
-                setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
+                const newState = showLogicPanel === question.id ? null : question.id;
+                console.log('Setting showLogicPanel to:', newState);
+                setShowLogicPanel(newState);
               }}
             />
           )}
@@ -2761,7 +2798,11 @@ const CreateTemplate: React.FC = () => {
               questionType={question.responseType}
               rules={question.logicRules || []}
               options={question.options || []}
-              onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
+              onRulesChange={(rules) => {
+                console.log('Logic rules changed for question:', question.id);
+                console.log('New rules:', rules);
+                updateQuestion(sectionId, question.id, { logicRules: rules });
+              }}
               questions={template.sections.flatMap((s) => s.questions.map((q) => ({ id: q.id, text: q.text })))}
               onClose={() => setShowLogicPanel(null)}
             />

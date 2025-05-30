@@ -211,6 +211,18 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
   const handleSelectTrigger = (index: number, trigger: TriggerAction) => {
     const newRules = [...rules];
     newRules[index].trigger = trigger;
+
+    // Initialize subQuestion for ask_questions trigger
+    if (trigger === "ask_questions") {
+      newRules[index].subQuestion = {
+        text: "Please provide additional information",
+        responseType: "Text"
+      };
+    } else {
+      // Clear subQuestion for other triggers
+      delete newRules[index].subQuestion;
+    }
+
     onRulesChange(newRules);
     setActiveTriggerIndex(null);
   };
@@ -383,6 +395,121 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
                     </div>
                   )}
                 </div>
+
+                {/* Configuration for require_action trigger */}
+                {rule.trigger === "require_action" && (
+                  <div className="Logic-Rules-config" style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                        Action required message:
+                      </label>
+                      <input
+                        type="text"
+                        value={rule.message || ""}
+                        onChange={(e) => {
+                          const newRules = [...rules];
+                          newRules[index].message = e.target.value;
+                          onRulesChange(newRules);
+                        }}
+                        placeholder="Enter action required message"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Configuration for display_message trigger */}
+                {rule.trigger === "display_message" && (
+                  <div className="Logic-Rules-config" style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                        Message to display:
+                      </label>
+                      <input
+                        type="text"
+                        value={rule.message || ""}
+                        onChange={(e) => {
+                          const newRules = [...rules];
+                          newRules[index].message = e.target.value;
+                          onRulesChange(newRules);
+                        }}
+                        placeholder="Enter message to display"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Configuration for ask_questions trigger */}
+                {rule.trigger === "ask_questions" && (
+                  <div className="Logic-Rules-config" style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                        Follow-up question:
+                      </label>
+                      <input
+                        type="text"
+                        value={rule.subQuestion?.text || ""}
+                        onChange={(e) => {
+                          const newRules = [...rules];
+                          if (!newRules[index].subQuestion) {
+                            newRules[index].subQuestion = { text: "", responseType: "Text" };
+                          }
+                          newRules[index].subQuestion!.text = e.target.value;
+                          onRulesChange(newRules);
+                        }}
+                        placeholder="Enter follow-up question"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                        Response type:
+                      </label>
+                      <select
+                        value={rule.subQuestion?.responseType || "Text"}
+                        onChange={(e) => {
+                          const newRules = [...rules];
+                          if (!newRules[index].subQuestion) {
+                            newRules[index].subQuestion = { text: "", responseType: "Text" };
+                          }
+                          newRules[index].subQuestion!.responseType = e.target.value as ResponseType;
+                          onRulesChange(newRules);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="Text">Text</option>
+                        <option value="Number">Number</option>
+                        <option value="Yes/No">Yes/No</option>
+                        <option value="Multiple choice">Multiple choice</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 {activeTriggerIndex === index && (
                   <div
