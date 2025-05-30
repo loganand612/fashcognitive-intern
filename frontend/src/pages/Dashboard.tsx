@@ -130,7 +130,16 @@ const Dashboard: React.FC = () => {
       try {
         const data = await fetchData("users/auth-status/");
         console.log("Auth status response:", data);
-        setCurrentUser(data);
+
+        // Extract user data from the response
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          console.log("Current user set:", data.user);
+          console.log("User role:", data.user.user_role);
+        } else {
+          console.warn("User not authenticated or user data missing");
+          setCurrentUser(null);
+        }
       } catch (error) {
         console.error("Error fetching current user:", error);
         // Set a default user for demo purposes
@@ -169,34 +178,43 @@ const Dashboard: React.FC = () => {
       // For inspectors, fetch assigned templates
       if (currentUser.user_role === 'inspector') {
         try {
-          console.log("Fetching assigned templates for inspector");
+          console.log("Fetching assigned templates for inspector:", currentUser.email);
           const assignments = await fetchData("users/my-assignments/");
           console.log("Assignments data:", assignments);
 
-          // Convert assignments to template format for display
-          const formattedTemplates = assignments.map((assignment: Assignment) => ({
-            id: assignment.template,
-            title: assignment.template_title,
-            lastModified: assignment.assigned_at,
-            access: "Assigned",
-            createdBy: assignment.assigned_by_name,
-            type: "Assigned Template",
-            status: assignment.status_display || assignment.status,
-            date: assignment.assigned_at
-          }));
+          if (Array.isArray(assignments) && assignments.length > 0) {
+            // Convert assignments to template format for display
+            const formattedTemplates = assignments.map((assignment: Assignment) => ({
+              id: assignment.template,
+              title: assignment.template_title,
+              lastModified: assignment.assigned_at,
+              access: "Assigned",
+              createdBy: assignment.assigned_by_name,
+              type: "Assigned Template",
+              status: assignment.status_display || assignment.status,
+              date: assignment.assigned_at
+            }));
 
-          // Sort by assignment date (most recent first) and take only the 3 most recent
-          const sortedTemplates = [...formattedTemplates].sort((a, b) => {
-            const dateA = a.date ? new Date(a.date).getTime() : 0;
-            const dateB = b.date ? new Date(b.date).getTime() : 0;
-            return dateB - dateA;
-          }).slice(0, 3);
+            // Sort by assignment date (most recent first) and take only the 3 most recent
+            const sortedTemplates = [...formattedTemplates].sort((a, b) => {
+              const dateA = a.date ? new Date(a.date).getTime() : 0;
+              const dateB = b.date ? new Date(b.date).getTime() : 0;
+              return dateB - dateA;
+            }).slice(0, 3);
 
-          setTemplates(sortedTemplates);
+            console.log("Formatted templates for inspector:", sortedTemplates);
+            setTemplates(sortedTemplates);
+          } else {
+            console.log("No assignments found for inspector");
+            setTemplates([]);
+          }
           setLoading(false);
           return;
         } catch (err) {
           console.error("Error fetching assigned templates:", err);
+          setError("Failed to fetch assigned templates. Please try again.");
+          setLoading(false);
+          return;
         }
       } else {
         // For admin users, fetch created templates
@@ -351,8 +369,8 @@ const Dashboard: React.FC = () => {
     { icon: Search, label: 'Search', href: '/search' },
     { icon: Bell, label: 'Notifications', href: '/notifications' },
     { icon: FileText, label: 'Templates', href: '/templates' },
-    { icon: ClipboardCheck, label: 'Inspections', href: '/inspections' },
     { icon: Calendar, label: 'Schedule', href: '/schedule' },
+    { icon: ClipboardCheck, label: 'Inspections', href: '/inspection' },
     { icon: Play, label: 'Actions', href: '/actions' },
     { icon: BookOpen, label: 'Training', href: '/training' },
     { icon: Package, label: 'Assets', href: '/assets' },
@@ -421,12 +439,24 @@ const Dashboard: React.FC = () => {
 
       <aside className="dashboard-sidebar">
         <nav className="dashboard-sidebar-nav">
-          {menuItems.map((item, index) => (
-            <a key={index} href={item.href} className="dashboard-nav-link">
-              <item.icon className="dashboard-nav-icon" />
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {menuItems.map((item, index) => {
+            // Make Inspections link inactive for inspector users
+            const isInspectionsLink = item.label === 'Inspections';
+            const isInspectorUser = currentUser?.user_role === 'inspector';
+            const shouldDisableLink = isInspectionsLink && isInspectorUser;
+
+            return shouldDisableLink ? (
+              <span key={index} className="dashboard-nav-link dashboard-nav-link-disabled">
+                <item.icon className="dashboard-nav-icon" />
+                <span>{item.label}</span>
+              </span>
+            ) : (
+              <a key={index} href={item.href} className="dashboard-nav-link">
+                <item.icon className="dashboard-nav-icon" />
+                <span>{item.label}</span>
+              </a>
+            );
+          })}
         </nav>
       </aside>
 
@@ -484,7 +514,12 @@ const Dashboard: React.FC = () => {
           <div className="dashboard-activity-list">
             {templates.length === 0 && !loading ? (
               <div className="dashboard-no-activity">
-                <p>No recent templates found. Create a template to get started.</p>
+                <p>
+                  {currentUser?.user_role === 'inspector'
+                    ? 'No assigned templates found. Contact your administrator to get templates assigned to you.'
+                    : 'No recent templates found. Create a template to get started.'
+                  }
+                </p>
               </div>
             ) : (
               templates.map((template) => (

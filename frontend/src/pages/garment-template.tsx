@@ -1493,6 +1493,8 @@ const Garment_Template: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [template, setTemplate] = useState<Template>(getInitialTemplate())
   const [isLoading, setIsLoading] = useState<boolean>(!!id)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [accessError, setAccessError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<number>(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
@@ -1506,11 +1508,46 @@ const Garment_Template: React.FC = () => {
   const [defectImages, setDefectImages] = useState<{ [defectIndex: number]: string[] }>({})
   const [isExporting, setIsExporting] = useState<boolean>(false)
 
+  // Check user role and permissions
+  useEffect(() => {
+    const checkUserAccess = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/users/current-user/', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+
+          // Check if user is inspector
+          if (userData.user_role === 'inspector') {
+            setAccessError('Only admin users can create or edit templates. Please contact your administrator.');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          setAccessError('Unable to verify user permissions. Please log in again.');
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking user access:', error);
+        setAccessError('Error checking user permissions. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+    };
+
+    checkUserAccess();
+  }, []);
+
   // Load existing template if in edit mode
   useEffect(() => {
     console.log("Garment_Template: Component mounted, id param:", id);
 
-    if (id) {
+    // Only load template if user has access and no access error
+    if (currentUser && !accessError && id) {
       console.log("Garment_Template: Attempting to load template with ID:", id);
       setIsLoading(true)
       fetch(`http://127.0.0.1:8000/api/users/templates/${id}/`)
@@ -1673,10 +1710,11 @@ const Garment_Template: React.FC = () => {
           console.log('Garment_Template: Finished loading attempt, setting isLoading to false')
           setIsLoading(false)
         })
-    } else {
+    } else if (currentUser && !accessError && !id) {
       console.log("Garment_Template: No ID provided, using default template")
+      setIsLoading(false);
     }
-  }, [id, navigate])
+  }, [id, navigate, currentUser, accessError])
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
@@ -4688,6 +4726,42 @@ const Garment_Template: React.FC = () => {
         </div>
       </div>
     )
+  }
+
+  // Show access error if user doesn't have permission
+  if (accessError) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Access Denied</h2>
+        <p style={{ marginBottom: '2rem', maxWidth: '500px' }}>{accessError}</p>
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: 'pointer'
+          }}
+        >
+          Go to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return <div>Loading template...</div>
   }
 
   // Main Render

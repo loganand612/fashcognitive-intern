@@ -2015,6 +2015,8 @@ const CreateTemplate: React.FC = () => {
     description: "",
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [accessError, setAccessError] = useState<string | null>(null)
 
   // Initialize template state
   const [template, setTemplate] = useState<Template>({
@@ -2054,28 +2056,96 @@ const CreateTemplate: React.FC = () => {
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
+  // Check user role and permissions
+  useEffect(() => {
+    const checkUserAccess = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/users/current-user/', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+
+          // Check if user is inspector
+          if (userData.user_role === 'inspector') {
+            setAccessError('Only admin users can create or edit templates. Please contact your administrator.');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          setAccessError('Unable to verify user permissions. Please log in again.');
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking user access:', error);
+        setAccessError('Error checking user permissions. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+    };
+
+    checkUserAccess();
+  }, []);
+
   // Backend API integration - Load template from server
   useEffect(() => {
-    if (id) {
-      axios
-        .get(`http://localhost:8000/api/users/templates/${id}/`)
-        .then((res) => {
-          setTemplate(res.data);
-          setTemplateData(res.data);
-          setActiveSectionId(res.data.sections[0]?.id || null);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          console.error("Failed to load template", err);
-          setIsLoading(false);
-        });
-    } else {
-      const newTemplate = getInitialTemplate();
-      setTemplate(newTemplate);
-      setActiveSectionId(newTemplate.sections[0]?.id || null);
-      setIsLoading(false);
+    // Only load template if user has access and no access error
+    if (currentUser && !accessError) {
+      if (id) {
+        axios
+          .get(`http://localhost:8000/api/users/templates/${id}/`)
+          .then((res) => {
+            setTemplate(res.data);
+            setTemplateData(res.data);
+            setActiveSectionId(res.data.sections[0]?.id || null);
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.error("Failed to load template", err);
+            setIsLoading(false);
+          });
+      } else {
+        const newTemplate = getInitialTemplate();
+        setTemplate(newTemplate);
+        setActiveSectionId(newTemplate.sections[0]?.id || null);
+        setIsLoading(false);
+      }
     }
-  }, [id]);
+  }, [id, currentUser, accessError]);
+
+  // Show access error if user doesn't have permission
+  if (accessError) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Access Denied</h2>
+        <p style={{ marginBottom: '2rem', maxWidth: '500px' }}>{accessError}</p>
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: 'pointer'
+          }}
+        >
+          Go to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   // Show loading state
   if (isLoading || !template) {

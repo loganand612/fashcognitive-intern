@@ -12,8 +12,8 @@ import {
   X,
   Home,
   Bell,
-  ClipboardCheck,
   Calendar,
+  ClipboardCheck,
   Play,
   BookOpen,
   Package,
@@ -64,8 +64,8 @@ const TemplatePage: React.FC = () => {
     { icon: Search, label: "Search", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: FileText, label: "Templates", href: "/templates", active: true },
-    { icon: ClipboardCheck, label: "Inspections", href: "/inspections" },
     { icon: Calendar, label: "Schedule", href: "/schedule" },
+    { icon: ClipboardCheck, label: "Inspections", href: "/inspection" },
     { icon: Play, label: "Actions", href: "/actions" },
     { icon: BookOpen, label: "Training", href: "/training" },
     { icon: Package, label: "Assets", href: "/assets" },
@@ -233,7 +233,15 @@ const TemplatePage: React.FC = () => {
         });
         if (response.ok) {
           const userData = await response.json();
-          setCurrentUser(userData);
+          // Extract user data from the response
+          if (userData.authenticated && userData.user) {
+            setCurrentUser(userData.user);
+            console.log("Current user set:", userData.user);
+            console.log("User role:", userData.user.user_role);
+          } else {
+            console.warn("User not authenticated or user data missing");
+            setCurrentUser(null);
+          }
         }
       } catch (error) {
         console.error('Error fetching current user:', error);
@@ -388,11 +396,22 @@ const TemplatePage: React.FC = () => {
 
       <aside className="dashboard-sidebar">
         <nav className="dashboard-sidebar-nav">
-          {menuItems.map((item, i) => (
-            <a key={i} href={item.href} className={`dashboard-nav-link ${item.active ? "active" : ""}`}>
-              <item.icon size={20} /><span>{item.label}</span>
-            </a>
-          ))}
+          {menuItems.map((item, i) => {
+            // Make Inspections link inactive for inspector users
+            const isInspectionsLink = item.label === 'Inspections';
+            const isInspectorUser = currentUser?.user_role === 'inspector';
+            const shouldDisableLink = isInspectionsLink && isInspectorUser;
+
+            return shouldDisableLink ? (
+              <span key={i} className={`dashboard-nav-link dashboard-nav-link-disabled ${item.active ? "active" : ""}`}>
+                <item.icon size={20} /><span>{item.label}</span>
+              </span>
+            ) : (
+              <a key={i} href={item.href} className={`dashboard-nav-link ${item.active ? "active" : ""}`}>
+                <item.icon size={20} /><span>{item.label}</span>
+              </a>
+            );
+          })}
         </nav>
       </aside>
 
@@ -461,25 +480,27 @@ const TemplatePage: React.FC = () => {
                 Test as {currentUser?.user_role === 'inspector' ? 'Admin' : 'Inspector'}
               </button>
 
-              <div className="tp-create-dropdown" ref={dropdownRef}>
-                <button className="tp-create-button" onClick={toggleCreateDropdown}>
-                  <Plus size={16} />
-                  Create
-                  <ChevronDown size={16} className={`tp-dropdown-icon ${showCreateDropdown ? 'open' : ''}`} />
-                </button>
-                {showCreateDropdown && (
-                  <div className="tp-dropdown-menu">
-                    <a href="/create_templates" className="tp-dropdown-item">
-                      <FileText size={16} />
-                      Standard Template
-                    </a>
-                    <a href="/garment-template" className="tp-dropdown-item">
-                      <FileText size={16} />
-                      Garment Template
-                    </a>
-                  </div>
-                )}
-              </div>
+              {currentUser?.user_role !== 'inspector' && (
+                <div className="tp-create-dropdown" ref={dropdownRef}>
+                  <button className="tp-create-button" onClick={toggleCreateDropdown}>
+                    <Plus size={16} />
+                    Create
+                    <ChevronDown size={16} className={`tp-dropdown-icon ${showCreateDropdown ? 'open' : ''}`} />
+                  </button>
+                  {showCreateDropdown && (
+                    <div className="tp-dropdown-menu">
+                      <a href="/create_templates" className="tp-dropdown-item">
+                        <FileText size={16} />
+                        Standard Template
+                      </a>
+                      <a href="/garment-template" className="tp-dropdown-item">
+                        <FileText size={16} />
+                        Garment Template
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {loading && <div className="tp-loading">Loading templates...</div>}
@@ -578,7 +599,7 @@ const TemplatePage: React.FC = () => {
       </div>
 
       {/* Start from scratch dialog - rendered at the document level for better positioning */}
-      {showStartFromScratchDialog && (
+      {showStartFromScratchDialog && currentUser?.user_role !== 'inspector' && (
         <div
           className="tp-start-scratch-dialog"
           ref={startFromScratchDialogRef}

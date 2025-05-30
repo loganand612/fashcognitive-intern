@@ -188,6 +188,13 @@
   transform: scale(1.1) !important;
 }
 
+.schedule-nav-link-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  color: var(--text-muted) !important;
+}
+
 /* Main Content - matching Dashboard */
 .schedule-main-content {
   margin-left: 280px;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, Edit, FileText, User, Settings, Home, Bell, ClipboardCheck, Calendar, Play, BookOpen, Package, AlertCircle, Search, LogOut, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, User, Settings, Home, Bell, Calendar, Play, BookOpen, Package, AlertCircle, Search, LogOut, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import './TemplateView.css';
 import '../assets/Dashboard.css';
 
@@ -182,8 +182,8 @@ const TemplateView = () => {
     { icon: Search, label: "Search", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: FileText, label: "Templates", href: "/templates", active: true },
-    { icon: ClipboardCheck, label: "Inspections", href: "/inspections" },
     { icon: Calendar, label: "Schedule", href: "/schedule" },
+    { icon: ClipboardCheck, label: "Inspections", href: "/inspection" },
     { icon: Play, label: "Actions", href: "/actions" },
     { icon: BookOpen, label: "Training", href: "/training" },
     { icon: Package, label: "Assets", href: "/assets" },
@@ -246,16 +246,31 @@ const TemplateView = () => {
       {/* Sidebar */}
       <aside className="dashboard-sidebar">
         <nav className="dashboard-sidebar-nav">
-          {menuItems.map((item, index) => (
-            <a
-              key={index}
-              href={item.href}
-              className={`dashboard-nav-link ${item.active ? 'active' : ''}`}
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {menuItems.map((item, index) => {
+            // Make Inspections link inactive for inspector users
+            const isInspectionsLink = item.label === 'Inspections';
+            const isInspectorUser = currentUser?.user_role === 'inspector';
+            const shouldDisableLink = isInspectionsLink && isInspectorUser;
+
+            return shouldDisableLink ? (
+              <span
+                key={index}
+                className={`dashboard-nav-link dashboard-nav-link-disabled ${item.active ? 'active' : ''}`}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </span>
+            ) : (
+              <a
+                key={index}
+                href={item.href}
+                className={`dashboard-nav-link ${item.active ? 'active' : ''}`}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </a>
+            );
+          })}
         </nav>
       </aside>
 

@@ -5,8 +5,8 @@ import {
   Search,
   Bell,
   FileText,
-  ClipboardCheck,
   Calendar,
+  ClipboardCheck,
   Play,
   BookOpen,
   Package,
@@ -108,8 +108,8 @@ const Schedule: React.FC = () => {
     { icon: Search, label: "Search", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: FileText, label: "Templates", href: "/templates" },
-    { icon: ClipboardCheck, label: "Inspections", href: "/inspections" },
     { icon: Calendar, label: "Schedule", href: "/schedule", active: true },
+    { icon: ClipboardCheck, label: "Inspections", href: "/inspection" },
     { icon: Play, label: "Actions", href: "/actions" },
     { icon: BookOpen, label: "Training", href: "/training" },
     { icon: Package, label: "Assets", href: "/assets" },
@@ -123,9 +123,16 @@ const Schedule: React.FC = () => {
         console.log("Fetching current user...");
         const data = await fetchData("users/auth-status/");
         console.log("Auth status response:", data);
-        console.log("Setting current user:", data);
-        setCurrentUser(data);
-        console.log("Current user set successfully");
+
+        // Extract user data from the response
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          console.log("Current user set:", data.user);
+          console.log("User role:", data.user.user_role);
+        } else {
+          console.warn("User not authenticated or user data missing");
+          setCurrentUser(null);
+        }
       } catch (error) {
         console.error("Error fetching current user:", error);
         // Set a default user for demo purposes
@@ -410,6 +417,60 @@ const Schedule: React.FC = () => {
   // Combine templates with assignment status
   useEffect(() => {
     const combineTemplatesWithStatus = () => {
+      // For inspectors, create template-like objects from assignments
+      if (currentUser?.user_role === 'inspector') {
+        const templatesFromAssignments: TemplateWithStatus[] = assignments.map(assignment => {
+          // Determine display status
+          let display_status = assignment.status_display || assignment.status;
+          let display_status_class = assignment.status;
+          let key_date: string | null = null;
+
+          // Set key date based on status
+          switch (assignment.status) {
+            case 'completed':
+              key_date = assignment.completed_at;
+              break;
+            case 'in_progress':
+              key_date = assignment.started_at;
+              break;
+            case 'assigned':
+              key_date = assignment.due_date;
+              break;
+            default:
+              key_date = assignment.due_date;
+          }
+
+          return {
+            id: assignment.template,
+            title: assignment.template_title,
+            description: `Assigned by ${assignment.assigned_by_name}`,
+            created_at: assignment.assigned_at,
+            updated_at: assignment.assigned_at,
+            lastModified: assignment.assigned_at,
+            owner: assignment.assigned_by,
+            createdBy: assignment.assigned_by_name,
+            access: 'assigned',
+            template_type: 'standard',
+            owner_name: assignment.assigned_by_name,
+            assignment: assignment,
+            status: assignment.status,
+            display_status,
+            display_status_class,
+            key_date,
+            assigned_date: assignment.assigned_at,
+            inspector_info: {
+              id: assignment.inspector,
+              name: assignment.inspector_name,
+              email: assignment.inspector_email
+            }
+          };
+        });
+
+        setTemplatesWithStatus(templatesFromAssignments);
+        return;
+      }
+
+      // For admins, use the original logic with templates
       if (!templates.length) {
         setTemplatesWithStatus([]);
         return;
@@ -478,7 +539,7 @@ const Schedule: React.FC = () => {
     };
 
     combineTemplatesWithStatus();
-  }, [templates, assignments]);
+  }, [templates, assignments, currentUser]);
 
   // Format date for display
   const formatDate = (dateString: string | null) => {
@@ -497,20 +558,10 @@ const Schedule: React.FC = () => {
     (template.inspector_info?.name.toLowerCase().includes(searchTerm.toLowerCase()) || false)
   );
 
-  // For inspectors: Show only templates assigned to them
+  // For inspectors: Show all filtered templates (they're already filtered to their assignments)
   // For admins: Show all templates
   // If user not loaded yet, show all templates (assume admin for now)
-  const displayTemplates = !currentUser
-    ? filteredTemplates // Show all templates if user not loaded yet
-    : currentUser.user_role === 'admin'
-    ? filteredTemplates // Show all templates for admin
-    : currentUser.user_role === 'inspector'
-    ? filteredTemplates.filter(template => {
-        // For inspectors, show only templates assigned to them with active assignments
-        return template.inspector_info?.id === currentUser?.id &&
-               ['assigned', 'in_progress'].includes(template.display_status_class);
-      })
-    : filteredTemplates; // Default to showing all templates
+  const displayTemplates = filteredTemplates;
 
   // Separate templates by status for better organization
   const completedTemplates = displayTemplates.filter(t => t.display_status_class === 'completed');
@@ -525,14 +576,11 @@ const Schedule: React.FC = () => {
       return displayTemplates;
     }
 
-    // For inspectors, show assigned templates for my-schedules, empty for others
+    // For inspectors, show their assigned templates for my-schedules, empty for others
     if (currentUser.user_role === 'inspector') {
       if (activeTab === 'my-schedules') {
-        // Show templates assigned to this inspector
-        return displayTemplates.filter(template =>
-          template.inspector_info?.id === currentUser?.id &&
-          ['assigned', 'in_progress'].includes(template.display_status_class)
-        );
+        // Show all templates (they're already filtered to this inspector's assignments)
+        return displayTemplates;
       }
       return []; // Empty for other tabs for inspectors
     }
@@ -564,14 +612,15 @@ const Schedule: React.FC = () => {
   const tabTemplates = getTabTemplates();
 
   // Debug logging (can be removed in production)
-  // console.log("=== DEBUG INFO ===");
-  // console.log("Current user:", currentUser);
-  // console.log("Templates:", templates);
-  // console.log("Templates with status:", templatesWithStatus);
-  // console.log("Filtered templates:", filteredTemplates);
-  // console.log("Display templates:", displayTemplates);
-  // console.log("Tab templates:", tabTemplates);
-  // console.log("Active tab:", activeTab);
+  console.log("=== SCHEDULE DEBUG INFO ===");
+  console.log("Current user:", currentUser);
+  console.log("Templates:", templates);
+  console.log("Assignments:", assignments);
+  console.log("Templates with status:", templatesWithStatus);
+  console.log("Filtered templates:", filteredTemplates);
+  console.log("Display templates:", displayTemplates);
+  console.log("Tab templates:", tabTemplates);
+  console.log("Active tab:", activeTab);
 
   return (
     <div className="schedule-container">
@@ -598,12 +647,24 @@ const Schedule: React.FC = () => {
       {/* Sidebar */}
       <aside className="schedule-sidebar">
         <nav className="schedule-sidebar-nav">
-          {menuItems.map((item, index) => (
-            <a key={index} href={item.href} className={`schedule-nav-link ${item.active ? 'active' : ''}`}>
-              <item.icon className="schedule-nav-icon" />
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {menuItems.map((item, index) => {
+            // Make Inspections link inactive for inspector users
+            const isInspectionsLink = item.label === 'Inspections';
+            const isInspectorUser = currentUser?.user_role === 'inspector';
+            const shouldDisableLink = isInspectionsLink && isInspectorUser;
+
+            return shouldDisableLink ? (
+              <span key={index} className={`schedule-nav-link schedule-nav-link-disabled ${item.active ? 'active' : ''}`}>
+                <item.icon className="schedule-nav-icon" />
+                <span>{item.label}</span>
+              </span>
+            ) : (
+              <a key={index} href={item.href} className={`schedule-nav-link ${item.active ? 'active' : ''}`}>
+                <item.icon className="schedule-nav-icon" />
+                <span>{item.label}</span>
+              </a>
+            );
+          })}
         </nav>
       </aside>
 
@@ -633,13 +694,15 @@ const Schedule: React.FC = () => {
           </button>
 
           <div className="schedule-header-actions">
-            <button
-              className="schedule-inspections-button"
-              onClick={handleScheduleInspections}
-            >
-              <Plus size={16} />
-              Schedule inspections
-            </button>
+            {currentUser?.user_role === 'admin' && (
+              <button
+                className="schedule-inspections-button"
+                onClick={handleScheduleInspections}
+              >
+                <Plus size={16} />
+                Schedule inspections
+              </button>
+            )}
             {currentUser?.user_role === 'admin' && (
               <button
                 className="schedule-assign-button"

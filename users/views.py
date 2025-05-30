@@ -195,6 +195,13 @@ class TemplateCreateView(APIView):
         print(f"sessionid: {request.COOKIES.get('sessionid')}")
         if not request.user.is_authenticated:
             return Response({"error": "User is not authenticated"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Only admin users can create templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can create templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         try:
             title = request.data.get("title")
             description = request.data.get("description")
@@ -345,6 +352,13 @@ class TemplateCreateView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, pk=None):
+        # Only admin users can update templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can update templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         request.data._mutable = True  # May be required if using QueryDict
 
         if not pk:
@@ -395,6 +409,13 @@ class TemplateDetailView(RetrieveAPIView):
         return response
 
     def patch(self, request, pk=None):
+        # Only admin users can update templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can update templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         template = self.get_object()
 
         try:
@@ -677,6 +698,13 @@ class GarmentTemplateCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # Only admin users can create templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can create templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         # Check if this is a publish request
         if request.data.get("publish") == "true":
             return self.publish_template(request)
