@@ -1,9 +1,8 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle } from "lucide-react"
+import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle, Trash2, Plus } from "lucide-react"
 import { fetchData, postData } from "../utils/api"
 import "./Inspection.css"
 
@@ -49,11 +48,40 @@ interface Question {
   siteOptions?: string[]  // Custom site names for Site response type
 }
 
+// Garment-specific types
+type AQLLevel = "1.5" | "2.5" | "4.0" | "6.5"
+type InspectionLevel = "I" | "II" | "III"
+type SamplingPlan = "Single" | "Double" | "Multiple"
+type Severity = "Normal" | "Tightened" | "Reduced"
+
+interface GarmentDetailsContent {
+  aqlSettings: {
+    aqlLevel: AQLLevel
+    inspectionLevel: InspectionLevel
+    samplingPlan: SamplingPlan
+    severity: Severity
+  }
+  sizes: string[]
+  colors: string[]
+  includeCartonOffered: boolean
+  includeCartonInspected: boolean
+  defaultDefects: string[]
+}
+
+interface StandardSectionContent {
+  description?: string
+  questions: Question[]
+}
+
+type SectionType = "standard" | "garmentDetails"
+
 interface Section {
   id: string
   title: string
   description?: string
   questions: Question[]
+  type?: SectionType
+  content?: StandardSectionContent | GarmentDetailsContent
 }
 
 interface Template {
@@ -149,7 +177,7 @@ const isConditionMet = (question: Question, rule: LogicRule): boolean => {
       }
       break
     case "not equal to":
-      conditionMet = compareValue != ruleValue
+      conditionMet = compareValue !== ruleValue
       break
     case "greater than or equal to":
       conditionMet = typeof compareValue === "number" && typeof ruleValue === "number" && compareValue >= ruleValue
@@ -169,8 +197,8 @@ const isConditionMet = (question: Question, rule: LogicRule): boolean => {
 const QuestionAnswering: React.FC = () => {
   const navigate = useNavigate()
   const [template, setTemplate] = useState<Template | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [, setIsLoading] = useState(true)
+  const [, setError] = useState<string | null>(null)
   const [currentInspector, setCurrentInspector] = useState<Inspector | null>(null)
   const [templateLoaded, setTemplateLoaded] = useState(false) // Track if template is already loaded
 
@@ -316,6 +344,20 @@ const QuestionAnswering: React.FC = () => {
           console.log('Raw API response:', data)
           console.log('Number of sections in API response:', data.sections?.length)
 
+          // Check for garment details sections specifically
+          const garmentSections = data.sections?.filter((s: any) => s.type === "garmentDetails") || []
+          console.log('Garment details sections found:', garmentSections.length)
+          garmentSections.forEach((section: any, index: number) => {
+            console.log(`Garment section ${index + 1}:`, {
+              id: section.id,
+              title: section.title,
+              type: section.type,
+              hasContent: !!section.content,
+              contentKeys: section.content ? Object.keys(section.content) : [],
+              content: section.content
+            })
+          })
+
           // Debug: Log the entire raw data structure
           console.log('=== FULL API RESPONSE DEBUG ===')
           console.log(JSON.stringify(data, null, 2))
@@ -334,13 +376,47 @@ const QuestionAnswering: React.FC = () => {
             sections: data.sections.map((section: any, index: number) => {
               console.log(`Processing section ${index + 1}: "${section.title}" (ID: ${section.id})`)
 
+              // Handle garment details section
+              if (section.type === "garmentDetails") {
+                console.log('Processing garment details section:', section)
+
+                // Ensure garment details section has proper content
+                let garmentContent = section.content
+                if (!garmentContent) {
+                  console.log('No content found for garment section, creating default content')
+                  garmentContent = {
+                    aqlSettings: {
+                      aqlLevel: "2.5" as AQLLevel,
+                      inspectionLevel: "II" as InspectionLevel,
+                      samplingPlan: "Single" as SamplingPlan,
+                      severity: "Normal" as Severity
+                    },
+                    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+                    colors: ['BLUE', 'RED', 'BLACK'],
+                    includeCartonOffered: true,
+                    includeCartonInspected: true,
+                    defaultDefects: ['Stitching', 'Fabric', 'Color', 'Measurement', 'Packing']
+                  }
+                }
+
+                return {
+                  id: section.id.toString(),
+                  title: section.title,
+                  description: section.description || "",
+                  questions: [],
+                  type: "garmentDetails" as SectionType,
+                  content: garmentContent
+                }
+              }
+
               if (!section.questions || !Array.isArray(section.questions)) {
                 console.warn(`Section ${section.title} has no questions or invalid questions array`)
                 return {
                   id: section.id.toString(),
                   title: section.title,
                   description: section.description || "",
-                  questions: []
+                  questions: [],
+                  type: "standard" as SectionType
                 }
               }
 
@@ -439,6 +515,40 @@ const QuestionAnswering: React.FC = () => {
           setTemplate(transformedTemplate)
           setTemplateLoaded(true) // Mark template as loaded
           console.log('=== TEMPLATE SET SUCCESSFULLY ===')
+
+          // Initialize garment report data if this is a garment template
+          const garmentSection = transformedTemplate.sections.find(s => s.type === "garmentDetails")
+          if (garmentSection && garmentSection.content && isGarmentDetailsContent(garmentSection.content)) {
+            console.log('Initializing garment report data for inspection')
+            const garmentContent = garmentSection.content
+
+            // Handle both camelCase and snake_case property names
+            const defaultDefects = garmentContent.defaultDefects || (garmentContent as any).default_defects || []
+            const aqlSettings = garmentContent.aqlSettings || (garmentContent as any).aql_settings || {
+              aqlLevel: "2.5",
+              inspectionLevel: "II",
+              samplingPlan: "Single",
+              severity: "Normal"
+            }
+
+            // Initialize defects from template
+            const initialDefects = defaultDefects.map((defect: string) => ({
+              type: defect,
+              remarks: "",
+              critical: 0,
+              major: 0,
+              minor: 0
+            }))
+
+            setReportData(prev => ({
+              ...prev,
+              defects: initialDefects,
+              aqlSettings: {
+                ...aqlSettings,
+                status: "PASS" as const
+              }
+            }))
+          }
 
           // After loading the template, fetch the inspector info
           await fetchInspectorInfo();
@@ -734,11 +844,324 @@ const QuestionAnswering: React.FC = () => {
   const [activeConditionalFields, setActiveConditionalFields] = useState<Record<string, LogicRule[]>>({})
   const [conditionalQuestions, setConditionalQuestions] = useState<Record<string, Question[]>>({})
   const [conditionalAnswers, setConditionalAnswers] = useState<Record<string, any>>({})
-  const [notifications, setNotifications] = useState<Record<string, string>>({})
+  const [, setNotifications] = useState<Record<string, string>>({})
   const [assignment, setAssignment] = useState<any>(null)
   const [assignmentError, setAssignmentError] = useState<string | null>(null)
   const [showSignatureModal, setShowSignatureModal] = useState(false)
+
+  // Garment inspection specific state
+  const [defectImages, setDefectImages] = useState<Record<number, string[]>>({})
+
+  interface QuantityData {
+    orderQty: number | string
+    offeredQty: number | string
+  }
+
+  interface ReportData {
+    quantities: {
+      [color: string]: {
+        [size: string]: QuantityData
+      }
+    }
+    cartonOffered: string
+    cartonInspected: string
+    cartonToInspect: string
+    defects: {
+      type: string
+      remarks: string
+      critical: number | string
+      major: number | string
+      minor: number | string
+      images?: string[]
+    }[]
+    aqlSettings: {
+      aqlLevel: AQLLevel
+      inspectionLevel: InspectionLevel
+      samplingPlan: SamplingPlan
+      severity: Severity
+      status: "PASS" | "FAIL"
+    }
+    editingAql: boolean
+    newSize: string
+    newColor: string
+  }
+
+  const [reportData, setReportData] = useState<ReportData>({
+    quantities: {},
+    cartonOffered: "30",
+    cartonInspected: "5",
+    cartonToInspect: "5",
+    defects: [],
+    aqlSettings: {
+      aqlLevel: "2.5",
+      inspectionLevel: "II",
+      samplingPlan: "Single",
+      severity: "Normal",
+      status: "PASS"
+    },
+    editingAql: false,
+    newSize: "",
+    newColor: ""
+  })
   const [activeQuestion, setActiveQuestion] = useState<Question | null>(null)
+
+  // Helper functions for garment details
+  const isGarmentDetailsContent = (content: any): content is GarmentDetailsContent => {
+    console.log('isGarmentDetailsContent checking:', content)
+    if (!content || typeof content !== 'object') {
+      console.log('Content is not an object')
+      return false
+    }
+
+    // Check for required properties - be flexible with the structure
+    const hasAqlSettings = 'aqlSettings' in content || 'aql_settings' in content
+    const hasSizes = 'sizes' in content && Array.isArray(content.sizes)
+    const hasColors = 'colors' in content && Array.isArray(content.colors)
+
+    console.log('hasAqlSettings:', hasAqlSettings)
+    console.log('hasSizes:', hasSizes)
+    console.log('hasColors:', hasColors)
+
+    return hasAqlSettings && hasSizes && hasColors
+  }
+
+  const handleQuantityChange = (color: string, size: string, field: 'orderQty' | 'offeredQty', value: string) => {
+    setReportData(prev => ({
+      ...prev,
+      quantities: {
+        ...prev.quantities,
+        [color]: {
+          ...prev.quantities[color],
+          [size]: {
+            ...prev.quantities[color]?.[size],
+            [field]: value
+          }
+        }
+      }
+    }))
+  }
+
+  const updateDefect = (index: number, field: string, value: any) => {
+    setReportData(prev => ({
+      ...prev,
+      defects: prev.defects.map((defect, i) =>
+        i === index ? { ...defect, [field]: value } : defect
+      )
+    }))
+  }
+
+  const addDefect = () => {
+    setReportData(prev => ({
+      ...prev,
+      defects: [...prev.defects, {
+        type: "",
+        remarks: "",
+        critical: 0,
+        major: 0,
+        minor: 0
+      }]
+    }))
+  }
+
+  const removeDefect = (index: number) => {
+    setReportData(prev => ({
+      ...prev,
+      defects: prev.defects.filter((_, i) => i !== index)
+    }))
+  }
+
+  const calculateColumnTotal = (size: string, field: 'orderQty' | 'offeredQty'): number => {
+    return Object.values(reportData.quantities).reduce((total, colorData) => {
+      const qty = colorData[size]?.[field]
+      return total + (typeof qty === 'number' ? qty : parseInt(qty as string) || 0)
+    }, 0)
+  }
+
+  const calculateGrandTotal = (field: 'orderQty' | 'offeredQty'): number => {
+    return Object.values(reportData.quantities).reduce((total, colorData) => {
+      return total + Object.values(colorData).reduce((colorTotal, sizeData) => {
+        const qty = sizeData[field]
+        return colorTotal + (typeof qty === 'number' ? qty : parseInt(qty as string) || 0)
+      }, 0)
+    }, 0)
+  }
+
+  const calculateRowTotal = (color: string, field: 'orderQty' | 'offeredQty'): number => {
+    const colorData = reportData.quantities[color]
+    if (!colorData) return 0
+    return Object.values(colorData).reduce((total, sizeData) => {
+      const qty = sizeData[field]
+      return total + (typeof qty === 'number' ? qty : parseInt(qty as string) || 0)
+    }, 0)
+  }
+
+  const calculateTotalDefects = (type: 'critical' | 'major' | 'minor'): number => {
+    return reportData.defects.reduce((total, defect) => {
+      const value = defect[type]
+      return total + (typeof value === 'number' ? value : parseInt(value?.toString() || '0', 10) || 0)
+    }, 0)
+  }
+
+  // Helper functions for garment details editing - matching garment-template.tsx
+  const updateGarmentDetails = (sectionId: string, updates: Partial<GarmentDetailsContent>) => {
+    if (!template) return
+
+    setTemplate(prev => {
+      if (!prev) return prev
+
+      return {
+        ...prev,
+        sections: prev.sections.map(section => {
+          if (section.id === sectionId && section.type === "garmentDetails") {
+            // Type assertion to ensure we're working with GarmentDetailsContent
+            const currentContent = section.content as GarmentDetailsContent
+            return {
+              ...section,
+              content: {
+                ...currentContent,
+                ...updates
+              } as GarmentDetailsContent
+            }
+          }
+          return section
+        })
+      }
+    })
+  }
+
+  const addReportSize = () => {
+    if (!reportData.newSize.trim()) return
+
+    const section = template?.sections.find((s) => s.type === "garmentDetails")
+    if (!section || !isGarmentDetailsContent(section.content)) return
+
+    if (section.content.sizes.includes(reportData.newSize.trim())) {
+      alert("This size already exists")
+      return
+    }
+
+    const updatedSizes = [...section.content.sizes, reportData.newSize.trim()]
+    updateGarmentDetails(section.id, { sizes: updatedSizes })
+    setReportData((prev) => ({ ...prev, newSize: "" }))
+  }
+
+  const addReportColor = () => {
+    if (!reportData.newColor.trim()) return
+
+    const section = template?.sections.find((s) => s.type === "garmentDetails")
+    if (!section || !isGarmentDetailsContent(section.content)) return
+
+    if (section.content.colors.includes(reportData.newColor.trim())) {
+      alert("This color already exists")
+      return
+    }
+
+    const updatedColors = [...section.content.colors, reportData.newColor.trim()]
+    updateGarmentDetails(section.id, { colors: updatedColors })
+    setReportData((prev) => ({ ...prev, newColor: "" }))
+  }
+
+  const removeReportSize = (size: string) => {
+    const section = template?.sections.find((s) => s.type === "garmentDetails")
+    if (!section || !isGarmentDetailsContent(section.content)) return
+
+    // eslint-disable-next-line no-restricted-globals
+    if (confirm(`Are you sure you want to remove size "${size}"?`)) {
+      const updatedSizes = section.content.sizes.filter(s => s !== size)
+      updateGarmentDetails(section.id, { sizes: updatedSizes })
+
+      // Clean up quantities for removed size
+      setReportData(prev => ({
+        ...prev,
+        quantities: Object.fromEntries(
+          Object.entries(prev.quantities).map(([color, colorData]) => [
+            color,
+            Object.fromEntries(
+              Object.entries(colorData).filter(([sizeKey]) => sizeKey !== size)
+            )
+          ])
+        )
+      }))
+    }
+  }
+
+  const removeReportColor = (color: string) => {
+    const section = template?.sections.find((s) => s.type === "garmentDetails")
+    if (!section || !isGarmentDetailsContent(section.content)) return
+
+    // eslint-disable-next-line no-restricted-globals
+    if (confirm(`Are you sure you want to remove color "${color}"?`)) {
+      const updatedColors = section.content.colors.filter(c => c !== color)
+      updateGarmentDetails(section.id, { colors: updatedColors })
+
+      // Clean up quantities for removed color
+      setReportData(prev => ({
+        ...prev,
+        quantities: Object.fromEntries(
+          Object.entries(prev.quantities).filter(([colorKey]) => colorKey !== color)
+        )
+      }))
+    }
+  }
+
+  const editReportSize = (oldSize: string) => {
+    const newSize = prompt("Edit size", oldSize)
+    if (newSize && newSize !== oldSize) {
+      const section = template?.sections.find((s) => s.type === "garmentDetails")
+      if (!section || !isGarmentDetailsContent(section.content)) return
+
+      if (section.content.sizes.includes(newSize)) {
+        alert("This size already exists")
+        return
+      }
+
+      const updatedSizes = section.content.sizes.map((s) => (s === oldSize ? newSize : s))
+      updateGarmentDetails(section.id, { sizes: updatedSizes })
+
+      // Update quantities for renamed size
+      setReportData(prev => ({
+        ...prev,
+        quantities: Object.fromEntries(
+          Object.entries(prev.quantities).map(([color, colorData]) => [
+            color,
+            Object.fromEntries(
+              Object.entries(colorData).map(([sizeKey, sizeData]) => [
+                sizeKey === oldSize ? newSize : sizeKey,
+                sizeData
+              ])
+            )
+          ])
+        )
+      }))
+    }
+  }
+
+  const editReportColor = (oldColor: string) => {
+    const newColor = prompt("Edit color", oldColor)
+    if (newColor && newColor !== oldColor) {
+      const section = template?.sections.find((s) => s.type === "garmentDetails")
+      if (!section || !isGarmentDetailsContent(section.content)) return
+
+      if (section.content.colors.includes(newColor)) {
+        alert("This color already exists")
+        return
+      }
+
+      const updatedColors = section.content.colors.map((c) => (c === oldColor ? newColor : c))
+      updateGarmentDetails(section.id, { colors: updatedColors })
+
+      // Update quantities for renamed color
+      setReportData(prev => ({
+        ...prev,
+        quantities: {
+          ...Object.fromEntries(
+            Object.entries(prev.quantities).filter(([colorKey]) => colorKey !== oldColor)
+          ),
+          [newColor]: prev.quantities[oldColor] || {}
+        }
+      }))
+    }
+  }
 
   // Update answers when template changes
   useEffect(() => {
@@ -1225,6 +1648,59 @@ const QuestionAnswering: React.FC = () => {
       setCurrentSectionIndex(currentSectionIndex - 1)
       window.scrollTo(0, 0)
     }
+  }
+
+  // Garment-specific calculation functions are defined above
+
+  // Image upload functions for defects
+  const handleDefectImageUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const newImages: string[] = []
+    let loadedCount = 0
+
+    Array.from(files).forEach((file) => {
+      if (file.type.match(/^image\//)) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const result = event.target?.result as string
+          if (result) {
+            newImages.push(result)
+            loadedCount++
+
+            if (loadedCount === files.length) {
+              setDefectImages((prev) => {
+                const currentImages = prev[index] || []
+                return {
+                  ...prev,
+                  [index]: [...currentImages, ...newImages],
+                }
+              })
+            }
+          }
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+
+  const removeDefectImage = (defectIndex: number, imageIndex: number) => {
+    setDefectImages(prev => {
+      const currentImages = prev[defectIndex] || []
+      const newImages = currentImages.filter((_, i) => i !== imageIndex)
+
+      if (newImages.length === 0) {
+        const newState = { ...prev }
+        delete newState[defectIndex]
+        return newState
+      } else {
+        return {
+          ...prev,
+          [defectIndex]: newImages
+        }
+      }
+    })
   }
 
   const handleSubmit = async () => {
@@ -2021,7 +2497,367 @@ const QuestionAnswering: React.FC = () => {
     }
   }
 
+  // Render garment details section - matching garment-template.tsx report section exactly
+  const renderGarmentDetails = (section: Section) => {
+    if (!section.content || !isGarmentDetailsContent(section.content)) {
+      return <div>Invalid garment details section</div>
+    }
 
+    const garmentContent = section.content
+
+    // Handle both camelCase and snake_case property names with defaults
+    const sizes = garmentContent.sizes || ['S', 'M', 'L', 'XL', 'XXL']
+    const colors = garmentContent.colors || ['BLUE', 'RED', 'BLACK']
+    const includeCartonOffered = garmentContent.includeCartonOffered ?? true
+    const includeCartonInspected = garmentContent.includeCartonInspected ?? true
+
+    return (
+      <>
+        <div className="report-section-preview">
+          <h4>Garment Details</h4>
+
+          {/* Add/Edit Size and Color Controls - matching garment-template.tsx */}
+          <div className="inspection-garment-grid-actions">
+            <div className="inspection-grid-action-item">
+              <input
+                type="text"
+                placeholder="Add Size"
+                value={reportData.newSize}
+                onChange={(e) => setReportData((prev) => ({ ...prev, newSize: e.target.value }))}
+                className="inspection-grid-action-input"
+              />
+              <button className="inspection-grid-action-button" onClick={addReportSize}>
+                Add Size
+              </button>
+            </div>
+            <div className="inspection-grid-action-item">
+              <input
+                type="text"
+                placeholder="Add Color"
+                value={reportData.newColor}
+                onChange={(e) => setReportData((prev) => ({ ...prev, newColor: e.target.value }))}
+                className="inspection-grid-action-input"
+              />
+              <button className="inspection-grid-action-button" onClick={addReportColor}>
+                Add Color
+              </button>
+            </div>
+          </div>
+
+          <div className="garment-grid-preview">
+            <table className="garment-table-preview">
+              <thead>
+                <tr>
+                  <th>Color</th>
+                  {sizes.map((size: string) => (
+                    <React.Fragment key={size}>
+                      <th colSpan={2} className="size-header">
+                        <div className="inspection-size-header-content">
+                          <span>{size}</span>
+                          <div className="inspection-size-actions">
+                            <button
+                              className="inspection-size-edit-btn"
+                              onClick={() => editReportSize(size)}
+                              title={`Edit size ${size}`}
+                            >
+                              <Edit size={12} />
+                            </button>
+                            <button
+                              className="inspection-size-remove-btn"
+                              onClick={() => removeReportSize(size)}
+                              title={`Remove size ${size}`}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </th>
+                    </React.Fragment>
+                  ))}
+                  <th colSpan={2} className="size-header">Total</th>
+                </tr>
+                <tr>
+                  <th></th>
+                  {sizes.map((size: string) => (
+                    <React.Fragment key={size}>
+                      <th className="qty-header">Order Qty</th>
+                      <th className="qty-header">Offered Qty</th>
+                    </React.Fragment>
+                  ))}
+                  <th className="qty-header">Order Qty</th>
+                  <th className="qty-header">Offered Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {colors.map((color: string) => (
+                  <tr key={color}>
+                    <td className="color-column">
+                      <div className="inspection-color-cell">
+                        <span>{color}</span>
+                        <div className="inspection-color-actions">
+                          <button
+                            className="inspection-color-edit-btn"
+                            onClick={() => editReportColor(color)}
+                            title={`Edit color ${color}`}
+                          >
+                            <Edit size={12} />
+                          </button>
+                          <button
+                            className="inspection-color-remove-btn"
+                            onClick={() => removeReportColor(color)}
+                            title={`Remove color ${color}`}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                    {sizes.map((size: string) => (
+                      <React.Fragment key={size}>
+                        <td>
+                          <input
+                            type="number"
+                            className="qty-input"
+                            value={reportData.quantities[color]?.[size]?.orderQty || ""}
+                            onChange={(e) => handleQuantityChange(color, size, "orderQty", e.target.value)}
+                            placeholder="0"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="qty-input"
+                            value={reportData.quantities[color]?.[size]?.offeredQty || ""}
+                            onChange={(e) => handleQuantityChange(color, size, "offeredQty", e.target.value)}
+                            placeholder="0"
+                          />
+                        </td>
+                      </React.Fragment>
+                    ))}
+                    <td className="total-cell">{calculateRowTotal(color, "orderQty")}</td>
+                    <td className="total-cell">{calculateRowTotal(color, "offeredQty")}</td>
+                  </tr>
+                ))}
+                <tr className="total-row">
+                  <td className="color-column">Total</td>
+                  {sizes.map((size: string) => (
+                    <React.Fragment key={size}>
+                      <td className="total-cell">{calculateColumnTotal(size, "orderQty")}</td>
+                      <td className="total-cell">{calculateColumnTotal(size, "offeredQty")}</td>
+                    </React.Fragment>
+                  ))}
+                  <td className="total-cell">{calculateGrandTotal("orderQty")}</td>
+                  <td className="total-cell">{calculateGrandTotal("offeredQty")}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {includeCartonOffered && (
+              <div className="carton-info">
+                <label>No of Carton Offered:</label>
+                <input
+                  type="number"
+                  className="carton-input"
+                  value={reportData.cartonOffered}
+                  onChange={(e) => setReportData(prev => ({ ...prev, cartonOffered: e.target.value }))}
+                />
+              </div>
+            )}
+
+            <div className="carton-info">
+              <label>No of Carton to Inspect:</label>
+              <input
+                type="number"
+                className="carton-input"
+                value={reportData.cartonToInspect}
+                onChange={(e) => setReportData(prev => ({ ...prev, cartonToInspect: e.target.value }))}
+              />
+            </div>
+
+            {includeCartonInspected && (
+              <div className="carton-info">
+                <label>No of Carton Inspected:</label>
+                <input
+                  type="number"
+                  className="carton-input"
+                  value={reportData.cartonInspected}
+                  onChange={(e) => setReportData(prev => ({ ...prev, cartonInspected: e.target.value }))}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="report-section-preview">
+          <h4>Defect Log</h4>
+
+          <div className="defect-log-preview">
+            <table className="defect-table-preview">
+              <thead>
+                <tr>
+                  <th>Defect Type</th>
+                  <th>Remarks</th>
+                  <th>Critical</th>
+                  <th>Major</th>
+                  <th>Minor</th>
+                  <th>Total</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.defects.map((defect, index) => (
+                  <tr key={index}>
+                    <td>
+                      <input
+                        type="text"
+                        className="defect-input"
+                        value={defect.type}
+                        onChange={(e) => updateDefect(index, "type", e.target.value)}
+                        placeholder="Enter defect type"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="defect-input"
+                        value={defect.remarks}
+                        onChange={(e) => updateDefect(index, "remarks", e.target.value)}
+                        placeholder="Enter remarks"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="defect-input"
+                        value={defect.critical || 0}
+                        onChange={(e) => updateDefect(index, "critical", e.target.value)}
+                        placeholder="0"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="defect-input"
+                        value={defect.major}
+                        onChange={(e) => updateDefect(index, "major", e.target.value)}
+                        placeholder="0"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="defect-input"
+                        value={defect.minor}
+                        onChange={(e) => updateDefect(index, "minor", e.target.value)}
+                        placeholder="0"
+                      />
+                    </td>
+                    <td>
+                      {Number.parseInt(defect.critical?.toString() || "0", 10) +
+                        Number.parseInt(defect.major?.toString() || "0", 10) +
+                        Number.parseInt(defect.minor?.toString() || "0", 10)}
+                    </td>
+                    <td className="defect-actions">
+                      <label className="image-upload-label">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleDefectImageUpload(index, e)}
+                          className="sr-only"
+                        />
+                        <ImageIcon size={16} className="action-icon" />
+                      </label>
+                      <button
+                        className="defect-action-button"
+                        onClick={() => removeDefect(index)}
+                      >
+                        <Trash2 size={16} className="action-icon" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                <tr className="total-row">
+                  <td colSpan={2}>Total</td>
+                  <td>{calculateTotalDefects("critical")}</td>
+                  <td>{calculateTotalDefects("major")}</td>
+                  <td>{calculateTotalDefects("minor")}</td>
+                  <td>
+                    {calculateTotalDefects("critical") +
+                      calculateTotalDefects("major") +
+                      calculateTotalDefects("minor")}
+                  </td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="add-defect-container">
+              <button className="add-defect-button" onClick={addDefect}>
+                <Plus size={16} /> Add Defect
+              </button>
+            </div>
+
+            <div className="photograph-section">
+              <h5>Photographs</h5>
+              <div className="defect-images-grid">
+                {Object.entries(defectImages).map(([defectIndex, images]) => {
+                  const index = Number.parseInt(defectIndex, 10)
+                  const defect = reportData.defects[index]
+                  if (!defect || !images.length) return null
+
+                  return images.map((image, imageIndex) => (
+                    <div key={`${defectIndex}-${imageIndex}`} className="defect-image-card">
+                      <div className="defect-image-header">
+                        <span className="defect-image-type">{defect.type}</span>
+                        <button
+                          className="remove-image-button"
+                          onClick={() => removeDefectImage(index, imageIndex)}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <div className="defect-image-container">
+                        <img
+                          src={image || "/placeholder.svg"}
+                          alt={`Defect: ${defect.type}`}
+                          className="defect-image"
+                        />
+                      </div>
+                      <div className="defect-image-remarks">{defect.remarks}</div>
+                    </div>
+                  ))
+                })}
+              </div>
+            </div>
+
+            <div className="aql-result-preview">
+              <div className="aql-header">
+                <h5>AQL Result</h5>
+              </div>
+              <div className="aql-info">
+                <p>
+                  <strong>AQL Level:</strong> {reportData.aqlSettings.aqlLevel}
+                </p>
+                <p>
+                  <strong>Inspection Level:</strong> {reportData.aqlSettings.inspectionLevel}
+                </p>
+                <p>
+                  <strong>Sampling Plan:</strong> {reportData.aqlSettings.samplingPlan}
+                </p>
+                <p>
+                  <strong>Severity:</strong> {reportData.aqlSettings.severity}
+                </p>
+                <p className={`aql-status ${reportData.aqlSettings.status.toLowerCase()}`}>
+                  <strong>Status:</strong> {reportData.aqlSettings.status}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   if (isComplete) {
     return (
@@ -2104,9 +2940,16 @@ const QuestionAnswering: React.FC = () => {
         </h2>
         {currentSection.description && <p className="inspection-section-description">{currentSection.description}</p>}
 
-        <div className="inspection-questions-list">
-          {currentSection.questions.map((question) => renderQuestionResponse(question))}
-        </div>
+        {/* Render questions for standard sections or garment details for garment sections */}
+        {currentSection.type === "garmentDetails" ? (
+          <div className="inspection-garment-details-container">
+            {renderGarmentDetails(currentSection)}
+          </div>
+        ) : (
+          <div className="inspection-questions-list">
+            {currentSection.questions.map((question) => renderQuestionResponse(question))}
+          </div>
+        )}
 
         <div className="inspection-navigation-buttons">
           {currentSectionIndex > 0 && (
