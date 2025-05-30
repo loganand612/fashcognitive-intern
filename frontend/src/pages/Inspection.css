@@ -1982,7 +1982,7 @@
 
 .garment-table-preview th,
 .garment-table-preview td {
-  padding: 8px;
+  padding: 10px 12px;
   border: 1px solid #d0d0d0;
   text-align: center;
   vertical-align: middle;
@@ -2026,11 +2026,12 @@
 
 .garment-table-preview .qty-input {
   width: 100%;
+  min-width: 60px;
   border: none;
   background: transparent;
   text-align: center;
   font-size: 13px;
-  padding: 4px;
+  padding: 6px 4px;
   outline: none;
 }
 
@@ -2341,6 +2342,52 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.edit-aql-button {
+  background: none;
+  border: 1px solid var(--primary-blue);
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--primary-blue);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-aql-button:hover {
+  background-color: var(--primary-blue);
+  color: white;
+}
+
+.aql-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.aql-edit-field label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.aql-edit-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border-gray);
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  transition: border-color 0.2s ease;
+}
+
+.aql-edit-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .sr-only {

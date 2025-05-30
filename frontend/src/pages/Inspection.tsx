@@ -54,6 +54,12 @@ type InspectionLevel = "I" | "II" | "III"
 type SamplingPlan = "Single" | "Double" | "Multiple"
 type Severity = "Normal" | "Tightened" | "Reduced"
 
+// Constants for AQL editing
+const AQL_LEVELS: AQLLevel[] = ["1.5", "2.5", "4.0", "6.5"]
+const INSPECTION_LEVELS: InspectionLevel[] = ["I", "II", "III"]
+const SAMPLING_PLANS: SamplingPlan[] = ["Single", "Double", "Multiple"]
+const SEVERITIES: Severity[] = ["Normal", "Tightened", "Reduced"]
+
 interface GarmentDetailsContent {
   aqlSettings: {
     aqlLevel: AQLLevel
@@ -1161,6 +1167,18 @@ const QuestionAnswering: React.FC = () => {
         }
       }))
     }
+  }
+
+  // AQL editing functions
+  const toggleAqlEditing = () => {
+    setReportData((prev) => ({ ...prev, editingAql: !prev.editingAql }))
+  }
+
+  const updateAqlResult = (field: string, value: string) => {
+    setReportData((prev) => ({
+      ...prev,
+      aqlSettings: { ...prev.aqlSettings, [field]: value },
+    }))
   }
 
   // Update answers when template changes
@@ -2834,23 +2852,100 @@ const QuestionAnswering: React.FC = () => {
             <div className="aql-result-preview">
               <div className="aql-header">
                 <h5>AQL Result</h5>
+                <button className="edit-aql-button" onClick={toggleAqlEditing}>
+                  <Edit size={16} />
+                </button>
               </div>
               <div className="aql-info">
-                <p>
-                  <strong>AQL Level:</strong> {reportData.aqlSettings.aqlLevel}
-                </p>
-                <p>
-                  <strong>Inspection Level:</strong> {reportData.aqlSettings.inspectionLevel}
-                </p>
-                <p>
-                  <strong>Sampling Plan:</strong> {reportData.aqlSettings.samplingPlan}
-                </p>
-                <p>
-                  <strong>Severity:</strong> {reportData.aqlSettings.severity}
-                </p>
-                <p className={`aql-status ${reportData.aqlSettings.status.toLowerCase()}`}>
-                  <strong>Status:</strong> {reportData.aqlSettings.status}
-                </p>
+                {reportData.editingAql ? (
+                  <>
+                    <div className="aql-edit-field">
+                      <label>AQL Level:</label>
+                      <select
+                        value={reportData.aqlSettings.aqlLevel}
+                        onChange={(e) => updateAqlResult("aqlLevel", e.target.value)}
+                        className="aql-edit-input"
+                      >
+                        {AQL_LEVELS.map((level) => (
+                          <option key={level} value={level}>
+                            {level}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="aql-edit-field">
+                      <label>Inspection Level:</label>
+                      <select
+                        value={reportData.aqlSettings.inspectionLevel}
+                        onChange={(e) => updateAqlResult("inspectionLevel", e.target.value)}
+                        className="aql-edit-input"
+                      >
+                        {INSPECTION_LEVELS.map((level) => (
+                          <option key={level} value={level}>
+                            {level}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="aql-edit-field">
+                      <label>Sampling Plan:</label>
+                      <select
+                        value={reportData.aqlSettings.samplingPlan}
+                        onChange={(e) => updateAqlResult("samplingPlan", e.target.value)}
+                        className="aql-edit-input"
+                      >
+                        {SAMPLING_PLANS.map((plan) => (
+                          <option key={plan} value={plan}>
+                            {plan}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="aql-edit-field">
+                      <label>Severity:</label>
+                      <select
+                        value={reportData.aqlSettings.severity}
+                        onChange={(e) => updateAqlResult("severity", e.target.value)}
+                        className="aql-edit-input"
+                      >
+                        {SEVERITIES.map((severity) => (
+                          <option key={severity} value={severity}>
+                            {severity}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="aql-edit-field">
+                      <label>Status:</label>
+                      <select
+                        value={reportData.aqlSettings.status}
+                        onChange={(e) => updateAqlResult("status", e.target.value)}
+                        className="aql-edit-input"
+                      >
+                        <option value="PASS">PASS</option>
+                        <option value="FAIL">FAIL</option>
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      <strong>AQL Level:</strong> {reportData.aqlSettings.aqlLevel}
+                    </p>
+                    <p>
+                      <strong>Inspection Level:</strong> {reportData.aqlSettings.inspectionLevel}
+                    </p>
+                    <p>
+                      <strong>Sampling Plan:</strong> {reportData.aqlSettings.samplingPlan}
+                    </p>
+                    <p>
+                      <strong>Severity:</strong> {reportData.aqlSettings.severity}
+                    </p>
+                    <p className={`aql-status ${reportData.aqlSettings.status.toLowerCase()}`}>
+                      <strong>Status:</strong> {reportData.aqlSettings.status}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
