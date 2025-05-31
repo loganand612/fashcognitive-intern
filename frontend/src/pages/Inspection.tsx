@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle, Trash2, Plus } from "lucide-react"
+import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle, Trash2, Plus, MapPin } from "lucide-react"
 import { fetchData, postData } from "../utils/api"
 import "./Inspection.css"
 
@@ -130,10 +130,7 @@ const resizeImage = (base64: string): Promise<string> => {
 
 // Helper function to check if a condition is met
 const isConditionMet = (question: Question, rule: LogicRule): boolean => {
-  console.log(`    isConditionMet: Checking question value "${question.value}" against rule value "${rule.value}" with condition "${rule.condition}"`)
-
   if (question.value === null || question.value === undefined) {
-    console.log(`    isConditionMet: Question value is null/undefined, returning false`)
     return false
   }
 
@@ -149,7 +146,6 @@ const isConditionMet = (question: Question, rule: LogicRule): boolean => {
     compareValue = typeof value === "string" ? Number.parseFloat(value) : typeof value === "number" ? value : 0
     ruleValue =
       typeof rule.value === "string" ? Number.parseFloat(rule.value) : typeof rule.value === "number" ? rule.value : 0
-    console.log(`    isConditionMet: Number comparison - compareValue: ${compareValue}, ruleValue: ${ruleValue}`)
   }
 
   switch (rule.condition) {
@@ -195,7 +191,6 @@ const isConditionMet = (question: Question, rule: LogicRule): boolean => {
       conditionMet = false
   }
 
-  console.log(`    isConditionMet: Final result for "${rule.condition}" comparison: ${conditionMet}`)
   return conditionMet
 }
 
@@ -228,7 +223,7 @@ const QuestionAnswering: React.FC = () => {
         const urlParams = new URLSearchParams(window.location.search);
         assignmentId = urlParams.get('assignmentId');
       } catch (e) {
-        console.log("No assignment ID in URL");
+        // No assignment ID in URL
       }
 
       // If user is an inspector, set as current inspector
@@ -238,7 +233,6 @@ const QuestionAnswering: React.FC = () => {
           name: `${userData.first_name} ${userData.last_name}`.trim() || userData.username || userData.email.split('@')[0],
           email: userData.email
         });
-        console.log('Current inspector set from user data:', userData);
 
         // Check if this template is assigned to this inspector
         const assignments = await fetchData('users/my-assignments/');
@@ -254,7 +248,6 @@ const QuestionAnswering: React.FC = () => {
 
         if (currentAssignment) {
           setAssignment(currentAssignment);
-          console.log('Assignment found:', currentAssignment);
 
           // Check if assignment is completed or expired
           if (currentAssignment.status === 'completed') {
@@ -289,7 +282,6 @@ const QuestionAnswering: React.FC = () => {
             name: currentAssignment.inspector_name || 'Inspector',
             email: currentAssignment.inspector_email || ''
           });
-          console.log('Current inspector set from assignment:', currentAssignment);
         }
       }
     } catch (error) {
@@ -302,94 +294,65 @@ const QuestionAnswering: React.FC = () => {
   useEffect(() => {
     // Prevent multiple template loads
     if (templateLoaded) {
-      console.log('Template already loaded, skipping fetch')
       return
     }
 
     const fetchTemplate = async () => {
-      console.log('=== STARTING TEMPLATE FETCH ===')
       setIsLoading(true)
       setError(null)
 
       const templateId = getTemplateIdFromUrl()
-      console.log('Template ID from URL:', templateId)
 
       if (templateId) {
         try {
           // First check if user is inspector and if template is assigned
           const userData = await fetchData('users/current-user/');
           if (userData.user_role === 'inspector') {
-            console.log('User is inspector, checking assignments...');
             const assignments = await fetchData('users/my-assignments/');
             const hasAssignment = assignments.some((a: any) => a.template.toString() === templateId);
 
             if (!hasAssignment) {
-              console.log('Inspector does not have assignment for this template');
               setError('Access Denied: This template is not assigned to you.');
               setAssignmentError('You do not have an active assignment for this template. Please contact an admin for assignment.');
               setIsLoading(false);
               setTemplateLoaded(true);
               return;
             }
-            console.log('Inspector has valid assignment for this template');
           }
 
-          console.log('Fetching template from API...')
           // First try to fetch with access check (for shared templates)
           let data;
           try {
-            console.log('Trying access-check endpoint...')
             data = await fetchData(`users/templates/${templateId}/access-check/`);
-            console.log('Access-check successful')
           } catch (error) {
-            console.log('Access check failed, trying regular endpoint...')
             data = await fetchData(`users/templates/${templateId}/`);
-            console.log('Regular endpoint successful')
           }
 
-          console.log('Raw API response:', data)
-          console.log('Number of sections in API response:', data.sections?.length)
 
-          // Check for garment details sections specifically
-          const garmentSections = data.sections?.filter((s: any) => s.type === "garmentDetails") || []
-          console.log('Garment details sections found:', garmentSections.length)
-          garmentSections.forEach((section: any, index: number) => {
-            console.log(`Garment section ${index + 1}:`, {
-              id: section.id,
-              title: section.title,
-              type: section.type,
-              hasContent: !!section.content,
-              contentKeys: section.content ? Object.keys(section.content) : [],
-              content: section.content
-            })
-          })
-
-          // Debug: Log the entire raw data structure
-          console.log('=== FULL API RESPONSE DEBUG ===')
-          console.log(JSON.stringify(data, null, 2))
 
           // Validate the API response
           if (!data.sections || !Array.isArray(data.sections)) {
             throw new Error('Invalid template data: sections missing or not an array')
           }
 
+          // Filter out duplicate sections (backend bug fix)
+          const uniqueSections = data.sections.filter((section: any, index: number, array: any[]) => {
+            // Keep only the first occurrence of each section title
+            return array.findIndex(s => s.title === section.title) === index
+          })
+
           // Transform the data to match our expected format
           const transformedTemplate: Template = {
             id: data.id.toString(),
             title: data.title,
             description: data.description || "Complete all required fields in this inspection",
-            logo: data.logo || "/placeholder.svg?height=80&width=80",
-            sections: data.sections.map((section: any, index: number) => {
-              console.log(`Processing section ${index + 1}: "${section.title}" (ID: ${section.id})`)
-
+            logo: data.logo || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCAyMEM0Ni42Mjc0IDIwIDUyIDI1LjM3MjYgNTIgMzJDNTIgMzguNjI3NCA0Ni42Mjc0IDQ0IDQwIDQ0QzMzLjM3MjYgNDQgMjggMzguNjI3NCAyOCAzMkMyOCAyNS4zNzI2IDMzLjM3MjYgMjAgNDAgMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0yMCA1NkMyMCA1MC40NzcyIDI0LjQ3NzIgNDYgMzAgNDZINTBDNTUuNTIyOCA0NiA2MCA1MC40NzcyIDYwIDU2VjYwSDIwVjU2WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K",
+            sections: uniqueSections.map((section: any, index: number) => {
               // Handle garment details section
               if (section.type === "garmentDetails") {
-                console.log('Processing garment details section:', section)
-
                 // Ensure garment details section has proper content
                 let garmentContent = section.content
                 if (!garmentContent) {
-                  console.log('No content found for garment section, creating default content')
                   garmentContent = {
                     aqlSettings: {
                       aqlLevel: "2.5" as AQLLevel,
@@ -416,7 +379,6 @@ const QuestionAnswering: React.FC = () => {
               }
 
               if (!section.questions || !Array.isArray(section.questions)) {
-                console.warn(`Section ${section.title} has no questions or invalid questions array`)
                 return {
                   id: section.id.toString(),
                   title: section.title,
@@ -431,8 +393,6 @@ const QuestionAnswering: React.FC = () => {
                 title: section.title,
                 description: section.description || "",
                 questions: section.questions.map((question: any) => {
-                  console.log(`  - Processing question: "${question.text}" with response_type: "${question.response_type}"`)
-
                   // Transform options from backend format to frontend format
                   let options: string[] = [];
                   if (question.options && Array.isArray(question.options)) {
@@ -447,20 +407,7 @@ const QuestionAnswering: React.FC = () => {
                     }
                   }
 
-                  console.log(`    - Options for "${question.text}":`, options)
 
-                  // Debug logic rules
-                  console.log(`    - Logic rules for "${question.text}":`, question.logic_rules)
-                  console.log(`    - Raw question object:`, question)
-                  console.log(`    - All question keys:`, Object.keys(question))
-
-                  // Check if logic rules exist in different formats
-                  if (question.logic_rules) {
-                    console.log(`    - Found logic_rules (snake_case):`, question.logic_rules)
-                  }
-                  if ((question as any).logicRules) {
-                    console.log(`    - Found logicRules (camelCase):`, (question as any).logicRules)
-                  }
 
                   // Transform logic rules to ensure consistent format
                   let logicRules: LogicRule[] = []
@@ -471,10 +418,6 @@ const QuestionAnswering: React.FC = () => {
 
                       // Get subQuestion from multiple possible sources
                       const subQuestion = rule.subQuestion || rule.sub_question || rule.triggerConfig?.subQuestion || rule.triggerConfig?.sub_question
-
-                      console.log(`      - Processing rule ${rule.id} with trigger: ${rule.trigger}`)
-                      console.log(`      - Rule message: "${message}"`)
-                      console.log(`      - SubQuestion found:`, subQuestion)
 
                       return {
                         id: rule.id,
@@ -505,38 +448,18 @@ const QuestionAnswering: React.FC = () => {
                     siteOptions: question.site_options || question.siteOptions || undefined
                   }
 
-                  console.log(`    - Transformed question:`, transformedQuestion)
-                  console.log(`    - Raw question from backend:`, question)
-                  console.log(`    - Logic rules for "${question.text}":`, transformedQuestion.logicRules)
-                  console.log(`    - Raw logic_rules field:`, question.logic_rules)
-                  console.log(`    - Raw logicRules field:`, (question as any).logicRules)
-                  if (transformedQuestion.logicRules && transformedQuestion.logicRules.length > 0) {
-                    console.log(`    - ✅ Question "${question.text}" has ${transformedQuestion.logicRules.length} logic rules`)
-                    transformedQuestion.logicRules.forEach((rule: LogicRule, index: number) => {
-                      console.log(`      Rule ${index + 1}:`, rule)
-                    })
-                  } else {
-                    console.log(`    - ❌ Question "${question.text}" has NO logic rules`)
-                  }
                   return transformedQuestion
                 })
               }
             })
           }
 
-          console.log('Final transformed template:')
-          console.log('- Sections count:', transformedTemplate.sections.length)
-          console.log('- Section titles:', transformedTemplate.sections.map(s => s.title))
-          console.log('- Section IDs:', transformedTemplate.sections.map(s => s.id))
-
           setTemplate(transformedTemplate)
           setTemplateLoaded(true) // Mark template as loaded
-          console.log('=== TEMPLATE SET SUCCESSFULLY ===')
 
           // Initialize garment report data if this is a garment template
           const garmentSection = transformedTemplate.sections.find(s => s.type === "garmentDetails")
           if (garmentSection && garmentSection.content && isGarmentDetailsContent(garmentSection.content)) {
-            console.log('Initializing garment report data for inspection')
             const garmentContent = garmentSection.content
 
             // Handle both camelCase and snake_case property names
@@ -570,27 +493,22 @@ const QuestionAnswering: React.FC = () => {
           // After loading the template, fetch the inspector info
           await fetchInspectorInfo();
         } catch (error) {
-          console.error('Error loading template from API:', error)
-          console.log('Falling back to default template...')
           setError('Failed to load template. Using default template.')
           const defaultTemplate = getDefaultTemplate()
-          console.log('Default template sections:', defaultTemplate.sections.length)
           setTemplate(defaultTemplate)
           setTemplateLoaded(true) // Mark template as loaded even for default
         }
       } else {
-        console.log('No template ID provided, using default template...')
         const defaultTemplate = getDefaultTemplate()
-        console.log('Default template sections:', defaultTemplate.sections.length)
         setTemplate(defaultTemplate)
         setTemplateLoaded(true) // Mark template as loaded
       }
 
       setIsLoading(false)
-      console.log('=== TEMPLATE FETCH COMPLETE ===')
     }
 
     fetchTemplate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Map backend response_type to frontend ResponseType
@@ -638,7 +556,6 @@ const QuestionAnswering: React.FC = () => {
     }
 
     const mappedType = typeMap[type] || typeMap[type.toLowerCase()] || 'Text'
-    console.log(`Mapping response type: "${type}" -> "${mappedType}"`)
     return mappedType
   }
 
@@ -647,7 +564,7 @@ const QuestionAnswering: React.FC = () => {
     id: "default-template",
     title: "Logic Rules Test Template",
     description: "Template to test logic rules functionality - Enter 5 in the number field to see logic rules trigger",
-    logo: "/placeholder.svg?height=80&width=80",
+    logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCAyMEM0Ni42Mjc0IDIwIDUyIDI1LjM3MjYgNTIgMzJDNTIgMzguNjI3NCA0Ni42Mjc0IDQ0IDQwIDQ0QzMzLjM3MjYgNDQgMjggMzguNjI3NCAyOCAzMkMyOCAyNS4zNzI2IDMzLjM3MjYgMjAgNDAgMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0yMCA1NkMyMCA1MC40NzcyIDI0LjQ3NzIgNDYgMzAgNDZINTBDNTUuNTIyOCA0NiA2MCA1MC40NzcyIDYwIDU2VjYwSDIwVjU2WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K",
     sections: [
       {
         id: "section-1",
@@ -944,9 +861,7 @@ const QuestionAnswering: React.FC = () => {
 
   // Helper functions for garment details
   const isGarmentDetailsContent = (content: any): content is GarmentDetailsContent => {
-    console.log('isGarmentDetailsContent checking:', content)
     if (!content || typeof content !== 'object') {
-      console.log('Content is not an object')
       return false
     }
 
@@ -954,10 +869,6 @@ const QuestionAnswering: React.FC = () => {
     const hasAqlSettings = 'aqlSettings' in content || 'aql_settings' in content
     const hasSizes = 'sizes' in content && Array.isArray(content.sizes)
     const hasColors = 'colors' in content && Array.isArray(content.colors)
-
-    console.log('hasAqlSettings:', hasAqlSettings)
-    console.log('hasSizes:', hasSizes)
-    console.log('hasColors:', hasColors)
 
     return hasAqlSettings && hasSizes && hasColors
   }
@@ -1231,9 +1142,6 @@ const QuestionAnswering: React.FC = () => {
   useEffect(() => {
     if (!template || !currentInspector) return
 
-    console.log('=== INSPECTOR UPDATE EFFECT ===')
-    console.log('Template sections before inspector update:', template.sections.length)
-
     // Find the inspector question in the template
     let inspectorQuestionId: string | null = null;
 
@@ -1248,32 +1156,20 @@ const QuestionAnswering: React.FC = () => {
 
     // If we found the inspector question and it doesn't have a value yet, set it
     if (inspectorQuestionId && (!answers[inspectorQuestionId] || answers[inspectorQuestionId] === "")) {
-      console.log('Auto-filling inspector field:', inspectorQuestionId, 'with:', currentInspector.name)
-
       // Only update answers, don't modify the template structure
       setAnswers(prev => ({
         ...prev,
         [inspectorQuestionId as string]: currentInspector.name
       }));
-
-      console.log('Inspector field auto-filled, template sections remain:', template.sections.length);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentInspector, template?.id]) // Only depend on inspector and template ID, not the full template
 
   // Check for triggered messages and conditional fields when answers change
   useEffect(() => {
-    console.log('=== CONDITIONAL LOGIC USEEFFECT TRIGGERED ===')
-    console.log('Template exists:', !!template)
-    console.log('Current answers:', answers)
-
     if (!template) {
-      console.log('No template, returning early')
       return
     }
-
-    console.log('=== CHECKING CONDITIONAL LOGIC ===')
-    console.log('Current answers:', answers)
-    console.log('Template sections count:', template.sections.length)
 
     const messages: Record<string, string> = {}
     const conditionalFields: Record<string, LogicRule[]> = {}
@@ -1281,22 +1177,13 @@ const QuestionAnswering: React.FC = () => {
     const notificationMessages: Record<string, string> = {}
 
     template.sections.forEach((section, sectionIndex) => {
-      console.log(`Processing section ${sectionIndex + 1}: "${section.title}" with ${section.questions.length} questions`)
-
       section.questions.forEach((question, questionIndex) => {
         // Use the current answer for this question
         const currentAnswer = answers[question.id]
         const questionWithAnswer = { ...question, value: currentAnswer }
 
-        console.log(`Checking question ${questionIndex + 1}: "${question.text}" (ID: ${question.id})`)
-        console.log(`  - Current answer: ${currentAnswer}`)
-        console.log(`  - Logic rules count: ${question.logicRules?.length || 0}`)
-        console.log(`  - Logic rules:`, question.logicRules)
-        console.log(`  - Question object keys:`, Object.keys(question))
-
         // Check if this question has any logic rules at all
         if (!question.logicRules || !Array.isArray(question.logicRules) || question.logicRules.length === 0) {
-          console.log(`  - ❌ No logic rules found for question "${question.text}"`)
           return
         }
 
@@ -1304,25 +1191,18 @@ const QuestionAnswering: React.FC = () => {
           const activeRules: LogicRule[] = []
 
           for (const rule of question.logicRules) {
-            console.log(`  - Checking rule: ${rule.condition} ${rule.value} (trigger: ${rule.trigger})`)
             const conditionMet = isConditionMet(questionWithAnswer, rule)
-            console.log(`  - Condition met: ${conditionMet}`)
 
             if (conditionMet) {
-              console.log(`  - ✅ Condition met! Executing trigger: ${rule.trigger}`)
-              console.log(`  - Rule details:`, JSON.stringify(rule, null, 2))
 
               switch (rule.trigger) {
                 case "display_message":
                   if (rule.message && rule.message.trim() !== "") {
                     // Show only the custom message without any prefix
                     messages[question.id] = rule.message.trim()
-                    console.log(`  - ✅ Display message set: ${rule.message}`)
-                    console.log(`  - Messages object now:`, messages)
                   } else {
                     // Fallback message if empty
                     messages[question.id] = `Logic rule triggered for answer: ${currentAnswer}`
-                    console.log(`  - ⚠️ Display message rule has empty message, using fallback`)
                   }
                   break
 
@@ -1330,23 +1210,18 @@ const QuestionAnswering: React.FC = () => {
                   activeRules.push(rule)
                   if (rule.message && rule.message.trim() !== "") {
                     messages[question.id] = `📸 EVIDENCE REQUIRED: ${rule.message.trim()}`
-                    console.log(`  - ✅ Evidence required: ${rule.message}`)
                   } else {
                     // Fallback message if empty
                     messages[question.id] = `📸 EVIDENCE REQUIRED: Please upload proof for answer: ${currentAnswer}`
-                    console.log(`  - ⚠️ Evidence rule has empty message, using fallback`)
                   }
                   break
 
                 case "require_action":
                   if (rule.message && rule.message.trim() !== "") {
                     messages[question.id] = `⚠️ ACTION REQUIRED: ${rule.message.trim()}`
-                    console.log(`  - ✅ Action required: ${rule.message}`)
-                    console.log(`  - Messages object now:`, messages)
                   } else {
                     // Fallback message if empty
                     messages[question.id] = `⚠️ ACTION REQUIRED: Please take action for answer: ${currentAnswer}`
-                    console.log(`  - ⚠️ Action required rule has empty message, using fallback`)
                   }
                   break
 
@@ -1354,24 +1229,17 @@ const QuestionAnswering: React.FC = () => {
                   if (rule.message && rule.message.trim() !== "") {
                     notificationMessages[question.id] = rule.message.trim()
                     messages[question.id] = `🔔 NOTIFICATION: ${rule.message.trim()}`
-                    console.log(`  - ✅ Notification set: ${rule.message}`)
-                    console.log(`  - Messages object now:`, messages)
-                    console.log(`  - Notification messages:`, notificationMessages)
                   } else {
                     // Fallback message if empty
                     const fallbackMessage = `Admin has been notified about answer: ${currentAnswer}`
                     notificationMessages[question.id] = fallbackMessage
                     messages[question.id] = `🔔 NOTIFICATION: ${fallbackMessage}`
-                    console.log(`  - ⚠️ Notify rule has empty message, using fallback`)
                   }
                   break
 
                 case "ask_questions":
                   // Handle both camelCase and snake_case formats from backend
                   const subQuestion = rule.subQuestion || (rule as any).sub_question
-                  console.log(`  - ✅ Processing ask_questions trigger`)
-                  console.log(`  - Rule object:`, rule)
-                  console.log(`  - SubQuestion found:`, subQuestion)
 
                   if (subQuestion) {
                     // Use the subQuestion text directly, or rule message as fallback
@@ -1381,16 +1249,11 @@ const QuestionAnswering: React.FC = () => {
                         ? rule.message.trim()
                         : `Please provide additional information about your answer: ${currentAnswer}`
 
-                    console.log(`  - ✅ Creating conditional question: ${questionText}`)
-
                     // Handle both responseType and response_type
                     let responseType = subQuestion.responseType || subQuestion.response_type || 'Text'
 
                     // Map the responseType to ensure it matches our expected format
                     responseType = mapResponseType(responseType)
-
-                    console.log(`  - ✅ Creating conditional question with responseType: "${responseType}" (original: "${subQuestion.responseType || subQuestion.response_type}")`)
-                    console.log(`  - ✅ SubQuestion options:`, subQuestion.options)
 
                     // Create a dynamic question based on the rule
                     const dynamicQuestion: Question = {
@@ -1412,28 +1275,16 @@ const QuestionAnswering: React.FC = () => {
                     const existingQuestion = dynamicQuestions[question.id].find(q => q.id === dynamicQuestion.id)
                     if (!existingQuestion) {
                       dynamicQuestions[question.id].push(dynamicQuestion)
-                      console.log(`  - ✅ Dynamic question added:`, dynamicQuestion)
-                      console.log(`  - ✅ Dynamic question responseType: "${dynamicQuestion.responseType}"`)
-                      console.log(`  - ✅ Dynamic question text: "${dynamicQuestion.text}"`)
-                      console.log(`  - ✅ Dynamic question options: "${JSON.stringify(dynamicQuestion.options)}"`)
                     } else {
-                      console.log(`  - ℹ️ Dynamic question already exists, updating:`, dynamicQuestion.id)
                       // Update the existing question with current value and ensure all properties are updated
                       existingQuestion.value = dynamicQuestion.value
                       existingQuestion.responseType = dynamicQuestion.responseType
                       existingQuestion.text = dynamicQuestion.text
                       existingQuestion.options = dynamicQuestion.options
-                      console.log(`  - ℹ️ Updated question responseType: "${existingQuestion.responseType}"`)
-                      console.log(`  - ℹ️ Updated question text: "${existingQuestion.text}"`)
-                      console.log(`  - ℹ️ Updated question options: "${JSON.stringify(existingQuestion.options)}"`)
                     }
-                    console.log(`  - Dynamic questions object now:`, dynamicQuestions)
 
                     // Don't add a generic message for ask_questions - let the conditional question speak for itself
                   } else {
-                    console.log(`  - ❌ Ask questions rule has no subQuestion or sub_question`)
-                    console.log(`  - Rule object:`, rule)
-                    console.log(`  - Rule keys:`, Object.keys(rule))
                     // If there's a rule message but no subQuestion, show the rule message
                     if (rule.message && rule.message.trim() !== "") {
                       messages[question.id] = rule.message.trim()
@@ -1447,18 +1298,12 @@ const QuestionAnswering: React.FC = () => {
                 case "take_action":
                   if (rule.message && rule.message.trim() !== "") {
                     messages[question.id] = `🎯 TAKE ACTION: ${rule.message.trim()}`
-                    console.log(`  - ✅ Take action message set: ${rule.message}`)
-                  } else {
-                    console.log(`  - ❌ Take action rule has no message`)
                   }
                   break
 
                 default:
-                  console.log(`  - ❌ Unknown trigger type: ${rule.trigger}`)
                   break
               }
-            } else {
-              console.log(`  - ❌ Condition NOT met for trigger: ${rule.trigger}`)
             }
           }
 
@@ -1473,13 +1318,8 @@ const QuestionAnswering: React.FC = () => {
     setActiveConditionalFields(conditionalFields)
     setConditionalQuestions(dynamicQuestions)
     setNotifications(notificationMessages)
-
-    console.log('=== FINAL RESULTS ===')
-    console.log('Active messages:', messages)
-    console.log('Active conditional fields:', conditionalFields)
-    console.log('Dynamic questions:', dynamicQuestions)
-    console.log('Notifications:', notificationMessages)
-  }, [answers, conditionalAnswers, template])
+  }, [answers, conditionalAnswers, template?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Note: We intentionally use template?.id instead of template to prevent unnecessary re-renders
 
   // Redirect to dashboard after 2 seconds when inspection is complete
   useEffect(() => {
@@ -1527,39 +1367,13 @@ const QuestionAnswering: React.FC = () => {
   }
 
   const handleAnswerChange = (questionId: string, value: any) => {
-    console.log('=== ANSWER CHANGE ===')
-    console.log('Question ID:', questionId, 'New value:', value)
-    console.log('Event triggered successfully - selection is working!')
-
-    // Find the question to check its logic rules
-    const question = template?.sections
-      .flatMap(s => s.questions)
-      .find(q => q.id === questionId)
-
-    if (question) {
-      console.log(`Question found: "${question.text}"`)
-      console.log(`Logic rules for this question:`, question.logicRules)
-      console.log(`Logic rules count:`, question.logicRules?.length || 0)
-    } else {
-      console.log(`❌ Question not found for ID: ${questionId}`)
-    }
-
-    // Add alert for testing
-    if (value === 5 || value === "5") {
-      alert(`DEBUG: You entered 5! This should trigger logic rules.`)
-    }
-
     setAnswers((prev) => {
       const newAnswers = {
         ...prev,
         [questionId]: value,
       }
-      console.log('Updated answers state:', newAnswers)
       return newAnswers
     })
-
-    // Don't update the template structure - just store answers separately
-    // This prevents any potential duplication issues from template modifications
 
     // Clear validation error if value is provided
     if (value !== null && value !== undefined && value !== "") {
@@ -1569,14 +1383,9 @@ const QuestionAnswering: React.FC = () => {
         return newErrors
       })
     }
-
-    console.log('Answer updated, template structure unchanged')
   }
 
   const handleConditionalAnswerChange = (questionId: string, value: any) => {
-    console.log('=== CONDITIONAL ANSWER CHANGE ===')
-    console.log('Conditional Question ID:', questionId, 'New value:', value)
-
     setConditionalAnswers((prev) => ({
       ...prev,
       [questionId]: value,
@@ -1590,8 +1399,6 @@ const QuestionAnswering: React.FC = () => {
         return newErrors
       })
     }
-
-    console.log('Conditional answer updated')
   }
 
   // Helper function to get appropriate CSS class for message type
@@ -1941,7 +1748,7 @@ const QuestionAnswering: React.FC = () => {
           const urlParams = new URLSearchParams(window.location.search);
           assignmentId = urlParams.get('assignmentId');
         } catch (e) {
-          console.log("No assignment ID in URL");
+          // No assignment ID in URL
         }
       }
 
@@ -1955,17 +1762,13 @@ const QuestionAnswering: React.FC = () => {
         assignment_id: assignmentId
       }
 
-      console.log("Submitting inspection data:", submissionData)
-
       // Submit the inspection data to the API
-      const responseData = await postData('users/submit-inspection/', submissionData);
-      console.log("Inspection submitted successfully:", responseData);
+      await postData('users/submit-inspection/', submissionData);
 
       // If this was part of an assignment, update the assignment status
       if (assignmentId) {
         try {
-          const completeResponse = await postData(`users/template-assignments/${assignmentId}/complete/`, {});
-          console.log("Assignment marked as completed", completeResponse);
+          await postData(`users/template-assignments/${assignmentId}/complete/`, {});
         } catch (e) {
           console.warn("Error updating assignment status:", e);
         }
@@ -2000,12 +1803,6 @@ const QuestionAnswering: React.FC = () => {
 
   const renderConditionalResponseInput = (question: Question) => {
     const value = conditionalAnswers[question.id]
-    console.log(`🔧 CONDITIONAL INPUT DEBUG:`)
-    console.log(`  - Question text: "${question.text}"`)
-    console.log(`  - Question responseType: "${question.responseType}"`)
-    console.log(`  - Question ID: "${question.id}"`)
-    console.log(`  - Current value: ${JSON.stringify(value)}`)
-    console.log(`  - Question object:`, question)
 
     switch (question.responseType) {
       case "Text":
@@ -2129,7 +1926,7 @@ const QuestionAnswering: React.FC = () => {
               </label>
             ) : (
               <div className="inspection-media-preview">
-                <img src={value || "/placeholder.svg"} alt="Uploaded media" className="inspection-media-image" />
+                <img src={value || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNjBDMTA2LjYyNyA2MCAxMTIgNjUuMzczIDExMiA3MkMxMTIgNzguNjI3IDEwNi42MjcgODQgMTAwIDg0QzkzLjM3MyA4NCA4OCA3OC42MjcgODggNzJDODggNjUuMzczIDkzLjM3MyA2MCAxMDAgNjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik03MCA5NkM3MCA5MC40NzcgNzQuNDc3IDg2IDgwIDg2SDEyMEMxMjUuNTIzIDg2IDEzMCA5MC40NzcgMTMwIDk2VjEwMEg3MFY5NloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg=="} alt="Uploaded media" className="inspection-media-image" />
                 <button className="inspection-media-remove-button" onClick={() => handleConditionalAnswerChange(question.id, null)}>
                   <X size={16} />
                 </button>
@@ -2183,24 +1980,102 @@ const QuestionAnswering: React.FC = () => {
         )
 
       case "Inspection location":
-        const locationOptions = ["Main Building", "Warehouse", "Office", "Factory Floor", "Parking Lot"]
         return (
-          <div className="inspection-dropdown-container">
-            <select
-              value={value || ""}
-              onChange={(e) => handleConditionalAnswerChange(question.id, e.target.value)}
-              className="inspection-dropdown-input inspection-conditional-input"
-            >
-              <option value="" disabled>
-                Select location
-              </option>
-              {locationOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="inspection-dropdown-icon" />
+          <div className="inspection-location-container">
+            <div className="inspection-location-input-wrapper">
+              <input
+                type="text"
+                className="inspection-text-input inspection-conditional-input"
+                value={value || ""}
+                onChange={(e) => handleConditionalAnswerChange(question.id, e.target.value)}
+                placeholder="Enter city, area, or address"
+              />
+              <button
+                className="inspection-location-button"
+                title="Get current location"
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (position) => {
+                        // Get coordinates
+                        const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+
+                        // Try to get address from coordinates using reverse geocoding
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
+                          .then(response => response.json())
+                          .then(data => {
+                            let locationText = '';
+                            if (data && data.address) {
+                              const address = data.address;
+                              // Create a full readable address from components
+                              const components = [];
+
+                              // Add house number and street name
+                              if (address.house_number && address.road) {
+                                components.push(`${address.house_number} ${address.road}`);
+                              } else if (address.road) {
+                                components.push(address.road);
+                              }
+
+                              // Add neighborhood/suburb if available
+                              if (address.neighbourhood || address.suburb) {
+                                components.push(address.neighbourhood || address.suburb);
+                              }
+
+                              // Add city/town/village
+                              if (address.city || address.town || address.village) {
+                                components.push(address.city || address.town || address.village);
+                              }
+
+                              // Add state/county
+                              if (address.state || address.county) {
+                                components.push(address.state || address.county);
+                              }
+
+                              // Add postal code if available
+                              if (address.postcode) {
+                                components.push(address.postcode);
+                              }
+
+                              // Add country
+                              if (address.country) {
+                                components.push(address.country);
+                              }
+
+                              locationText = components.join(', ');
+                            }
+
+                            // If we couldn't get a readable address, use coordinates
+                            if (!locationText) {
+                              locationText = coords;
+                            }
+
+                            handleConditionalAnswerChange(question.id, locationText);
+                          })
+                          .catch(error => {
+                            console.error("Error getting location name:", error);
+                            // Fallback to coordinates if geocoding fails
+                            handleConditionalAnswerChange(question.id, coords);
+                          });
+                      },
+                      (error) => {
+                        alert("Error getting location: " + error.message);
+                      }
+                    );
+                  } else {
+                    alert("Geolocation is not supported by this browser.");
+                  }
+                }}
+              >
+                <MapPin size={14} />
+              </button>
+            </div>
+            {value && (
+              <div className="inspection-location-display">
+                <MapPin size={12} />
+                <span>{value}</span>
+              </div>
+            )}
           </div>
         )
 
@@ -2329,27 +2204,7 @@ const QuestionAnswering: React.FC = () => {
             </div>
           )}
 
-          {/* Debug section - remove in production */}
-          {false && process.env.NODE_ENV === 'development' && (
-            <div style={{
-              marginTop: '10px',
-              padding: '10px',
-              backgroundColor: '#f0f0f0',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontFamily: 'monospace'
-            }}>
-              <div><strong>Debug Info for Question: {question.text}</strong></div>
-              <div>Question ID: {question.id}</div>
-              <div>Current Answer: {JSON.stringify(answers[question.id])}</div>
-              <div>Logic Rules Count: {question.logicRules?.length || 0}</div>
-              <div>Logic Rules: {JSON.stringify(question.logicRules, null, 2)}</div>
-              <div>Active Message: {message || 'None'}</div>
-              <div>Active Conditional Fields: {JSON.stringify(activeConditionalFields[question.id] || [], null, 2)}</div>
-              <div>Conditional Questions: {JSON.stringify(conditionalQuestions[question.id] || [], null, 2)}</div>
-            </div>
-          )}
+
         </div>
       </div>
     )
@@ -2357,7 +2212,6 @@ const QuestionAnswering: React.FC = () => {
 
   const renderResponseInput = (question: Question) => {
     const value = answers[question.id]
-    console.log(`Rendering input for question "${question.text}" with responseType: "${question.responseType}"`)
 
     switch (question.responseType) {
       case "Text":
@@ -2398,28 +2252,19 @@ const QuestionAnswering: React.FC = () => {
           <div className="inspection-yes-no-options">
             <button
               className={`inspection-option-button ${value === "Yes" ? "selected" : ""}`}
-              onClick={() => {
-                console.log('Yes button clicked for question:', question.id)
-                handleAnswerChange(question.id, "Yes")
-              }}
+              onClick={() => handleAnswerChange(question.id, "Yes")}
             >
               Yes
             </button>
             <button
               className={`inspection-option-button ${value === "No" ? "selected" : ""}`}
-              onClick={() => {
-                console.log('No button clicked for question:', question.id)
-                handleAnswerChange(question.id, "No")
-              }}
+              onClick={() => handleAnswerChange(question.id, "No")}
             >
               No
             </button>
             <button
               className={`inspection-option-button ${value === "N/A" ? "selected" : ""}`}
-              onClick={() => {
-                console.log('N/A button clicked for question:', question.id)
-                handleAnswerChange(question.id, "N/A")
-              }}
+              onClick={() => handleAnswerChange(question.id, "N/A")}
             >
               N/A
             </button>
@@ -2448,7 +2293,6 @@ const QuestionAnswering: React.FC = () => {
                     question.multipleSelection ? Array.isArray(value) && value.includes(option) : value === option
                   }
                   onChange={() => {
-                    console.log('Multiple choice option clicked:', option, 'for question:', question.id)
                     if (question.multipleSelection) {
                       const currentValues = Array.isArray(value) ? [...value] : []
                       if (currentValues.includes(option)) {
@@ -2503,7 +2347,7 @@ const QuestionAnswering: React.FC = () => {
               </label>
             ) : (
               <div className="inspection-media-preview">
-                <img src={value || "/placeholder.svg"} alt="Uploaded media" className="inspection-media-image" />
+                <img src={value || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNjBDMTA2LjYyNyA2MCAxMTIgNjUuMzczIDExMiA3MkMxMTIgNzguNjI3IDEwNi42MjcgODQgMTAwIDg0QzkzLjM3MyA4NCA4OCA3OC42MjcgODggNzJDODggNjUuMzczIDkzLjM3MyA2MCAxMDAgNjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik03MCA5NkM3MCA5MC40NzcgNzQuNDc3IDg2IDgwIDg2SDEyMEMxMjUuNTIzIDg2IDEzMCA5MC40NzcgMTMwIDk2VjEwMEg3MFY5NloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg=="} alt="Uploaded media" className="inspection-media-image" />
                 <button className="inspection-media-remove-button" onClick={() => handleAnswerChange(question.id, null)}>
                   <X size={16} />
                 </button>
@@ -2639,24 +2483,102 @@ const QuestionAnswering: React.FC = () => {
         }
 
       case "Inspection location":
-        const locationOptions = ["Main Building", "Warehouse", "Office", "Factory Floor", "Parking Lot"]
         return (
-          <div className="inspection-dropdown-container">
-            <select
-              value={value || ""}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              className="inspection-dropdown-input"
-            >
-              <option value="" disabled>
-                Select location
-              </option>
-              {locationOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="inspection-dropdown-icon" />
+          <div className="inspection-location-container">
+            <div className="inspection-location-input-wrapper">
+              <input
+                type="text"
+                className="inspection-text-input"
+                value={value || ""}
+                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                placeholder="Enter city, area, or address"
+              />
+              <button
+                className="inspection-location-button"
+                title="Get current location"
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (position) => {
+                        // Get coordinates
+                        const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+
+                        // Try to get address from coordinates using reverse geocoding
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
+                          .then(response => response.json())
+                          .then(data => {
+                            let locationText = '';
+                            if (data && data.address) {
+                              const address = data.address;
+                              // Create a full readable address from components
+                              const components = [];
+
+                              // Add house number and street name
+                              if (address.house_number && address.road) {
+                                components.push(`${address.house_number} ${address.road}`);
+                              } else if (address.road) {
+                                components.push(address.road);
+                              }
+
+                              // Add neighborhood/suburb if available
+                              if (address.neighbourhood || address.suburb) {
+                                components.push(address.neighbourhood || address.suburb);
+                              }
+
+                              // Add city/town/village
+                              if (address.city || address.town || address.village) {
+                                components.push(address.city || address.town || address.village);
+                              }
+
+                              // Add state/county
+                              if (address.state || address.county) {
+                                components.push(address.state || address.county);
+                              }
+
+                              // Add postal code if available
+                              if (address.postcode) {
+                                components.push(address.postcode);
+                              }
+
+                              // Add country
+                              if (address.country) {
+                                components.push(address.country);
+                              }
+
+                              locationText = components.join(', ');
+                            }
+
+                            // If we couldn't get a readable address, use coordinates
+                            if (!locationText) {
+                              locationText = coords;
+                            }
+
+                            handleAnswerChange(question.id, locationText);
+                          })
+                          .catch(error => {
+                            console.error("Error getting location name:", error);
+                            // Fallback to coordinates if geocoding fails
+                            handleAnswerChange(question.id, coords);
+                          });
+                      },
+                      (error) => {
+                        alert("Error getting location: " + error.message);
+                      }
+                    );
+                  } else {
+                    alert("Geolocation is not supported by this browser.");
+                  }
+                }}
+              >
+                <MapPin size={14} />
+              </button>
+            </div>
+            {value && (
+              <div className="inspection-location-display">
+                <MapPin size={12} />
+                <span>{value}</span>
+              </div>
+            )}
           </div>
         )
 
@@ -2987,7 +2909,7 @@ const QuestionAnswering: React.FC = () => {
                       </div>
                       <div className="defect-image-container">
                         <img
-                          src={image || "/placeholder.svg"}
+                          src={image || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNjBDMTA2LjYyNyA2MCAxMTIgNjUuMzczIDExMiA3MkMxMTIgNzguNjI3IDEwNi42MjcgODQgMTAwIDg0QzkzLjM3MyA4NCA4OCA3OC42MjcgODggNzJDODggNjUuMzczIDkzLjM3MyA2MCAxMDAgNjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik03MCA5NkM3MCA5MC40NzcgNzQuNDc3IDg2IDgwIDg2SDEyMEMxMjUuNTIzIDg2IDEzMCA5MC40NzcgMTMwIDk2VjEwMEg3MFY5NloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg=="}
                           alt={`Defect: ${defect.type}`}
                           className="defect-image"
                         />
@@ -3151,7 +3073,7 @@ const QuestionAnswering: React.FC = () => {
       <div className="inspection-template-header">
         <div className="inspection-template-logo-container">
           {template.logo && (
-            <img src={template.logo || "/placeholder.svg"} alt="Template logo" className="inspection-template-logo" />
+            <img src={template.logo || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCAyMEM0Ni42Mjc0IDIwIDUyIDI1LjM3MjYgNTIgMzJDNTIgMzguNjI3NCA0Ni42Mjc0IDQ0IDQwIDQ0QzMzLjM3MjYgNDQgMjggMzguNjI3NCAyOCAzMkMyOCAyNS4zNzI2IDMzLjM3MjYgMjAgNDAgMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0yMCA1NkMyMCA1MC40NzcyIDI0LjQ3NzIgNDYgMzAgNDZINTBDNTUuNTIyOCA0NiA2MCA1MC40NzcyIDYwIDU2VjYwSDIwVjU2WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K"} alt="Template logo" className="inspection-template-logo" />
           )}
         </div>
         <div className="inspection-template-info">
@@ -3160,32 +3082,7 @@ const QuestionAnswering: React.FC = () => {
         </div>
       </div>
 
-      {/* Global Debug Section - remove in production */}
-      {false && process.env.NODE_ENV === 'development' && template && currentSection && (
-        <div style={{
-          margin: '20px',
-          padding: '15px',
-          backgroundColor: '#e8f4fd',
-          border: '2px solid #0066cc',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontFamily: 'monospace'
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#0066cc' }}>
-            🔍 GLOBAL DEBUG INFO - Logic Rules Status
-          </div>
-          <div><strong>Template ID:</strong> {template?.id || 'N/A'}</div>
-          <div><strong>Total Sections:</strong> {template?.sections?.length || 0}</div>
-          <div><strong>Current Section:</strong> {currentSectionIndex + 1} - {currentSection?.title || 'N/A'}</div>
-          <div><strong>Total Questions in Current Section:</strong> {currentSection?.questions?.length || 0}</div>
-          <div><strong>Questions with Logic Rules:</strong> {currentSection?.questions?.filter(q => q.logicRules && q.logicRules.length > 0)?.length || 0}</div>
-          <div><strong>Current Answers:</strong> {JSON.stringify(answers, null, 2)}</div>
-          <div><strong>Active Messages Count:</strong> {Object.keys(activeMessages).length}</div>
-          <div><strong>Active Messages:</strong> {JSON.stringify(activeMessages, null, 2)}</div>
-          <div><strong>Active Conditional Fields Count:</strong> {Object.keys(activeConditionalFields).length}</div>
-          <div><strong>Conditional Questions Count:</strong> {Object.keys(conditionalQuestions).length}</div>
-        </div>
-      )}
+
 
       <div className="inspection-progress-indicator">
         <div className="inspection-progress-bar">
@@ -3197,18 +3094,11 @@ const QuestionAnswering: React.FC = () => {
         <div className="inspection-progress-text">
           Section {currentSectionIndex + 1} of {template?.sections?.length || 0}
         </div>
-        {/* Debug info */}
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-          Debug: Template has {template?.sections?.length || 0} sections, Current: {currentSectionIndex + 1}
-        </div>
       </div>
 
       <div className="inspection-section-container">
         <h2 className="inspection-section-title">
           {currentSection?.title || 'Loading...'}
-          <span style={{ fontSize: '12px', color: '#666', marginLeft: '10px' }}>
-            (Section ID: {currentSection?.id || 'N/A'})
-          </span>
         </h2>
         {currentSection?.description && <p className="inspection-section-description">{currentSection.description}</p>}
 

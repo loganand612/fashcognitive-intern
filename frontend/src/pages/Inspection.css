@@ -277,6 +277,66 @@
   width: 100%;
 }
 
+/* Location input styles */
+.inspection-location-container {
+  width: 100%;
+}
+
+.inspection-location-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inspection-location-button {
+  padding: 12px;
+  border: 2px solid var(--border-light);
+  border-radius: 8px;
+  background-color: var(--bg-white);
+  color: var(--primary-blue);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.inspection-location-button:hover {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.inspection-location-button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.inspection-location-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-gray);
+  font-weight: 500;
+}
+
+.inspection-location-display svg {
+  color: var(--primary-blue);
+  flex-shrink: 0;
+}
+
 .inspection-dropdown-button {
   width: 100%;
   padding: 12px 16px;

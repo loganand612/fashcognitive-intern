@@ -1583,6 +1583,7 @@ const Garment_Template: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [accessError, setAccessError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<number>(0)
+  const [maxAccessibleTab, setMaxAccessibleTab] = useState<number>(0) // Track the highest tab user can access
   const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
 
@@ -4709,6 +4710,17 @@ const Garment_Template: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Report Tab Navigation */}
+        <div className="garment-template-report-footer">
+          <button className="garment-template-next-button" onClick={() => {
+            setActiveTab(2)
+            setMaxAccessibleTab(Math.max(maxAccessibleTab, 2))
+          }}>
+            Next: Access
+            <ArrowRight size={16} />
+          </button>
+        </div>
       </div>
     )
   }
@@ -4843,20 +4855,30 @@ const Garment_Template: React.FC = () => {
             <button className={`nav-tab ${activeTab === 0 ? "active" : ""}`} onClick={() => setActiveTab(0)}>
               1. Build
             </button>
-            <button className={`nav-tab ${activeTab === 1 ? "active" : ""}`} onClick={() => setActiveTab(1)}>
+            <button
+              className={`nav-tab ${activeTab === 1 ? "active" : ""}`}
+              onClick={() => setActiveTab(1)}
+              disabled={maxAccessibleTab < 1}
+            >
               2. Report
             </button>
-            <button className={`nav-tab ${activeTab === 2 ? "active" : ""}`} onClick={() => setActiveTab(2)}>
+            <button
+              className={`nav-tab ${activeTab === 2 ? "active" : ""}`}
+              onClick={() => setActiveTab(2)}
+              disabled={maxAccessibleTab < 2}
+            >
               3. Access
             </button>
           </div>
         </div>
         <div className="nav-right">
-          {/* Keep only save button in navbar for all tabs */}
-          <button className="nav-save-button" onClick={handleSave}>
-            <Save size={16} />
-            Save Template
-          </button>
+          {/* Show save button only in Access tab (tab 2) */}
+          {activeTab === 2 && (
+            <button className="nav-save-button" onClick={handleSave}>
+              <Save size={16} />
+              Save Template
+            </button>
+          )}
         </div>
       </div>
 
@@ -4907,9 +4929,18 @@ const Garment_Template: React.FC = () => {
                 {template.sections.map((section, idx) => renderSection(section, idx))}
               </div>
               <div className="add-section-container">
-                <button className="add-section-button" onClick={addStandardSection}>
-                  <Plus size={16} /> Add Standard Page
-                </button>
+                <div className="garment-template-add-section-actions">
+                  <button className="add-section-button" onClick={addStandardSection}>
+                    <Plus size={16} /> Add Standard Page
+                  </button>
+                  <button className="garment-template-next-button" onClick={() => {
+                    setActiveTab(1)
+                    setMaxAccessibleTab(Math.max(maxAccessibleTab, 1))
+                  }}>
+                    Next: Report
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 

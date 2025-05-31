@@ -1247,6 +1247,51 @@
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Navigation buttons styling */
+.garment-template-add-section-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.garment-template-next-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.garment-template-next-button:hover {
+  background-color: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.garment-template-next-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+/* Report tab footer navigation */
+.garment-template-report-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 24px 0;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 24px;
+}
+
 /* Mobile Preview */
 .mobile-preview-container {
   position: fixed;
