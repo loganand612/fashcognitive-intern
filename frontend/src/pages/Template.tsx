@@ -14,8 +14,8 @@ import {
   X,
   Home,
   Bell,
-  ClipboardCheck,
   Calendar,
+  ClipboardCheck,
   Play,
   BookOpen,
   Package,
@@ -66,8 +66,8 @@ const TemplatePage: React.FC = () => {
     { icon: Search, label: "Search", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: FileText, label: "Templates", href: "/templates", active: true },
-    { icon: ClipboardCheck, label: "Inspections", href: "/inspections" },
     { icon: Calendar, label: "Schedule", href: "/schedule" },
+    { icon: ClipboardCheck, label: "Inspections", href: "/inspection" },
     { icon: Play, label: "Actions", href: "/actions" },
     { icon: BookOpen, label: "Training", href: "/training" },
     { icon: Package, label: "Assets", href: "/assets" },
@@ -80,6 +80,7 @@ const TemplatePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
   const [showCreateDropdown, setShowCreateDropdown] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   const loggedInUser = localStorage.getItem("username")
 
@@ -225,10 +226,59 @@ const TemplatePage: React.FC = () => {
     };
   }, [isDropdownOpen]);
 
+  // Fetch current user
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/users/auth-status/', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          // Extract user data from the response
+          if (userData.authenticated && userData.user) {
+            setCurrentUser(userData.user);
+            console.log("Current user set:", userData.user);
+            console.log("User role:", userData.user.user_role);
+          } else {
+            console.warn("User not authenticated or user data missing");
+            setCurrentUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        // Set a default user for demo purposes
+        setCurrentUser({
+          id: 1,
+          username: "demouser",
+          email: "demo@example.com",
+          user_role: "admin"
+        });
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
   useEffect(() => {
     const testAllEndpoints = async () => {
       setLoading(true)
       setError("")
+
+      // If user is not loaded yet, wait
+      if (!currentUser) {
+        setLoading(false)
+        return
+      }
+
+      // For inspectors, show only assigned templates (redirect to dashboard)
+      if (currentUser.user_role === 'inspector') {
+        setError("Inspectors can only view assigned templates on the Dashboard and Schedule pages.")
+        setTemplates([])
+        setLoading(false)
+        return
+      }
+
       const results: { [endpoint: string]: EndpointResult } = {}
 
       for (const endpoint of endpointsToTry) {
@@ -292,7 +342,7 @@ const TemplatePage: React.FC = () => {
     }
 
     testAllEndpoints()
-  }, [])
+  }, [currentUser])
 
   return (
     <div className="tp-app-container">
@@ -348,11 +398,22 @@ const TemplatePage: React.FC = () => {
 
       <aside className="dashboard-sidebar">
         <nav className="dashboard-sidebar-nav">
-          {menuItems.map((item, i) => (
-            <a key={i} href={item.href} className={`dashboard-nav-link ${item.active ? "active" : ""}`}>
-              <item.icon size={20} /><span>{item.label}</span>
-            </a>
-          ))}
+          {menuItems.map((item, i) => {
+            // Make Inspections link inactive for inspector users
+            const isInspectionsLink = item.label === 'Inspections';
+            const isInspectorUser = currentUser?.user_role === 'inspector';
+            const shouldDisableLink = isInspectionsLink && isInspectorUser;
+
+            return shouldDisableLink ? (
+              <span key={i} className={`dashboard-nav-link dashboard-nav-link-disabled ${item.active ? "active" : ""}`}>
+                <item.icon size={20} /><span>{item.label}</span>
+              </span>
+            ) : (
+              <a key={i} href={item.href} className={`dashboard-nav-link ${item.active ? "active" : ""}`}>
+                <item.icon size={20} /><span>{item.label}</span>
+              </a>
+            );
+          })}
         </nav>
       </aside>
 
@@ -400,32 +461,72 @@ const TemplatePage: React.FC = () => {
           <section className="tp-templates-section">
             <div className="tp-templates-header">
               <h2>Templates <span className="tp-count">(1 - {filteredTemplates.length} of {templates.length})</span></h2>
-              <div className="tp-create-dropdown" ref={dropdownRef}>
-                <button className="tp-create-button" onClick={toggleCreateDropdown}>
-                  <Plus size={16} />
-                  Create
-                  <ChevronDown size={16} className={`tp-dropdown-icon ${showCreateDropdown ? 'open' : ''}`} />
-                </button>
-                {showCreateDropdown && (
-                  <div className="tp-dropdown-menu">
-                    <a href="/create_templates" className="tp-dropdown-item">
-                      <FileText size={16} />
-                      Standard Template
-                    </a>
-                    <a href="/garment-template" className="tp-dropdown-item">
-                      <FileText size={16} />
-                      Garment Template
-                    </a>
-                  </div>
-                )}
-              </div>
+
+              {/* Test button to switch user role - FOR TESTING ONLY */}
+              <button
+                onClick={() => {
+                  const newRole = currentUser?.user_role === 'inspector' ? 'admin' : 'inspector';
+                  setCurrentUser({...currentUser, user_role: newRole});
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  marginRight: '1rem',
+                  backgroundColor: currentUser?.user_role === 'inspector' ? '#ef4444' : '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Test as {currentUser?.user_role === 'inspector' ? 'Admin' : 'Inspector'}
+              </button>
+
+              {currentUser?.user_role !== 'inspector' && (
+                <div className="tp-create-dropdown" ref={dropdownRef}>
+                  <button className="tp-create-button" onClick={toggleCreateDropdown}>
+                    <Plus size={16} />
+                    Create
+                    <ChevronDown size={16} className={`tp-dropdown-icon ${showCreateDropdown ? 'open' : ''}`} />
+                  </button>
+                  {showCreateDropdown && (
+                    <div className="tp-dropdown-menu">
+                      <a href="/create_templates" className="tp-dropdown-item">
+                        <FileText size={16} />
+                        Standard Template
+                      </a>
+                      <a href="/garment-template" className="tp-dropdown-item">
+                        <FileText size={16} />
+                        Garment Template
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {loading && <div className="tp-loading">Loading templates...</div>}
             {error && (
               <div className="tp-error-message">
-                {error}<p>Showing demo data for display purposes.</p>
-                <details><summary>API Debug Info (Click to expand)</summary><pre>{JSON.stringify(debugInfo, null, 2)}</pre></details>
+                {error}
+                {currentUser?.user_role === 'inspector' ? (
+                  <div style={{ marginTop: '1rem' }}>
+                    <p>Please visit the following pages to view your assigned templates:</p>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                      <a href="/dashboard" className="tp-create-button" style={{ textDecoration: 'none' }}>
+                        Go to Dashboard
+                      </a>
+                      <a href="/schedule" className="tp-create-button" style={{ textDecoration: 'none' }}>
+                        Go to Schedule
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p>Showing demo data for display purposes.</p>
+                    <details><summary>API Debug Info (Click to expand)</summary><pre>{JSON.stringify(debugInfo, null, 2)}</pre></details>
+                  </>
+                )}
               </div>
             )}
 
@@ -501,7 +602,7 @@ const TemplatePage: React.FC = () => {
       </div>
 
       {/* Start from scratch dialog - rendered at the document level for better positioning */}
-      {showStartFromScratchDialog && (
+      {showStartFromScratchDialog && currentUser?.user_role !== 'inspector' && (
         <div
           className="tp-start-scratch-dialog"
           ref={startFromScratchDialogRef}

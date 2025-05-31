@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
-    Template, Section, Question, TemplateAccess,
+    Template, Section, Question, QuestionOption, TemplateAccess,
     PermissionType, GranularPermission, PermissionAuditLog,
     TemplateAssignment, Inspection, Response, InspectionResponse
 )
@@ -37,7 +37,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
+class QuestionOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionOption
+        fields = ['id', 'text', 'order']
+
+
 class QuestionSerializer(serializers.ModelSerializer):
+    options = QuestionOptionSerializer(many=True, read_only=True)
+
     class Meta:
         model = Question
         fields = [
@@ -51,20 +59,42 @@ class QuestionSerializer(serializers.ModelSerializer):
             'multiple_selection',
             'min_value',
             'max_value',
+            'options',
+        ]
+
+
+# Basic Question serializer (for template creation)
+class BasicQuestionSerializer(serializers.ModelSerializer):
+    options = serializers.ListField(child=serializers.CharField(), required=False, allow_empty=True)
+
+    class Meta:
+        model = Question
+        fields = [
+            'id',
+            'text',
+            'response_type',
+            'required',
+            'order',
+            'logic_rules',
+            'flagged',
+            'multiple_selection',
+            'min_value',
+            'max_value',
+            'options',
         ]
 
 
 # Basic Section serializer
 class BasicSectionSerializer(serializers.ModelSerializer):
-    questions = QuestionSerializer(many=True, required=False)
+    questions = BasicQuestionSerializer(many=True, required=False)
 
     class Meta:
         model = Section
         fields = ['id', 'title', 'description', 'order', 'questions']
 
 
-# Template serializer
-class TemplateSerializer(serializers.ModelSerializer):
+# Basic Template serializer (for simple operations)
+class BasicTemplateSerializer(serializers.ModelSerializer):
     sections = BasicSectionSerializer(many=True, required=False)
     logo = serializers.CharField(required=False, allow_blank=True)  # Accept base64 string for input
     lastModified = serializers.SerializerMethodField()
@@ -73,7 +103,7 @@ class TemplateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Template
-        fields = ['id', 'title', 'description', 'logo', 'lastModified', 'access', 'sections', 'createdBy']
+        fields = ['id', 'title', 'description', 'logo', 'lastModified', 'access', 'sections', 'createdBy', 'user']
 
     def create(self, validated_data):
         sections_data = validated_data.pop('sections', [])
@@ -91,7 +121,20 @@ class TemplateSerializer(serializers.ModelSerializer):
             questions_data = section_data.pop('questions', [])
             section = Section.objects.create(template=template, **section_data)
             for question_data in questions_data:
-                Question.objects.create(section=section, **question_data)
+                # Extract options before creating the question
+                options_data = question_data.pop('options', [])
+
+                # Create the question
+                question = Question.objects.create(section=section, **question_data)
+
+                # Create options for multiple choice questions
+                if options_data and isinstance(options_data, list):
+                    for o_index, option_text in enumerate(options_data):
+                        QuestionOption.objects.create(
+                            question=question,
+                            text=option_text,
+                            order=o_index
+                        )
 
         return template
 
@@ -136,7 +179,7 @@ class TemplateCreateView(APIView):
                 print("❌ JSON decode error for sections:", e)
                 return Response({'sections': ['Invalid JSON']}, status=400)
 
-        serializer = TemplateSerializer(data=data)
+        serializer = BasicTemplateSerializer(data=data)
 
         if serializer.is_valid():
             template = serializer.save()
@@ -245,7 +288,25 @@ class TemplateSerializer(serializers.ModelSerializer):
                 section.save()
 
             for question_data in questions_data:
-                Question.objects.create(section=section, **question_data)
+                # Extract options before creating the question
+                options_data = question_data.pop('options', [])
+
+                # Debug logic rules
+                print(f"🔍 SERIALIZER: Creating question '{question_data.get('text')}' with logic_rules: {question_data.get('logic_rules')}")
+
+                # Create the question with logic_rules
+                question = Question.objects.create(section=section, **question_data)
+
+                print(f"🔍 SERIALIZER: Created question ID {question.id} with logic_rules: {question.logic_rules}")
+
+                # Create options for multiple choice questions
+                if options_data and isinstance(options_data, list):
+                    for o_index, option_text in enumerate(options_data):
+                        QuestionOption.objects.create(
+                            question=question,
+                            text=option_text,
+                            order=o_index
+                        )
 
         return template
 

@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     RegisterUserView, login_user, logout_user, templates_api, DashboardAPI,
     TemplateAPI, TemplateCreateView, TemplateDetailView,
-    DashboardTemplateView, AuthStatusView, auth_status, debug_auth_status, get_csrf_token, current_user
+    DashboardTemplateView, AuthStatusView, auth_status, debug_auth_status, get_csrf_token, current_user, debug_template_access
 )
 from .views import GarmentTemplateCreateView
 from .template_access_views import TemplateAccessListView, TemplateAccessDetailView
@@ -48,6 +48,7 @@ urlpatterns = [
     path("auth-status/", AuthStatusView.as_view(), name="api-auth-status"),
     path("debug-auth-status/", debug_auth_status, name="api-debug-auth-status"),
     path("current-user/", current_user, name="api-current-user"),
+    path("debug-template-access/", debug_template_access, name="api-debug-template-access"),
     path("logout/", logout_user, name="api-logout"),
     path("templates/<int:pk>/", TemplateDetailView.as_view(), name="api-template-detail"),
 

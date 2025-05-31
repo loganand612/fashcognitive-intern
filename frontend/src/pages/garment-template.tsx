@@ -1,9 +1,9 @@
 
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Move, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck, Save } from 'lucide-react'
+import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck, Save } from 'lucide-react'
 import "./garment-template.css"
 import "./print-styles.css"
 import AccessManager from "./components/AccessManager"
@@ -92,6 +92,7 @@ interface Question {
   value?: string | string[] | boolean | number | null
   logicRules?: LogicRule[]
   multipleSelection?: boolean
+  siteOptions?: string[]  // Custom site names for Site response type
 }
 
 // Garment-specific types
@@ -376,6 +377,80 @@ function isGarmentDetailsContent(content: StandardSectionContent | GarmentDetail
   return 'aqlSettings' in content && 'sizes' in content && 'colors' in content;
 }
 
+// Function to convert camelCase to snake_case (similar to Create_template.tsx)
+function toSnakeCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(toSnakeCase);
+  } else if (obj !== null && typeof obj === "object") {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (!obj.hasOwnProperty(key)) continue;
+      const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+      newObj[snakeKey] = toSnakeCase(obj[key]);
+    }
+    return newObj;
+  }
+  return obj;
+}
+
+// Function to clean template data for saving (similar to Create_template.tsx)
+function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Template> {
+  return {
+    ...(isNew ? {} : { id: template.id }),
+    title: template.title,
+    description: template.description,
+    logo: template.logo,
+    sections: template.sections.map((section) => {
+      const newSectionId = isNew || typeof section.id === "number" ? generateId() : section.id;
+
+      if (section.type === "garmentDetails" && isGarmentDetailsContent(section.content)) {
+        return {
+          id: newSectionId,
+          title: section.title,
+          type: section.type,
+          isCollapsed: section.isCollapsed,
+          content: {
+            aqlSettings: section.content.aqlSettings,
+            sizes: section.content.sizes,
+            colors: section.content.colors,
+            includeCartonOffered: section.content.includeCartonOffered,
+            includeCartonInspected: section.content.includeCartonInspected,
+            defaultDefects: section.content.defaultDefects
+          }
+        };
+      } else {
+        // For standard sections, properly structure the questions and logic rules
+        const standardContent = section.content as StandardSectionContent;
+        return {
+          id: newSectionId,
+          title: section.title,
+          type: section.type,
+          isCollapsed: section.isCollapsed,
+          content: {
+            description: standardContent.description,
+            questions: standardContent.questions.map((q) => {
+              const newQuestionId = isNew || typeof q.id === "number" ? generateId() : q.id;
+
+              return {
+                id: newQuestionId,
+                text: q.text,
+                responseType: q.responseType ?? "Text", // ensure fallback
+                required: q.required,
+                flagged: q.flagged,
+                options: q.options,
+                value: q.value,
+                logicRules: q.logicRules, // Preserve logic rules with subQuestion and message
+                multipleSelection: q.multipleSelection,
+                siteOptions: q.siteOptions,
+              };
+            }),
+          }
+        };
+      }
+    }),
+  };
+}
+
 
 
 
@@ -584,6 +659,47 @@ const renderQuestionResponse = (
         </div>
       );
     case "Site":
+      return (
+        <div className="response-field site-field">
+          <div className="site-options">
+            {(question.siteOptions || []).map((site, idx) => (
+              <div key={idx} className="site-option-container">
+                <input
+                  type="text"
+                  className={`site-option-input site-${idx % 4}`}
+                  value={site}
+                  onChange={(e) => {
+                    const newSiteOptions = [...(question.siteOptions || [])];
+                    newSiteOptions[idx] = e.target.value;
+                    updateQuestion(sectionId, question.id, { siteOptions: newSiteOptions });
+                  }}
+                  placeholder="Enter site name"
+                />
+                <button
+                  className="delete-option-button"
+                  onClick={() => {
+                    const newSiteOptions = [...(question.siteOptions || [])];
+                    newSiteOptions.splice(idx, 1);
+                    updateQuestion(sectionId, question.id, { siteOptions: newSiteOptions });
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            <button
+              className="add-option-button"
+              onClick={() => {
+                const newSiteOptions = [...(question.siteOptions || []), `Site ${(question.siteOptions || []).length + 1}`];
+                updateQuestion(sectionId, question.id, { siteOptions: newSiteOptions });
+              }}
+            >
+              <Plus size={14} />
+              <span>Add Site</span>
+            </button>
+          </div>
+        </div>
+      );
     case "Person":
       return (
         <div className="response-field dropdown-input">
@@ -1267,9 +1383,14 @@ const EnhancedLogicRuleBuilder: React.FC<{
 
   // Use questions parameter for future implementation of cross-question logic
 
+  // Use useCallback to memoize the onRuleChange call
+  const handleRuleChange = useCallback((updatedRule: LogicRule) => {
+    onRuleChange(updatedRule)
+  }, [onRuleChange])
+
   useEffect(() => {
-    onRuleChange(localRule)
-  }, [localRule, onRuleChange])
+    handleRuleChange(localRule)
+  }, [localRule, handleRuleChange])
 
   useEffect(() => {
     setLocalRule(rule)
@@ -1374,7 +1495,11 @@ const EnhancedLogicRulesContainer: React.FC<{
       value: null,
       trigger: null,
     }
-    onRulesChange([...rules, newRule])
+    console.log('Adding new rule:', newRule)
+    console.log('Current rules before adding:', rules.length)
+    const updatedRules = [...rules, newRule]
+    console.log('Updated rules after adding:', updatedRules.length)
+    onRulesChange(updatedRules)
   }
 
   const updateRule = (index: number, updatedRule: LogicRule) => {
@@ -1384,9 +1509,13 @@ const EnhancedLogicRulesContainer: React.FC<{
   }
 
   const deleteRule = (index: number) => {
-    const newRules = [...rules]
-    newRules.splice(index, 1)
-    onRulesChange(newRules)
+    // Add confirmation dialog to prevent accidental deletions
+    if (window.confirm('Are you sure you want to delete this logic rule?')) {
+      const newRules = [...rules]
+      newRules.splice(index, 1)
+      console.log(`Deleting rule at index ${index}. Rules before:`, rules.length, 'Rules after:', newRules.length)
+      onRulesChange(newRules)
+    }
   }
 
   return (
@@ -1451,11 +1580,12 @@ const Garment_Template: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [template, setTemplate] = useState<Template>(getInitialTemplate())
   const [isLoading, setIsLoading] = useState<boolean>(!!id)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [accessError, setAccessError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<number>(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(template.sections[0]?.id || null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
-  const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
+
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
   const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
@@ -1463,19 +1593,48 @@ const Garment_Template: React.FC = () => {
   const [newColor, setNewColor] = useState<string>("")
   const [newDefect, setNewDefect] = useState<string>("")
   const [defectImages, setDefectImages] = useState<{ [defectIndex: number]: string[] }>({})
-  const [startDate, setStartDate] = useState<string>("")
-  const [dueDate, setDueDate] = useState<string>("")
-  const [dateErrors, setDateErrors] = useState<{
-    startDate?: string;
-    dueDate?: string;
-  }>({})
   const [isExporting, setIsExporting] = useState<boolean>(false)
+
+  // Check user role and permissions
+  useEffect(() => {
+    const checkUserAccess = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/users/current-user/', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+
+          // Check if user is inspector
+          if (userData.user_role === 'inspector') {
+            setAccessError('Only admin users can create or edit templates. Please contact your administrator.');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          setAccessError('Unable to verify user permissions. Please log in again.');
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking user access:', error);
+        setAccessError('Error checking user permissions. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+    };
+
+    checkUserAccess();
+  }, []);
 
   // Load existing template if in edit mode
   useEffect(() => {
     console.log("Garment_Template: Component mounted, id param:", id);
 
-    if (id) {
+    // Only load template if user has access and no access error
+    if (currentUser && !accessError && id) {
       console.log("Garment_Template: Attempting to load template with ID:", id);
       setIsLoading(true)
       fetch(`http://127.0.0.1:8000/api/users/templates/${id}/`)
@@ -1638,10 +1797,11 @@ const Garment_Template: React.FC = () => {
           console.log('Garment_Template: Finished loading attempt, setting isLoading to false')
           setIsLoading(false)
         })
-    } else {
+    } else if (currentUser && !accessError && !id) {
       console.log("Garment_Template: No ID provided, using default template")
+      setIsLoading(false);
     }
-  }, [id, navigate])
+  }, [id, navigate, currentUser, accessError])
 
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
@@ -1693,41 +1853,17 @@ const Garment_Template: React.FC = () => {
         }
       }
 
-      // Prepare sections data
-      const sectionsData = template.sections.map(section => {
-        if (section.type === "garmentDetails" && isGarmentDetailsContent(section.content)) {
-          return {
-            id: section.id,
-            title: section.title,
-            type: section.type,
-            isCollapsed: section.isCollapsed,
-            content: {
-              aqlSettings: section.content.aqlSettings,
-              sizes: section.content.sizes,
-              colors: section.content.colors,
-              includeCartonOffered: section.content.includeCartonOffered,
-              includeCartonInspected: section.content.includeCartonInspected,
-              defaultDefects: section.content.defaultDefects
-            }
-          };
-        } else {
-          return {
-            id: section.id,
-            title: section.title,
-            type: section.type,
-            isCollapsed: section.isCollapsed,
-            content: section.content
-          };
-        }
-      });
-
-      // Add sections data
-      formData.append("sections", JSON.stringify(sectionsData));
-
       // Determine if this is a new template or an edit
       // Check if template is new: no URL id AND template.id is not a numeric database ID
       const hasNumericId = String(template.id).match(/^\d+$/);
       const isNew = !id && !hasNumericId;
+
+      // Prepare sections data using cleanTemplateForSave and toSnakeCase
+      const cleaned = cleanTemplateForSave(template, isNew);
+      const snakeCaseSections = toSnakeCase(cleaned.sections);
+
+      // Add sections data
+      formData.append("sections", JSON.stringify(snakeCaseSections));
       const templateDbId = hasNumericId ? template.id : id;
 
       // Set the appropriate URL and method based on whether we're creating or updating
@@ -2102,117 +2238,7 @@ const Garment_Template: React.FC = () => {
     updateGarmentDetails(sectionId, { [field]: !garmentContent[field] })
   }
 
-  // Drag and Drop
-  const handleDragStart = (type: "question" | "section", id: string) => {
-    // Don't allow dragging the Title Page or Garment Details section
-    if (type === "section") {
-      const section = template.sections.find((s) => s.id === id)
-      if (section?.title === "Title Page" || section?.type === "garmentDetails") {
-        return
-      }
-    }
 
-    setDraggedItem({ type, id })
-  }
-
-  const handleDragOver = (type: "question" | "section", id: string, e: React.DragEvent) => {
-    e.preventDefault()
-    if (!draggedItem) return
-
-    // Don't allow dropping before Title Page or Garment Details
-    if (type === "section" && draggedItem.type === "section") {
-      const targetSection = template.sections.find((s) => s.id === id)
-      if (targetSection?.title === "Title Page" || targetSection?.type === "garmentDetails") {
-        return
-      }
-
-      const draggedSection = template.sections.find((s) => s.id === draggedItem.id)
-      if (draggedSection?.title === "Title Page" || draggedSection?.type === "garmentDetails") {
-        return
-      }
-    }
-
-    if (draggedItem.id !== id) {
-      setDropTarget({ type, id })
-    }
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    if (!draggedItem || !dropTarget) return
-
-    if (draggedItem.type === "section" && dropTarget.type === "section") {
-      const sections = [...template.sections]
-      const draggedIndex = sections.findIndex((s) => s.id === draggedItem.id)
-      const dropIndex = sections.findIndex((s) => s.id === dropTarget.id)
-
-      // Don't allow reordering Title Page or Garment Details
-      if (
-        sections[draggedIndex].title === "Title Page" ||
-        sections[draggedIndex].type === "garmentDetails" ||
-        sections[dropIndex].title === "Title Page" ||
-        sections[dropIndex].type === "garmentDetails"
-      ) {
-        setDraggedItem(null)
-        setDropTarget(null)
-        return
-      }
-
-      const [removed] = sections.splice(draggedIndex, 1)
-      sections.splice(dropIndex, 0, removed)
-      setTemplate((prev) => ({ ...prev, sections }))
-    } else if (draggedItem.type === "question" && dropTarget.type === "question") {
-      const draggedSectionIndex = template.sections.findIndex(
-        (s) =>
-          s.type === "standard" && (s.content as StandardSectionContent).questions.some((q) => q.id === draggedItem.id),
-      )
-
-      const dropSectionIndex = template.sections.findIndex(
-        (s) =>
-          s.type === "standard" && (s.content as StandardSectionContent).questions.some((q) => q.id === dropTarget.id),
-      )
-
-      if (draggedSectionIndex === -1 || dropSectionIndex === -1) {
-        setDraggedItem(null)
-        setDropTarget(null)
-        return
-      }
-
-      const draggedSection = template.sections[draggedSectionIndex]
-      const dropSection = template.sections[dropSectionIndex]
-
-      if (draggedSection.type !== "standard" || dropSection.type !== "standard") {
-        setDraggedItem(null)
-        setDropTarget(null)
-        return
-      }
-
-      const newSections = [...template.sections]
-
-      const draggedQuestionIndex = (draggedSection.content as StandardSectionContent).questions.findIndex(
-        (q) => q.id === draggedItem.id,
-      )
-
-      const dropQuestionIndex = (dropSection.content as StandardSectionContent).questions.findIndex(
-        (q) => q.id === dropTarget.id,
-      )
-
-      const [removedQuestion] = (newSections[draggedSectionIndex].content as StandardSectionContent).questions.splice(
-        draggedQuestionIndex,
-        1,
-      )
-      ;(newSections[dropSectionIndex].content as StandardSectionContent).questions.splice(
-        dropQuestionIndex,
-        0,
-        removedQuestion,
-      )
-
-      setTemplate((prev) => ({ ...prev, sections: newSections }))
-    }
-
-    setDraggedItem(null)
-    setDropTarget(null)
-  }
 
   // Report functions
   const handleQuantityChange = (color: string, size: string, field: string, value: string) => {
@@ -2781,8 +2807,6 @@ const Garment_Template: React.FC = () => {
 
   const renderQuestion = (question: Question, sectionId: string, index: number) => {
     const isActive = activeQuestionId === question.id
-    const isDragging = draggedItem?.type === "question" && draggedItem.id === question.id
-    const isDropTarget = dropTarget?.type === "question" && dropTarget.id === question.id
 
     // Check if any triggers should be shown
     const hasRequireEvidence = shouldShowTrigger(question, "require_evidence")
@@ -2800,17 +2824,10 @@ const Garment_Template: React.FC = () => {
         ref={(el) => {
           questionRefs.current[question.id] = el
         }}
-        className={`question-item ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${hasActiveTriggers ? "has-active-triggers" : ""}`}
+        className={`question-item ${isActive ? "active" : ""} ${hasActiveTriggers ? "has-active-triggers" : ""}`}
         onClick={() => setActiveQuestionId(question.id)}
-        draggable
-        onDragStart={() => handleDragStart("question", question.id)}
-        onDragOver={(e) => handleDragOver("question", question.id, e)}
-        onDrop={handleDrop}
       >
         <div className="question-header">
-          <div className="question-drag-handle">
-            <Move size={16} />
-          </div>
           <div className="question-number">{index + 1}</div>
           <input
             type="text"
@@ -3169,11 +3186,8 @@ const Garment_Template: React.FC = () => {
 
   const renderSection = (section: AppSection, index: number) => {
     const isActive = activeSectionId === section.id
-    const isDragging = draggedItem?.type === "section" && draggedItem.id === section.id
-    const isDropTarget = dropTarget?.type === "section" && dropTarget.id === section.id
     const isTitlePage = index === 0 && section.title === "Title Page"
     const isGarmentDetails = section.type === "garmentDetails"
-    const isDraggable = !isTitlePage && !isGarmentDetails
 
     return (
       <div
@@ -3181,12 +3195,8 @@ const Garment_Template: React.FC = () => {
         ref={(el) => {
           sectionRefs.current[section.id] = el
         }}
-        className={`section-container ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isGarmentDetails ? "garment-details-section" : ""}`}
+        className={`section-container ${isActive ? "active" : ""} ${isGarmentDetails ? "garment-details-section" : ""}`}
         onClick={() => setActiveSectionId(section.id)}
-        draggable={isDraggable}
-        onDragStart={() => isDraggable && handleDragStart("section", section.id)}
-        onDragOver={(e) => handleDragOver("section", section.id, e)}
-        onDrop={handleDrop}
       >
         <div className="section-header">
           <button
@@ -4703,160 +4713,26 @@ const Garment_Template: React.FC = () => {
     )
   }
 
-  // Initialize dates for the inspection session
-  useEffect(() => {
-    if (!startDate) {
-      const today = new Date();
-      setStartDate(today.toISOString().split('T')[0]);
-
-      // Set due date to 30 days from today by default
-      const thirtyDaysLater = new Date();
-      thirtyDaysLater.setDate(today.getDate() + 30);
-      setDueDate(thirtyDaysLater.toISOString().split('T')[0]);
-    }
-  }, [startDate, setStartDate, setDueDate]);
-
   const renderAccessTab = () => {
-    // Get today's date in YYYY-MM-DD format for min attribute
-    const today = new Date().toISOString().split('T')[0];
-
-    const validateDates = () => {
-      const errors: {startDate?: string; dueDate?: string} = {};
-      const currentDate = new Date();
-      currentDate.setHours(0, 0, 0, 0);
-
-      const selectedStartDate = new Date(startDate);
-      const selectedDueDate = new Date(dueDate);
-
-      // Check if start date is in the past
-      if (selectedStartDate < currentDate) {
-        errors.startDate = "Start date cannot be in the past";
-      }
-
-      // Check if due date is before start date
-      if (selectedDueDate < selectedStartDate) {
-        errors.dueDate = "Due date must be after start date";
-      }
-
-      setDateErrors(errors);
-      return Object.keys(errors).length === 0;
-    };
-
-    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newStartDate = e.target.value;
-      setStartDate(newStartDate);
-
-      // Clear any existing errors for start date
-      setDateErrors(prev => ({...prev, startDate: undefined}));
-
-      // Ensure due date is not before start date
-      const startDateObj = new Date(newStartDate);
-      const dueDateObj = new Date(dueDate);
-
-      if (dueDateObj < startDateObj) {
-        // Set due date to start date if it's before the new start date
-        setDueDate(newStartDate);
-        // Clear any existing errors for due date
-        setDateErrors(prev => ({...prev, dueDate: undefined}));
-      }
-    };
-
-    const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newDueDate = e.target.value;
-      setDueDate(newDueDate);
-
-      // Clear any existing errors for due date
-      setDateErrors(prev => ({...prev, dueDate: undefined}));
-
-      // Validate that due date is not before start date
-      const startDateObj = new Date(startDate);
-      const dueDateObj = new Date(newDueDate);
-
-      if (dueDateObj < startDateObj) {
-        setDateErrors(prev => ({
-          ...prev,
-          dueDate: "Due date must be after start date"
-        }));
-      }
-    };
-
     const handlePublish = () => {
-      // Validate dates before publishing
-      if (validateDates()) {
-        // Save the template with session dates
-        updateTemplate({
-          ...template,
-          startDate: startDate,
-          dueDate: dueDate,
-          lastSaved: new Date()
-        });
+      // Save the template
+      updateTemplate({
+        ...template,
+        lastSaved: new Date()
+      });
 
-        alert('Template published successfully!');
-        window.location.href = '/dashboard';
-      } else {
-        // Show error message if validation fails
-        alert('Please correct the errors before publishing.');
-      }
+      alert('Template published successfully!');
+      window.location.href = '/dashboard';
     };
 
     return (
       <div className="garment-template-access-container">
         <div className="garment-template-access-header">
           <h1 className="garment-template-access-title">Template Access & Settings</h1>
-          <p className="garment-template-access-description">Configure access permissions and inspection timeframe for this template.</p>
+          <p className="garment-template-access-description">Configure access permissions and template assignments for this template.</p>
         </div>
 
         <div className="garment-template-access-content">
-          <div className="garment-template-access-tab">
-            <div className="garment-template-session-section">
-              <h2>
-                <Calendar size={22} className="garment-template-section-icon" />
-                Inspection Timeframe
-              </h2>
-              <p>Set the start and due dates for inspections using this template. These dates will determine when inspectors can access and complete their work.</p>
-
-              <div className="garment-template-date-fields">
-                <div className="garment-template-date-field">
-                  <label htmlFor="start-date">Start Date <span className="garment-template-required-indicator">*</span></label>
-                  <div className="garment-template-date-input-container">
-                    <Calendar size={16} className="garment-template-date-icon" />
-                    <input
-                      type="date"
-                      id="start-date"
-                      value={startDate}
-                      onChange={handleStartDateChange}
-                      min={today} // Prevent selecting dates before today
-                      className={`garment-template-date-input ${dateErrors.startDate ? 'garment-template-date-input-error' : ''}`}
-                    />
-                  </div>
-                  {dateErrors.startDate && (
-                    <div className="garment-template-date-error-message">{dateErrors.startDate}</div>
-                  )}
-                  <div className="garment-template-date-helper-text">Earliest date inspections can begin</div>
-                </div>
-
-                <div className="garment-template-date-field">
-                  <label htmlFor="due-date">Due Date <span className="garment-template-required-indicator">*</span></label>
-                  <div className="garment-template-date-input-container">
-                    <Calendar size={16} className="garment-template-date-icon" />
-                    <input
-                      type="date"
-                      id="due-date"
-                      value={dueDate}
-                      onChange={handleDueDateChange}
-                      min={startDate} // Prevent selecting a due date before start date
-                      className={`garment-template-date-input ${dateErrors.dueDate ? 'garment-template-date-input-error' : ''}`}
-                    />
-                  </div>
-                  {dateErrors.dueDate && (
-                    <div className="garment-template-date-error-message">{dateErrors.dueDate}</div>
-                  )}
-                  <div className="garment-template-date-helper-text">Deadline for completing inspections</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="garment-template-access-tab">
             <div className="garment-template-permissions-section">
               <h2>
@@ -4907,12 +4783,48 @@ const Garment_Template: React.FC = () => {
               <span>Publish Template</span>
             </button>
             <p className="garment-template-publish-note">
-              Publishing will make this template available to all users with access permissions. Once published, inspectors can begin using this template according to the timeframe you've set.
+              Publishing will make this template available to all users with access permissions. Once published, inspectors can begin using this template.
             </p>
           </div>
         </div>
       </div>
     )
+  }
+
+  // Show access error if user doesn't have permission
+  if (accessError) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Access Denied</h2>
+        <p style={{ marginBottom: '2rem', maxWidth: '500px' }}>{accessError}</p>
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: 'pointer'
+          }}
+        >
+          Go to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return <div>Loading template...</div>
   }
 
   // Main Render
@@ -4940,36 +4852,11 @@ const Garment_Template: React.FC = () => {
           </div>
         </div>
         <div className="nav-right">
-          {activeTab === 0 && (
-            <>
-              <button className="nav-save-button" onClick={handleSave}>
-                <Save size={16} />
-                Save Template
-              </button>
-              <button className="nav-next-button" onClick={() => setActiveTab(1)}>
-                Next: Report
-                <ArrowRight size={16} />
-              </button>
-            </>
-          )}
-          {activeTab === 1 && (
-            <>
-              <button className="nav-save-button" onClick={handleSave}>
-                <Save size={16} />
-                Save Template
-              </button>
-              <button className="nav-next-button" onClick={() => setActiveTab(2)}>
-                Next: Access
-                <ArrowRight size={16} />
-              </button>
-            </>
-          )}
-          {activeTab === 2 && (
-            <button className="nav-save-button" onClick={handleSave}>
-              <Save size={16} />
-              Save Template
-            </button>
-          )}
+          {/* Keep only save button in navbar for all tabs */}
+          <button className="nav-save-button" onClick={handleSave}>
+            <Save size={16} />
+            Save Template
+          </button>
         </div>
       </div>
 

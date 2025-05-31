@@ -208,6 +208,13 @@
   transform: scale(1.1);
 }
 
+.dashboard-nav-link-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  color: var(--text-muted) !important;
+}
+
 /* Main Content */
 .tp-template-container {
   margin-left: 280px;

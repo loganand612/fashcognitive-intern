@@ -460,6 +460,7 @@
 }
 
 .question-item {
+  position: relative; /* Required for absolute positioned logic panel */
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -1224,7 +1225,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-right: 30px; /* Make space for delete button */
+  padding-right: 40px; /* Make space for delete button */
 }
 
 .enhanced-logic-condition-row {
@@ -1257,21 +1258,21 @@
   right: 12px;
   background: none;
   border: none;
-  padding: 6px;
-  border-radius: 50%;
+  padding: 8px;
   cursor: pointer;
-  color: #9ca3af;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
   transition: all 0.2s ease;
-  opacity: 0;
-}
-
-.enhanced-logic-rule-builder:hover .enhanced-delete-rule-button {
-  opacity: 1;
+  opacity: 0.7;
 }
 
 .enhanced-delete-rule-button:hover {
-  background-color: #fee2e2;
-  color: #ef4444;
+  background-color: #fef2f2;
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 .delete-icon {
@@ -4066,93 +4067,7 @@
   max-width: 800px;
 }
 
-.create-template-date-fields {
-  display: flex;
-  gap: 32px;
-  margin-top: 24px;
-  width: 100%;
-  max-width: 800px;
-}
-
-.create-template-date-field {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.create-template-date-field label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.create-template-required-indicator {
-  color: #e53e3e;
-  font-size: 14px;
-}
-
-.create-template-date-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.create-template-date-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--color-text-secondary);
-  pointer-events: none;
-}
-
-.create-template-date-input {
-  padding: 14px 14px 14px 40px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 14px;
-  background-color: #f9f9f9;
-  width: 100%;
-  transition: all 0.2s ease;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.create-template-date-input:hover {
-  border-color: #b0b0b0;
-}
-
-.create-template-date-input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-  background-color: white;
-}
-
-.create-template-date-input-error {
-  border-color: #e53e3e;
-  background-color: #fff5f5;
-}
-
-.create-template-date-input-error:focus {
-  border-color: #e53e3e;
-  box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.2);
-}
-
-.create-template-date-error-message {
-  color: #e53e3e;
-  font-size: 12px;
-  margin-top: 6px;
-  font-weight: 500;
-}
-
-.create-template-date-helper-text {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 6px;
-}
+/* Date-related styles removed since scheduling functionality was removed */
 
 /* Workflow Navigation Styling */
 .create-template-workflow-navigation {
@@ -4203,11 +4118,6 @@
   .create-template-access-tab {
     padding: 24px 20px;
   }
-
-  .create-template-date-fields {
-    flex-direction: column;
-    gap: 24px;
-  }
 }
 
 /* Legacy access tab for backward compatibility */
@@ -4223,46 +4133,7 @@
   max-width: 1200px;
 }
 
-/* Override any conflicting styles for the new professional access section */
-.create-template-access-container .create-template-date-input {
-  padding: 14px 14px 14px 40px !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 8px !important;
-  font-size: 14px !important;
-  background-color: #f9f9f9 !important;
-  width: 100% !important;
-  transition: all 0.2s ease !important;
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  display: block !important;
-  color: var(--color-text) !important;
-}
-
-.create-template-access-container .create-template-date-input:hover {
-  border-color: #b0b0b0 !important;
-}
-
-.create-template-access-container .create-template-date-input:focus {
-  border-color: var(--color-primary) !important;
-  outline: none !important;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
-  background-color: white !important;
-}
-
-/* Ensure proper icon positioning */
-.create-template-date-input-container {
-  position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-}
-
-.create-template-date-icon {
-  position: absolute !important;
-  left: 12px !important;
-  color: var(--color-text-secondary) !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
+/* Date input override styles removed since scheduling functionality was removed */
 
 /* Ensure proper section styling */
 .create-template-access-container .create-template-section-icon {
@@ -4291,3 +4162,93 @@
   transition: all 0.2s ease !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
+
+/* Site options styling */
+.site-field {
+  width: 100%;
+}
+
+.site-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.site-option-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-option-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--border-gray);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.site-option-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+}
+
+/* Color variations for site options */
+.site-option-input.site-0 {
+  border-left: 4px solid #3b82f6;
+}
+
+.site-option-input.site-1 {
+  border-left: 4px solid #10b981;
+}
+
+.site-option-input.site-2 {
+  border-left: 4px solid #f59e0b;
+}
+
+.site-option-input.site-3 {
+  border-left: 4px solid #ef4444;
+}
+
+.delete-option-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--error-red);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-option-button:hover {
+  background-color: #dc2626;
+  transform: scale(1.05);
+}
+
+.add-option-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 2px dashed var(--border-gray);
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--text-gray);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.add-option-button:hover {
+  border-color: var(--primary-blue);
+  color: var(--primary-blue);
+  background-color: var(--bg-light);
+}
+

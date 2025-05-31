@@ -1,0 +1,85 @@
+# ============================================================================
+# Django Fashion Cognitive Inspection System - Requirements
+# ============================================================================
+
+# Core Django Framework
+Django==5.1.6
+djangorestframework==3.15.2
+
+# Database Support
+psycopg2-binary==2.9.9
+
+# CORS and Security
+django-cors-headers==4.6.0
+
+# Development Tools
+django-extensions==3.2.3
+
+# File and Media Handling
+Pillow==10.4.0
+
+# API Documentation
+drf-spectacular==0.27.2
+
+# Environment Configuration
+python-decouple==3.8
+
+# Date and Time Handling
+pytz==2024.2
+
+# ============================================================================
+# Optional Dependencies for Enhanced Functionality
+# ============================================================================
+
+# Production WSGI Server
+gunicorn==23.0.0
+
+# Static Files Handling for Production
+whitenoise==6.8.2
+
+# ============================================================================
+# Development and Testing Dependencies
+# ============================================================================
+
+# Testing Framework
+pytest==8.3.3
+pytest-django==4.9.0
+pytest-cov==6.0.0
+
+# Code Quality and Formatting
+flake8==7.1.1
+black==24.8.0
+isort==5.13.2
+
+# ============================================================================
+# Additional Utilities
+# ============================================================================
+
+# HTTP Requests (if needed for external APIs)
+requests==2.32.3
+
+# Excel file handling (if needed for data import/export)
+openpyxl==3.1.5
+
+# PDF generation (if needed for reports)
+reportlab==4.2.5
+
+# ============================================================================
+# Notes:
+# ============================================================================
+# 1. This requirements.txt is based on Django 5.1.6 and Python 3.10+
+# 2. PostgreSQL is used as the primary database
+# 3. All versions are pinned for reproducible builds
+# 4. Optional dependencies can be removed if not needed
+# 5. For production, consider using pip-tools for dependency management
+#
+# Installation:
+# pip install -r requirements.txt
+#
+# For development with additional tools:
+# pip install -r requirements.txt
+#
+# Database setup required:
+# - PostgreSQL server running
+# - Database 'Fash' created
+

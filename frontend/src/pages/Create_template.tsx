@@ -27,7 +27,6 @@ import {
   Check,
   Image,
   Trash2,
-  Move,
   Clock,
   ArrowLeft,
   Bell,
@@ -156,6 +155,7 @@ interface Question {
   conditionalProof?: string
   logicRules?: LogicRule[]
   multipleSelection?: boolean
+  siteOptions?: string[]  // Custom site names for Site response type
   logicResponses?: {
     ruleId: string
     responseType: string
@@ -249,6 +249,7 @@ function cleanTemplateForSave(template: Template, isNew: boolean): Partial<Templ
             conditionalProof: q.conditionalProof,
             logicRules: q.logicRules,
             multipleSelection: q.multipleSelection,
+            siteOptions: q.siteOptions,
           };
         }),
       };
@@ -953,9 +954,14 @@ const EnhancedLogicRuleBuilder: React.FC<{
   const [localRule, setLocalRule] = useState<LogicRule>(rule)
   const [showConfig, setShowConfig] = useState(false)
 
+  // Use useCallback to memoize the onRuleChange call
+  const handleRuleChange = useCallback((updatedRule: LogicRule) => {
+    onRuleChange(updatedRule)
+  }, [onRuleChange])
+
   useEffect(() => {
-    onRuleChange(localRule)
-  }, [localRule, onRuleChange])
+    handleRuleChange(localRule)
+  }, [localRule, handleRuleChange])
 
   useEffect(() => {
     setLocalRule(rule)
@@ -1060,7 +1066,11 @@ const EnhancedLogicRulesContainer: React.FC<{
       value: null,
       trigger: null,
     }
-    onRulesChange([...rules, newRule])
+    console.log('Adding new rule:', newRule)
+    console.log('Current rules before adding:', rules.length)
+    const updatedRules = [...rules, newRule]
+    console.log('Updated rules after adding:', updatedRules.length)
+    onRulesChange(updatedRules)
   }
 
   const updateRule = (index: number, updatedRule: LogicRule) => {
@@ -1070,9 +1080,13 @@ const EnhancedLogicRulesContainer: React.FC<{
   }
 
   const deleteRule = (index: number) => {
-    const newRules = [...rules]
-    newRules.splice(index, 1)
-    onRulesChange(newRules)
+    // Add confirmation dialog to prevent accidental deletions
+    if (window.confirm('Are you sure you want to delete this logic rule?')) {
+      const newRules = [...rules]
+      newRules.splice(index, 1)
+      console.log(`Deleting rule at index ${index}. Rules before:`, rules.length, 'Rules after:', newRules.length)
+      onRulesChange(newRules)
+    }
   }
 
   return (
@@ -1124,7 +1138,23 @@ const EnhancedAddLogicButton: React.FC<{
   className?: string
 }> = ({ hasRules, onClick, className = "" }) => {
   return (
-    <button className={`enhanced-add-logic-button ${hasRules ? "has-rules" : ""} ${className}`} onClick={onClick}>
+    <button
+      className={`enhanced-add-logic-button ${hasRules ? "has-rules" : ""} ${className}`}
+      onClick={(e) => {
+        console.log('Enhanced Add Logic Button clicked!');
+        console.log('Has rules:', hasRules);
+        e.preventDefault();
+        e.stopPropagation();
+        onClick();
+      }}
+      style={{
+        backgroundColor: hasRules ? '#e0f2fe' : '#f3f4f6',
+        border: hasRules ? '2px solid #0288d1' : '1px solid #d1d5db',
+        padding: '8px 12px',
+        borderRadius: '6px',
+        cursor: 'pointer'
+      }}
+    >
       <span>{hasRules ? "Edit logic" : "Add logic"}</span>
       {hasRules && <span className="rules-badge">!</span>}
     </button>
@@ -2014,6 +2044,8 @@ const CreateTemplate: React.FC = () => {
     description: "",
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [accessError, setAccessError] = useState<string | null>(null)
 
   // Initialize template state
   const [template, setTemplate] = useState<Template>({
@@ -2029,8 +2061,7 @@ const CreateTemplate: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
-  const [draggedItem, setDraggedItem] = useState<{ type: "question" | "section"; id: string } | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ type: "question" | "section"; id: string } | null>(null)
+
   const [showResponseTypeMenu, setShowResponseTypeMenu] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState<boolean>(true)
   const [showLogicPanel, setShowLogicPanel] = useState<string | null>(null)
@@ -2054,28 +2085,96 @@ const CreateTemplate: React.FC = () => {
   const questionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
+  // Check user role and permissions
+  useEffect(() => {
+    const checkUserAccess = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/users/current-user/', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+
+          // Check if user is inspector
+          if (userData.user_role === 'inspector') {
+            setAccessError('Only admin users can create or edit templates. Please contact your administrator.');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          setAccessError('Unable to verify user permissions. Please log in again.');
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking user access:', error);
+        setAccessError('Error checking user permissions. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+    };
+
+    checkUserAccess();
+  }, []);
+
   // Backend API integration - Load template from server
   useEffect(() => {
-    if (id) {
-      axios
-        .get(`http://localhost:8000/api/users/templates/${id}/`)
-        .then((res) => {
-          setTemplate(res.data);
-          setTemplateData(res.data);
-          setActiveSectionId(res.data.sections[0]?.id || null);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          console.error("Failed to load template", err);
-          setIsLoading(false);
-        });
-    } else {
-      const newTemplate = getInitialTemplate();
-      setTemplate(newTemplate);
-      setActiveSectionId(newTemplate.sections[0]?.id || null);
-      setIsLoading(false);
+    // Only load template if user has access and no access error
+    if (currentUser && !accessError) {
+      if (id) {
+        axios
+          .get(`http://localhost:8000/api/users/templates/${id}/`)
+          .then((res) => {
+            setTemplate(res.data);
+            setTemplateData(res.data);
+            setActiveSectionId(res.data.sections[0]?.id || null);
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.error("Failed to load template", err);
+            setIsLoading(false);
+          });
+      } else {
+        const newTemplate = getInitialTemplate();
+        setTemplate(newTemplate);
+        setActiveSectionId(newTemplate.sections[0]?.id || null);
+        setIsLoading(false);
+      }
     }
-  }, [id]);
+  }, [id, currentUser, accessError]);
+
+  // Show access error if user doesn't have permission
+  if (accessError) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Access Denied</h2>
+        <p style={{ marginBottom: '2rem', maxWidth: '500px' }}>{accessError}</p>
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: 'pointer'
+          }}
+        >
+          Go to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   // Show loading state
   if (isLoading || !template) {
@@ -2347,44 +2446,7 @@ const CreateTemplate: React.FC = () => {
     setShowResponseTypeMenu(null)
   }
 
-  // Drag and Drop
-  const handleDragStart = (type: "question" | "section", id: string) => setDraggedItem({ type, id })
-  const handleDragOver = (type: "question" | "section", id: string, e: React.DragEvent) => {
-    e.preventDefault()
-    if (draggedItem && draggedItem.id !== id) setDropTarget({ type, id })
-  }
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    if (!draggedItem || !dropTarget) return
-
-    if (draggedItem.type === "section" && dropTarget.type === "section") {
-      const sections = [...template.sections]
-      const draggedIndex = sections.findIndex((s) => s.id === draggedItem.id)
-      const dropIndex = sections.findIndex((s) => s.id === dropTarget.id)
-      const [removed] = sections.splice(draggedIndex, 1)
-      sections.splice(dropIndex, 0, removed)
-      setTemplate((prev) => ({ ...prev, sections }))
-    } else if (draggedItem.type === "question" && dropTarget.type === "question") {
-      const draggedSection = template.sections.find((s) => s.questions.some((q) => q.id === draggedItem.id))
-      const dropSection = template.sections.find((s) => s.questions.some((q) => q.id === dropTarget.id))
-
-      if (draggedSection && dropSection) {
-        const newSections = [...template.sections]
-        const draggedSectionIndex = newSections.findIndex((s) => s.id === draggedSection.id)
-        const draggedQuestionIndex = newSections[draggedSectionIndex].questions.findIndex(
-          (q) => q.id === draggedItem.id,
-        )
-        const dropSectionIndex = newSections.findIndex((s) => s.id === dropSection.id)
-        const dropQuestionIndex = newSections[dropSectionIndex].questions.findIndex((q) => q.id === dropTarget.id)
-        const [removedQuestion] = newSections[draggedSectionIndex].questions.splice(draggedQuestionIndex, 1)
-        newSections[dropSectionIndex].questions.splice(dropQuestionIndex, 0, removedQuestion)
-        setTemplate((prev) => ({ ...prev, sections: newSections }))
-      }
-    }
-    setDraggedItem(null)
-    setDropTarget(null)
-  }
 
   // Rendering Helpers
   const renderResponseTypeIcon = (type: ResponseType) => {
@@ -2595,6 +2657,47 @@ const CreateTemplate: React.FC = () => {
           </div>
         )
       case "Site":
+        return (
+          <div className="response-field site-field">
+            <div className="site-options">
+              {(question.siteOptions || []).map((site, idx) => (
+                <div key={idx} className="site-option-container">
+                  <input
+                    type="text"
+                    className={`site-option-input site-${idx % 4}`}
+                    value={site}
+                    onChange={(e) => {
+                      const newSiteOptions = [...(question.siteOptions || [])];
+                      newSiteOptions[idx] = e.target.value;
+                      updateQuestion(sectionId, question.id, { siteOptions: newSiteOptions });
+                    }}
+                    placeholder="Enter site name"
+                  />
+                  <button
+                    className="delete-option-button"
+                    onClick={() => {
+                      const newSiteOptions = [...(question.siteOptions || [])];
+                      newSiteOptions.splice(idx, 1);
+                      updateQuestion(sectionId, question.id, { siteOptions: newSiteOptions });
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className="add-option-button"
+                onClick={() => {
+                  const newSiteOptions = [...(question.siteOptions || []), `Site ${(question.siteOptions || []).length + 1}`];
+                  updateQuestion(sectionId, question.id, { siteOptions: newSiteOptions });
+                }}
+              >
+                <Plus size={14} />
+                <span>Add Site</span>
+              </button>
+            </div>
+          </div>
+        )
       case "Person":
       case "Inspection location":
         return (
@@ -2615,8 +2718,6 @@ const CreateTemplate: React.FC = () => {
 
   const renderQuestion = (question: Question, sectionId: string, index: number) => {
     const isActive = activeQuestionId === question.id
-    const isDragging = draggedItem?.type === "question" && draggedItem.id === question.id
-    const isDropTarget = dropTarget?.type === "question" && dropTarget.id === question.id
 
     return (
       <div
@@ -2624,17 +2725,10 @@ const CreateTemplate: React.FC = () => {
         ref={(el) => {
           questionRefs.current[question.id] = el
         }}
-        className={`question-item ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
+        className={`question-item ${isActive ? "active" : ""}`}
         onClick={() => setActiveQuestionId(question.id)}
-        draggable
-        onDragStart={() => handleDragStart("question", question.id)}
-        onDragOver={(e) => handleDragOver("question", question.id, e)}
-        onDrop={handleDrop}
       >
         <div className="question-header">
-          <div className="question-drag-handle">
-            <Move size={16} />
-          </div>
           <div className="question-number">{index + 1}</div>
           <input
             type="text"
@@ -2666,8 +2760,16 @@ const CreateTemplate: React.FC = () => {
             <EnhancedAddLogicButton
               hasRules={question.logicRules?.length ? true : false}
               onClick={() => {
+                console.log('Add Logic button clicked for question:', question.id);
+                console.log('Current showLogicPanel state:', showLogicPanel);
+                console.log('Question response type:', question.responseType);
+                console.log('Is response type supported?', LOGIC_SUPPORTED_TYPES.includes(question.responseType));
+                console.log('Current logic rules:', question.logicRules);
+
                 // Only show logic panel for supported types
-                setShowLogicPanel(showLogicPanel === question.id ? null : question.id);
+                const newState = showLogicPanel === question.id ? null : question.id;
+                console.log('Setting showLogicPanel to:', newState);
+                setShowLogicPanel(newState);
               }}
             />
           )}
@@ -2696,7 +2798,11 @@ const CreateTemplate: React.FC = () => {
               questionType={question.responseType}
               rules={question.logicRules || []}
               options={question.options || []}
-              onRulesChange={(rules) => updateQuestion(sectionId, question.id, { logicRules: rules })}
+              onRulesChange={(rules) => {
+                console.log('Logic rules changed for question:', question.id);
+                console.log('New rules:', rules);
+                updateQuestion(sectionId, question.id, { logicRules: rules });
+              }}
               questions={template.sections.flatMap((s) => s.questions.map((q) => ({ id: q.id, text: q.text })))}
               onClose={() => setShowLogicPanel(null)}
             />
@@ -2708,8 +2814,6 @@ const CreateTemplate: React.FC = () => {
 
   const renderSection = (section: Section, index: number) => {
     const isActive = activeSectionId === section.id
-    const isDragging = draggedItem?.type === "section" && draggedItem.id === section.id
-    const isDropTarget = dropTarget?.type === "section" && dropTarget.id === section.id
     const isTitlePage = index === 0
 
     return (
@@ -2718,12 +2822,8 @@ const CreateTemplate: React.FC = () => {
         ref={(el) => {
           sectionRefs.current[section.id] = el
         }}
-        className={`section-container ${isActive ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
+        className={`section-container ${isActive ? "active" : ""}`}
         onClick={() => setActiveSectionId(section.id)}
-        draggable={!isTitlePage}
-        onDragStart={() => !isTitlePage && handleDragStart("section", section.id)}
-        onDragOver={(e) => handleDragOver("section", section.id, e)}
-        onDrop={handleDrop}
       >
         <div className="section-header">
           <button
@@ -3635,7 +3735,7 @@ const CreateTemplate: React.FC = () => {
           />
         )
       case "Site":
-        const siteOptions = ["Main Site", "Secondary Site", "Remote Location", "Headquarters"]
+        const siteOptions = question.siteOptions || ["Site 1", "Site 2", "Site 3"]
         return (
           <select
             className="mobile-dropdown-field"
@@ -3910,53 +4010,10 @@ const CreateTemplate: React.FC = () => {
           <div className="create-template-access-container">
             <div className="create-template-access-header">
               <h1 className="create-template-access-title">Template Access & Settings</h1>
-              <p className="create-template-access-description">Configure access permissions and inspection timeframe for this template.</p>
+              <p className="create-template-access-description">Configure access permissions and template assignments for this template.</p>
             </div>
 
             <div className="create-template-access-content">
-              <div className="create-template-access-tab">
-                <div className="create-template-session-section">
-                  <h2>
-                    <Calendar size={22} className="create-template-section-icon" />
-                    Inspection Timeframe
-                  </h2>
-                  <p>Set the start and due dates for inspections using this template. These dates will determine when inspectors can access and complete their work.</p>
-
-                  <div className="create-template-date-fields">
-                    <div className="create-template-date-field">
-                      <label htmlFor="startDate">Start Date <span className="create-template-required-indicator">*</span></label>
-                      <div className="create-template-date-input-container">
-                        <Calendar size={16} className="create-template-date-icon" />
-                        <input
-                          type="date"
-                          id="startDate"
-                          name="startDate"
-                          min={new Date().toISOString().split('T')[0]}
-                          className="create-template-date-input"
-                          style={{appearance: "none", WebkitAppearance: "none"}}
-                        />
-                      </div>
-                      <div className="create-template-date-helper-text">Earliest date inspections can begin</div>
-                    </div>
-                    <div className="create-template-date-field">
-                      <label htmlFor="dueDate">Due Date <span className="create-template-required-indicator">*</span></label>
-                      <div className="create-template-date-input-container">
-                        <Calendar size={16} className="create-template-date-icon" />
-                        <input
-                          type="date"
-                          id="dueDate"
-                          name="dueDate"
-                          min={new Date().toISOString().split('T')[0]}
-                          className="create-template-date-input"
-                          style={{appearance: "none", WebkitAppearance: "none"}}
-                        />
-                      </div>
-                      <div className="create-template-date-helper-text">Deadline for completing inspections</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               <div className="create-template-access-tab">
                 <div className="create-template-permissions-section">
                   <h2>
@@ -3978,23 +4035,7 @@ const CreateTemplate: React.FC = () => {
                 </div>
               </div>
 
-              <div className="create-template-access-tab">
-                <div className="create-template-permissions-section">
-                  <h2>
-                    <ClipboardCheck size={22} className="create-template-section-icon" />
-                    Template Assignments
-                  </h2>
-                  <p>Assign this template to inspectors who will complete the inspections.</p>
 
-                  <TemplateAssignmentManager
-                    templateId={template.id}
-                    templateTitle={template.title || "Untitled Template"}
-                    onAssignmentUpdated={() => {
-                      console.log("Template assignments updated")
-                    }}
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="create-template-access-footer">

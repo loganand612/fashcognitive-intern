@@ -76,7 +76,6 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [selectedInspector, setSelectedInspector] = useState<number | null>(null);
   const [assignmentNotes, setAssignmentNotes] = useState('');
-  const [dueDate, setDueDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -217,9 +216,13 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
       const assignmentData = {
         template: templateId,
         inspector: selectedInspector,
-        notes: assignmentNotes,
-        due_date: dueDate || null
+        notes: assignmentNotes
       };
+
+      console.log('🔍 Frontend assignment data:', assignmentData);
+      console.log('🔍 Template ID:', templateId, 'Type:', typeof templateId);
+      console.log('🔍 Selected Inspector:', selectedInspector, 'Type:', typeof selectedInspector);
+      console.log('🔍 Is template saved:', isTemplateSaved);
 
       // Make the request with the CSRF token
       const response = await axios.post(
@@ -242,7 +245,6 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
       // Reset form
       setSelectedInspector(null);
       setAssignmentNotes('');
-      setDueDate('');
       setShowAssignForm(false);
       setError(null);
 
@@ -338,8 +340,15 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
     <div className="access-manager">
       <div style={{ width: '100%', maxWidth: '1000px' }}>
         <div className="access-header">
-          <h2>Template Assignments</h2>
-          <p>Assign "{templateTitle}" to inspectors</p>
+          <div className="tam-header-content">
+            <div className="tam-header-icon">
+              <ClipboardCheck size={32} />
+            </div>
+            <div className="tam-header-text">
+              <h2>Assign Template to Inspector</h2>
+              <p>Assign "{templateTitle}" to inspectors who will complete the inspections</p>
+            </div>
+          </div>
         </div>
 
         {isLoading && (
@@ -388,7 +397,7 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
 
           <div className="action-buttons">
             <button
-              className="invite-button"
+              className="tam-main-assign-button"
               onClick={() => setShowAssignForm(!showAssignForm)}
               disabled={!isTemplateSaved || currentUser?.user_role !== 'admin'}
               title={!isTemplateSaved ? templateNotSavedMessage : undefined}
@@ -400,23 +409,29 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
         </div>
 
         {showAssignForm && (
-          <div className="invite-form">
-            <div className="invite-form-header">
-              <h3>Assign Template to Inspector</h3>
-              <button className="close-button" onClick={() => setShowAssignForm(false)}>
+          <div className="tam-assign-form">
+            <div className="tam-form-header">
+              <div className="tam-form-title">
+                <UserPlus size={20} />
+                <h3>Assign Template to Inspector</h3>
+              </div>
+              <button className="tam-close-button" onClick={() => setShowAssignForm(false)}>
                 <X size={16} />
               </button>
             </div>
 
-            <div className="tab-content">
-              <div className="form-group">
-                <label>Select Inspector</label>
+            <div className="tam-form-content">
+              <div className="tam-form-group">
+                <label className="tam-form-label">
+                  <User size={16} />
+                  Select Inspector
+                </label>
                 <select
                   value={selectedInspector || ''}
                   onChange={(e) => setSelectedInspector(Number(e.target.value))}
-                  className="inspector-select"
+                  className="tam-inspector-select"
                 >
-                  <option value="">-- Select an Inspector --</option>
+                  <option value="">-- Choose an inspector --</option>
                   {availableInspectors.map(inspector => (
                     <option key={inspector.id} value={inspector.id}>
                       {inspector.name} ({inspector.email})
@@ -424,41 +439,38 @@ const TemplateAssignmentManager: React.FC<TemplateAssignmentManagerProps> = ({
                   ))}
                 </select>
                 {availableInspectors.length === 0 && (
-                  <p className="no-inspectors-message">
-                    No available inspectors found. All inspectors may already be assigned to this template.
-                  </p>
+                  <div className="tam-no-inspectors">
+                    <AlertCircle size={16} />
+                    <span>No available inspectors found. All inspectors may already be assigned to this template.</span>
+                  </div>
                 )}
               </div>
 
-              <div className="form-group">
-                <label>Due Date (Optional)</label>
-                <input
-                  type="datetime-local"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="date-input"
-                />
-                <small>If set, the assignment will expire after this date</small>
-              </div>
-
-              <div className="form-group">
-                <label>Notes (Optional)</label>
+              <div className="tam-form-group">
+                <label className="tam-form-label">
+                  <Edit2 size={16} />
+                  Notes (Optional)
+                </label>
                 <textarea
                   value={assignmentNotes}
                   onChange={(e) => setAssignmentNotes(e.target.value)}
-                  placeholder="Add any notes about this assignment"
+                  placeholder="Add any special instructions or notes for this assignment..."
                   rows={3}
+                  className="tam-notes-textarea"
                 />
               </div>
 
-              <div className="invite-actions">
-                <button className="cancel-button" onClick={() => setShowAssignForm(false)}>Cancel</button>
+              <div className="tam-form-actions">
+                <button className="tam-cancel-button" onClick={() => setShowAssignForm(false)}>
+                  Cancel
+                </button>
                 <button
-                  className="send-invite-button"
+                  className="tam-assign-button"
                   onClick={handleCreateAssignment}
                   disabled={!selectedInspector || !isTemplateSaved}
                   title={!isTemplateSaved ? templateNotSavedMessage : undefined}
                 >
+                  <Check size={16} />
                   Assign Template
                 </button>
               </div>

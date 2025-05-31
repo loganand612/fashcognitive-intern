@@ -195,6 +195,13 @@ class TemplateCreateView(APIView):
         print(f"sessionid: {request.COOKIES.get('sessionid')}")
         if not request.user.is_authenticated:
             return Response({"error": "User is not authenticated"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Only admin users can create templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can create templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         try:
             title = request.data.get("title")
             description = request.data.get("description")
@@ -280,6 +287,7 @@ class TemplateCreateView(APIView):
                 for question_data in section_data.get("questions", []):
                     # Check for response_type or responseType (handle both for compatibility)
                     print(f"🔍 Processing question: {question_data}")
+                    print(f"🔍 Logic rules in question_data: {question_data.get('logicRules')}")
                     response_type = question_data.get("response_type") or question_data.get("responseType")
                     if not response_type:
                         print(f"❌ Missing response_type for question: {question_data}")
@@ -293,25 +301,41 @@ class TemplateCreateView(APIView):
                             question.response_type = response_type
                             question.required = question_data.get("required", question.required)
                             question.order = question_data.get("order", question.order)
-                            question.logic_rules = question_data.get("logicRules", question.logic_rules)
+                            # Handle both camelCase and snake_case for logic_rules
+                            logic_rules = question_data.get("logic_rules") or question_data.get("logicRules")
+                            if logic_rules is not None:
+                                question.logic_rules = logic_rules
                             question.flagged = question_data.get("flagged", question.flagged)
                             question.multiple_selection = question_data.get("multipleSelection", question.multiple_selection)
+                            print(f"🔍 Saving question with logic_rules: {question.logic_rules}")
                             question.save()
                         else:
                             print(f"❌ Question with id {question_id} not found in section {section.id}")
                             return Response({"error": f"Question with id {question_id} not found."}, status=400)
 
                     else:
-                        Question.objects.create(
+                        # Handle both camelCase and snake_case for logic_rules
+                        logic_rules_data = question_data.get("logic_rules") or question_data.get("logicRules")
+                        print(f"🔍 Creating new question with logic_rules: {logic_rules_data}")
+                        question = Question.objects.create(
                             section=section,
                             text=question_data.get("text"),
                             response_type=response_type,
                             required=question_data.get("required", False),
                             order=question_data.get("order", 0),
-                            logic_rules=question_data.get("logicRules"),
+                            logic_rules=logic_rules_data,
                             flagged=question_data.get("flagged", False),
                             multiple_selection=question_data.get("multipleSelection", False),
                         )
+                        print(f"🔍 Created question with ID {question.id}, logic_rules: {question.logic_rules}")
+
+                        # Create options for multiple choice questions
+                        for o_index, option in enumerate(question_data.get("options", [])):
+                            QuestionOption.objects.create(
+                                question=question,
+                                text=option,
+                                order=o_index
+                            )
 
             return Response({
                 "message": "Template saved successfully!",
@@ -328,6 +352,13 @@ class TemplateCreateView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, pk=None):
+        # Only admin users can update templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can update templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         request.data._mutable = True  # May be required if using QueryDict
 
         if not pk:
@@ -342,8 +373,69 @@ class TemplateCreateView(APIView):
 class TemplateDetailView(RetrieveAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Check if user is inspector and if they have access to this template
+        template_id = kwargs.get('pk')
+        print(f"🔍 TemplateDetailView.get: template_id={template_id}, user={request.user}, user_role={getattr(request.user, 'user_role', 'unknown')}")
+
+        if request.user.user_role == 'inspector':
+            from .models import TemplateAssignment
+            # Check if this template is assigned to the inspector (including completed assignments for viewing results)
+            has_assignment = TemplateAssignment.objects.filter(
+                template_id=template_id,
+                inspector=request.user,
+                status__in=['assigned', 'in_progress', 'completed']
+            ).exists()
+
+            if not has_assignment:
+                # Check if they have any assignment for this template (even revoked/expired) for better error message
+                any_assignment = TemplateAssignment.objects.filter(
+                    template_id=template_id,
+                    inspector=request.user
+                ).exists()
+
+                if any_assignment:
+                    return Response(
+                        {"detail": "Your access to this template has expired or been revoked. Please contact your administrator."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                else:
+                    return Response(
+                        {"detail": "You do not have access to this template. Please contact your administrator."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+        # Admin users can access any template
+        elif request.user.user_role == 'admin':
+            # Admin users have full access to all templates
+            pass
+
+        response = super().get(request, *args, **kwargs)
+        print(f"🔍 Template API Response for ID {kwargs.get('pk')}:")
+        print(f"🔍 Response data: {response.data}")
+
+        # Debug logic rules specifically
+        if 'sections' in response.data:
+            for section in response.data['sections']:
+                if 'questions' in section:
+                    for question in section['questions']:
+                        if question.get('logic_rules'):
+                            print(f"🔍 Question '{question.get('text')}' has logic_rules: {question.get('logic_rules')}")
+                        else:
+                            print(f"🔍 Question '{question.get('text')}' has NO logic_rules")
+
+        return response
 
     def patch(self, request, pk=None):
+        # Only admin users can update templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can update templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         template = self.get_object()
 
         try:
@@ -423,32 +515,60 @@ class TemplateDetailView(RetrieveAPIView):
                                     question.response_type = response_type
                                     question.required = question_data.get("required", question.required)
                                     question.order = question_data.get("order", question.order)
-                                    question.logic_rules = question_data.get("logicRules", question.logic_rules)
+                                    # Handle both camelCase and snake_case for logic_rules
+                                    logic_rules = question_data.get("logic_rules") or question_data.get("logicRules")
+                                    if logic_rules is not None:
+                                        question.logic_rules = logic_rules
                                     question.flagged = question_data.get("flagged", question.flagged)
                                     question.multiple_selection = question_data.get("multipleSelection", question.multiple_selection)
                                     question.save()
+
+                                    # Update options for existing question
+                                    question.options.all().delete()  # Remove existing options
+                                    for o_index, option in enumerate(question_data.get("options", [])):
+                                        QuestionOption.objects.create(
+                                            question=question,
+                                            text=option,
+                                            order=o_index
+                                        )
                                 else:
-                                    Question.objects.create(
+                                    question = Question.objects.create(
                                         section=section,
                                         text=question_data.get("text"),
                                         response_type=response_type,
                                         required=question_data.get("required", False),
                                         order=question_data.get("order", 0),
-                                        logic_rules=question_data.get("logicRules"),
+                                        logic_rules=question_data.get("logic_rules") or question_data.get("logicRules"),
                                         flagged=question_data.get("flagged", False),
                                         multiple_selection=question_data.get("multipleSelection", False),
                                     )
+
+                                    # Create options for new question
+                                    for o_index, option in enumerate(question_data.get("options", [])):
+                                        QuestionOption.objects.create(
+                                            question=question,
+                                            text=option,
+                                            order=o_index
+                                        )
                             else:
-                                Question.objects.create(
+                                question = Question.objects.create(
                                     section=section,
                                     text=question_data.get("text"),
                                     response_type=response_type,
                                     required=question_data.get("required", False),
                                     order=question_data.get("order", 0),
-                                    logic_rules=question_data.get("logicRules"),
+                                    logic_rules=question_data.get("logic_rules") or question_data.get("logicRules"),
                                     flagged=question_data.get("flagged", False),
                                     multiple_selection=question_data.get("multipleSelection", False),
                                 )
+
+                                # Create options for new question
+                                for o_index, option in enumerate(question_data.get("options", [])):
+                                    QuestionOption.objects.create(
+                                        question=question,
+                                        text=option,
+                                        order=o_index
+                                    )
                 except Exception as e:
                     print(f"Error processing sections: {e}")
                     return Response({"error": f"Error processing sections: {str(e)}"}, status=400)
@@ -557,8 +677,60 @@ def current_user(request):
         "user_role": request.user.user_role
     })
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def debug_template_access(request):
+    """Debug endpoint to check template access for current user"""
+    template_id = request.GET.get('template_id', 115)
+
+    from .models import TemplateAssignment, Template
+
+    try:
+        template = Template.objects.get(id=template_id)
+        print(f"🔍 Template {template_id} exists: {template.title}")
+
+        # Check assignments for this user
+        assignments = TemplateAssignment.objects.filter(
+            template_id=template_id,
+            inspector=request.user
+        )
+
+        assignment_data = []
+        for assignment in assignments:
+            assignment_data.append({
+                'id': assignment.id,
+                'status': assignment.status,
+                'assigned_at': assignment.assigned_at,
+                'inspector': assignment.inspector.email
+            })
+
+        return Response({
+            "user": {
+                "id": request.user.id,
+                "email": request.user.email,
+                "user_role": request.user.user_role
+            },
+            "template": {
+                "id": template.id,
+                "title": template.title,
+                "owner": template.user.email
+            },
+            "assignments": assignment_data,
+            "has_active_assignment": TemplateAssignment.objects.filter(
+                template_id=template_id,
+                inspector=request.user,
+                status__in=['assigned', 'in_progress', 'completed']
+            ).exists()
+        })
+
+    except Template.DoesNotExist:
+        return Response({
+            "error": f"Template {template_id} does not exist"
+        }, status=404)
+
 # Add logout view
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def logout_user(request):
     logout(request)
     return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
@@ -597,6 +769,13 @@ class GarmentTemplateCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # Only admin users can create templates
+        if request.user.user_role == 'inspector':
+            return Response(
+                {"error": "Only admin users can create templates."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         # Check if this is a publish request
         if request.data.get("publish") == "true":
             return self.publish_template(request)
@@ -676,7 +855,7 @@ class GarmentTemplateCreateView(APIView):
                             response_type=question_data.get("responseType"),
                             required=question_data.get("required", False),
                             order=q_index,
-                            logic_rules=question_data.get("logicRules"),
+                            logic_rules=question_data.get("logic_rules") or question_data.get("logicRules"),
                             flagged=question_data.get("flagged", False),
                             multiple_selection=question_data.get("multipleSelection", False),
                         )
