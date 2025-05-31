@@ -703,15 +703,6 @@ const Schedule: React.FC = () => {
                 Schedule inspections
               </button>
             )}
-            {currentUser?.user_role === 'admin' && (
-              <button
-                className="schedule-assign-button"
-                onClick={handleAssignTemplate}
-              >
-                <Plus size={16} />
-                Assign Template
-              </button>
-            )}
           </div>
         </div>
 

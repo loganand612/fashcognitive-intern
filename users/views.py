@@ -373,24 +373,44 @@ class TemplateCreateView(APIView):
 class TemplateDetailView(RetrieveAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         # Check if user is inspector and if they have access to this template
         template_id = kwargs.get('pk')
+        print(f"🔍 TemplateDetailView.get: template_id={template_id}, user={request.user}, user_role={getattr(request.user, 'user_role', 'unknown')}")
+
         if request.user.user_role == 'inspector':
             from .models import TemplateAssignment
-            # Check if this template is assigned to the inspector
+            # Check if this template is assigned to the inspector (including completed assignments for viewing results)
             has_assignment = TemplateAssignment.objects.filter(
                 template_id=template_id,
                 inspector=request.user,
-                status__in=['assigned', 'in_progress']
+                status__in=['assigned', 'in_progress', 'completed']
             ).exists()
 
             if not has_assignment:
-                return Response(
-                    {"detail": "You do not have access to this template. Please contact your administrator."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+                # Check if they have any assignment for this template (even revoked/expired) for better error message
+                any_assignment = TemplateAssignment.objects.filter(
+                    template_id=template_id,
+                    inspector=request.user
+                ).exists()
+
+                if any_assignment:
+                    return Response(
+                        {"detail": "Your access to this template has expired or been revoked. Please contact your administrator."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                else:
+                    return Response(
+                        {"detail": "You do not have access to this template. Please contact your administrator."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+        # Admin users can access any template
+        elif request.user.user_role == 'admin':
+            # Admin users have full access to all templates
+            pass
 
         response = super().get(request, *args, **kwargs)
         print(f"🔍 Template API Response for ID {kwargs.get('pk')}:")
@@ -656,6 +676,57 @@ def current_user(request):
         "last_name": request.user.last_name,
         "user_role": request.user.user_role
     })
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def debug_template_access(request):
+    """Debug endpoint to check template access for current user"""
+    template_id = request.GET.get('template_id', 115)
+
+    from .models import TemplateAssignment, Template
+
+    try:
+        template = Template.objects.get(id=template_id)
+        print(f"🔍 Template {template_id} exists: {template.title}")
+
+        # Check assignments for this user
+        assignments = TemplateAssignment.objects.filter(
+            template_id=template_id,
+            inspector=request.user
+        )
+
+        assignment_data = []
+        for assignment in assignments:
+            assignment_data.append({
+                'id': assignment.id,
+                'status': assignment.status,
+                'assigned_at': assignment.assigned_at,
+                'inspector': assignment.inspector.email
+            })
+
+        return Response({
+            "user": {
+                "id": request.user.id,
+                "email": request.user.email,
+                "user_role": request.user.user_role
+            },
+            "template": {
+                "id": template.id,
+                "title": template.title,
+                "owner": template.user.email
+            },
+            "assignments": assignment_data,
+            "has_active_assignment": TemplateAssignment.objects.filter(
+                template_id=template_id,
+                inspector=request.user,
+                status__in=['assigned', 'in_progress', 'completed']
+            ).exists()
+        })
+
+    except Template.DoesNotExist:
+        return Response({
+            "error": f"Template {template_id} does not exist"
+        }, status=404)
 
 # Add logout view
 @api_view(["POST"])

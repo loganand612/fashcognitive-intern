@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
 import { ArrowLeft, Edit, FileText, User, Settings, Home, Bell, Calendar, Play, BookOpen, Package, AlertCircle, Search, LogOut, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import './TemplateView.css';
 import '../assets/Dashboard.css';
+import { fetchData } from '../utils/api';
 
 interface Question {
   id: string;
@@ -90,21 +90,15 @@ const TemplateView = () => {
     if (currentUser.user_role === 'inspector') {
       const checkInspectorAccess = async () => {
         try {
-          const assignments = await fetch('http://localhost:8000/api/users/my-assignments/', {
-            credentials: 'include'
-          });
+          const assignmentData = await fetchData('users/my-assignments/');
+          const hasAssignment = assignmentData.some((assignment: any) =>
+            assignment.template.toString() === id &&
+            ['assigned', 'in_progress'].includes(assignment.status)
+          );
 
-          if (assignments.ok) {
-            const assignmentData = await assignments.json();
-            const hasAssignment = assignmentData.some((assignment: any) =>
-              assignment.template.toString() === id &&
-              ['assigned', 'in_progress'].includes(assignment.status)
-            );
-
-            if (!hasAssignment) {
-              setAccessError('You do not have access to this template. Please contact your administrator.');
-              return;
-            }
+          if (!hasAssignment) {
+            setAccessError('You do not have access to this template. Please contact your administrator.');
+            return;
           }
         } catch (error) {
           console.error('Error checking inspector access:', error);
@@ -117,13 +111,12 @@ const TemplateView = () => {
     }
 
     console.log("TemplateView: Fetching template with ID:", id);
-    axios
-      .get(`http://127.0.0.1:8000/api/users/templates/${id}/`)
-      .then((res) => {
-        console.log("TemplateView: Template data received:", res.data);
-        console.log("TemplateView: Template type:", res.data.template_type);
-        console.log("Logo URL:", res.data.logo);
-        setTemplate(res.data);
+    fetchData(`users/templates/${id}/`)
+      .then((data) => {
+        console.log("TemplateView: Template data received:", data);
+        console.log("TemplateView: Template type:", data.template_type);
+        console.log("Logo URL:", data.logo);
+        setTemplate(data);
       })
       .catch((err) => {
         console.error("Failed to load template", err);
@@ -277,7 +270,7 @@ const TemplateView = () => {
       <div className="tp-template-container" style={{ marginLeft: '280px', marginTop: 'var(--header-height)' }}>
         <div className="tp-template-header" style={{ top: 'var(--header-height)' }}>
           <div className="tp-template-tabs">
-            <Link to="/template" className="tp-back-link">
+            <Link to="/templates" className="tp-back-link">
               <ArrowLeft size={16} />
               Back to Templates
             </Link>

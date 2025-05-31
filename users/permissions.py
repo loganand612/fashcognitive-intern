@@ -146,12 +146,36 @@ def has_template_permission(user, template_id, required_level=None, permission_c
     Returns:
         bool: True if the user has the required permission, False otherwise
     """
+    print(f"🔍 has_template_permission: user={user}, template_id={template_id}, required_level={required_level}")
+
     try:
         template = Template.objects.get(id=template_id)
+        print(f"🔍 Template found: {template.title}")
 
         # Check if user is the template owner
         if template.user == user:
+            print(f"🔍 User is template owner, granting access")
             return True
+
+        # Check if user is an inspector with an assignment for this template
+        if user.user_role == 'inspector':
+            print(f"🔍 User is inspector, checking assignments...")
+            assignment_exists = TemplateAssignment.objects.filter(
+                template=template,
+                inspector=user,
+                status__in=['assigned', 'in_progress', 'completed']
+            ).exists()
+
+            print(f"🔍 Assignment exists: {assignment_exists}")
+
+            if assignment_exists:
+                # For inspectors with assignments, they have at least viewer access
+                if required_level in ['viewer', None]:
+                    print(f"🔍 Inspector has assignment and required level is viewer/None, granting access")
+                    return True
+                # Inspectors can't have higher permissions through assignments
+                print(f"🔍 Inspector has assignment but required level ({required_level}) is higher than viewer")
+                return False
 
         # Check if user has access through TemplateAccess
         try:
@@ -199,9 +223,11 @@ def has_template_permission(user, template_id, required_level=None, permission_c
             return False
 
         except TemplateAccess.DoesNotExist:
+            print(f"🔍 No TemplateAccess found for user")
             return False
 
     except Template.DoesNotExist:
+        print(f"🔍 Template {template_id} does not exist")
         return False
 
 

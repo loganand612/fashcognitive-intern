@@ -17,6 +17,7 @@ class AccessVerificationMiddleware(MiddlewareMixin):
     # Define URL patterns that require permission checks
     TEMPLATE_URL_PATTERNS = [
         r'^/users/templates/(?P<template_id>\d+)/$',
+        r'^/api/users/templates/(?P<template_id>\d+)/$',
         r'^/api/templates/(?P<template_id>\d+)/$',
         r'^/users/templates/(?P<template_id>\d+)/access/$',
         r'^/users/templates/(?P<template_id>\d+)/access/(?P<access_id>\d+)/$',
@@ -25,6 +26,12 @@ class AccessVerificationMiddleware(MiddlewareMixin):
     # Define which methods require which permission levels for each URL pattern
     PERMISSION_REQUIREMENTS = {
         r'^/users/templates/(?P<template_id>\d+)/$': {
+            'GET': 'viewer',
+            'PUT': 'editor',
+            'PATCH': 'editor',
+            'DELETE': 'owner',
+        },
+        r'^/api/users/templates/(?P<template_id>\d+)/$': {
             'GET': 'viewer',
             'PUT': 'editor',
             'PATCH': 'editor',
@@ -80,8 +87,10 @@ class AccessVerificationMiddleware(MiddlewareMixin):
         print(f"🔍 AccessVerificationMiddleware: Processing {request.method} {path}")
         print(f"🔍 User authenticated: {request.user.is_authenticated}")
         print(f"🔍 User: {request.user}")
+        print(f"🔍 Session key: {request.session.session_key}")
+        print(f"🔍 Session data: {dict(request.session)}")
 
-        # Skip if user is not authenticated
+        # Skip if user is not authenticated - let the view handle authentication
         if not request.user.is_authenticated:
             print(f"🔍 User not authenticated, skipping middleware for {path}")
             return None
