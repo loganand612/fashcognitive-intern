@@ -133,8 +133,8 @@ def template_detail_with_access_check(request, template_id):
 
 
 @api_view(["GET"])
-@authentication_classes([])
-@permission_classes([])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def user_templates_with_shared(request):
     """
     Get templates owned by the user and templates shared with the user

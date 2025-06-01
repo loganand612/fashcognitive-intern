@@ -412,14 +412,42 @@ const QuestionAnswering: React.FC = () => {
                   // Transform logic rules to ensure consistent format
                   let logicRules: LogicRule[] = []
                   if (question.logic_rules && Array.isArray(question.logic_rules)) {
+                    console.log('🔍 Raw logic_rules from API for question:', question.text, question.logic_rules);
+                    console.log('🔍 Raw API question object:', JSON.stringify(question, null, 2));
                     logicRules = question.logic_rules.map((rule: any) => {
-                      // Get message from multiple possible sources
-                      const message = rule.message || rule.triggerConfig?.message || ''
+                      // Debug the original rule structure
+                      console.log('🔍 Original rule structure:', JSON.stringify(rule, null, 2));
+                      console.log('🔍 Rule properties:', Object.keys(rule));
+                      console.log('🔍 Rule.message direct:', rule.message);
+                      console.log('🔍 Rule.triggerConfig:', rule.triggerConfig);
+                      console.log('🔍 Rule.trigger_config:', rule.trigger_config);
 
-                      // Get subQuestion from multiple possible sources
-                      const subQuestion = rule.subQuestion || rule.sub_question || rule.triggerConfig?.subQuestion || rule.triggerConfig?.sub_question
+                      // Get message from multiple possible sources (handle both camelCase and snake_case)
+                      const message = rule.message ||
+                                    rule.triggerConfig?.message ||
+                                    rule.trigger_config?.message ||
+                                    (rule as any).triggerConfig?.message ||
+                                    (rule as any).trigger_config?.message || ''
+                      console.log('🔍 Processing rule:', rule);
+                      console.log('🔍 Extracted message:', message);
+                      console.log('🔍 Message extraction details:', {
+                        'rule.message': rule.message,
+                        'rule.triggerConfig?.message': rule.triggerConfig?.message,
+                        'rule.trigger_config?.message': rule.trigger_config?.message,
+                        'final_message': message
+                      });
 
-                      return {
+                      // Get subQuestion from multiple possible sources (handle both camelCase and snake_case)
+                      const subQuestion = rule.subQuestion ||
+                                        rule.sub_question ||
+                                        rule.triggerConfig?.subQuestion ||
+                                        rule.triggerConfig?.sub_question ||
+                                        rule.trigger_config?.subQuestion ||
+                                        rule.trigger_config?.sub_question ||
+                                        (rule as any).triggerConfig?.subQuestion ||
+                                        (rule as any).trigger_config?.sub_question
+
+                      const transformedRule = {
                         id: rule.id,
                         condition: rule.condition,
                         value: rule.value,
@@ -432,6 +460,8 @@ const QuestionAnswering: React.FC = () => {
                           options: subQuestion.options || subQuestion.choices || []
                         } : undefined
                       }
+                      console.log('🔍 Transformed rule:', transformedRule);
+                      return transformedRule;
                     })
                   }
 
@@ -454,7 +484,15 @@ const QuestionAnswering: React.FC = () => {
             })
           }
 
-          setTemplate(transformedTemplate)
+          // Add debugging info to template title for troubleshooting
+          const debugTemplate = {
+            ...transformedTemplate,
+            title: `${transformedTemplate.title} [DEBUG: Template loaded with ${transformedTemplate.sections.length} sections]`
+          }
+
+
+
+          setTemplate(debugTemplate)
           setTemplateLoaded(true) // Mark template as loaded
 
           // Initialize garment report data if this is a garment template
@@ -1197,44 +1235,140 @@ const QuestionAnswering: React.FC = () => {
 
               switch (rule.trigger) {
                 case "display_message":
-                  if (rule.message && rule.message.trim() !== "") {
-                    // Show only the custom message without any prefix
-                    messages[question.id] = rule.message.trim()
-                  } else {
-                    // Fallback message if empty
-                    messages[question.id] = `Logic rule triggered for answer: ${currentAnswer}`
+                  console.log('🔍 Inspection: display_message rule found:', rule);
+                  console.log('🔍 Inspection: rule.message value:', rule.message);
+                  console.log('🔍 Inspection: rule.message type:', typeof rule.message);
+                  console.log('🔍 Inspection: Full rule object:', JSON.stringify(rule, null, 2));
+
+                  // Check all possible properties in the rule object
+                  console.log('🔍 Inspection: All rule properties:', Object.keys(rule));
+                  console.log('🔍 Inspection: Rule has message property:', 'message' in rule);
+                  console.log('🔍 Inspection: Rule.message exists:', !!rule.message);
+                  console.log('🔍 Inspection: Rule.message is string:', typeof rule.message === 'string');
+                  console.log('🔍 Inspection: Rule.message is not empty:', rule.message && rule.message.trim() !== "");
+
+                  // Try multiple ways to get the message
+                  let displayMessage = '';
+
+                  console.log('🔍 Inspection: Checking for message in rule:', JSON.stringify(rule, null, 2));
+
+                  // First try rule.message
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    displayMessage = rule.message.trim();
+                    console.log('✅ Inspection: Using rule.message:', displayMessage);
                   }
+                  // Try triggerConfig.message
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    displayMessage = (rule as any).triggerConfig.message.trim();
+                    console.log('✅ Inspection: Using triggerConfig.message:', displayMessage);
+                  }
+                  // Try trigger_config.message
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    displayMessage = (rule as any).trigger_config.message.trim();
+                    console.log('✅ Inspection: Using trigger_config.message:', displayMessage);
+                  }
+                  // Try config.message
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    displayMessage = (rule as any).config.message.trim();
+                    console.log('✅ Inspection: Using config.message:', displayMessage);
+                  }
+                  // Try message property with different casing
+                  else if ((rule as any).Message && typeof (rule as any).Message === 'string' && (rule as any).Message.trim() !== "") {
+                    displayMessage = (rule as any).Message.trim();
+                    console.log('✅ Inspection: Using rule.Message (capital M):', displayMessage);
+                  }
+
+                  // If no message found anywhere, use fallback
+                  if (!displayMessage || displayMessage.trim() === "") {
+                    displayMessage = `✅ Condition met! You entered ${currentAnswer}.`;
+                    console.log('❌ Inspection: Using fallback message because no valid message found');
+                    console.log('❌ Inspection: Checked properties:', {
+                      'rule.message': rule.message,
+                      'rule.triggerConfig': (rule as any).triggerConfig,
+                      'rule.trigger_config': (rule as any).trigger_config,
+                      'rule.config': (rule as any).config,
+                      'rule.Message': (rule as any).Message
+                    });
+                  }
+
+                  messages[question.id] = displayMessage;
                   break
 
                 case "require_evidence":
                   activeRules.push(rule)
-                  if (rule.message && rule.message.trim() !== "") {
-                    messages[question.id] = `📸 EVIDENCE REQUIRED: ${rule.message.trim()}`
-                  } else {
-                    // Fallback message if empty
-                    messages[question.id] = `📸 EVIDENCE REQUIRED: Please upload proof for answer: ${currentAnswer}`
+
+                  // Try multiple ways to get the message for evidence requirement
+                  let evidenceMessage = '';
+
+                  // First try rule.message
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    evidenceMessage = rule.message.trim();
                   }
+                  // Try triggerConfig.message
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    evidenceMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  // Try trigger_config.message
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    evidenceMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  // Try config.message
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    evidenceMessage = (rule as any).config.message.trim();
+                  }
+                  // Fallback message
+                  else {
+                    evidenceMessage = `Please upload proof for answer: ${currentAnswer}`;
+                  }
+
+                  messages[question.id] = `📸 EVIDENCE REQUIRED: ${evidenceMessage}`;
                   break
 
                 case "require_action":
-                  if (rule.message && rule.message.trim() !== "") {
-                    messages[question.id] = `⚠️ ACTION REQUIRED: ${rule.message.trim()}`
-                  } else {
-                    // Fallback message if empty
-                    messages[question.id] = `⚠️ ACTION REQUIRED: Please take action for answer: ${currentAnswer}`
+                  // Try multiple ways to get the message for action requirement
+                  let actionMessage = '';
+
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    actionMessage = rule.message.trim();
                   }
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    actionMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    actionMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    actionMessage = (rule as any).config.message.trim();
+                  }
+                  else {
+                    actionMessage = `Please take action for answer: ${currentAnswer}`;
+                  }
+
+                  messages[question.id] = `⚠️ ACTION REQUIRED: ${actionMessage}`;
                   break
 
                 case "notify":
-                  if (rule.message && rule.message.trim() !== "") {
-                    notificationMessages[question.id] = rule.message.trim()
-                    messages[question.id] = `🔔 NOTIFICATION: ${rule.message.trim()}`
-                  } else {
-                    // Fallback message if empty
-                    const fallbackMessage = `Admin has been notified about answer: ${currentAnswer}`
-                    notificationMessages[question.id] = fallbackMessage
-                    messages[question.id] = `🔔 NOTIFICATION: ${fallbackMessage}`
+                  // Try multiple ways to get the message for notification
+                  let notifyMessage = '';
+
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    notifyMessage = rule.message.trim();
                   }
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    notifyMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    notifyMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    notifyMessage = (rule as any).config.message.trim();
+                  }
+                  else {
+                    notifyMessage = `Admin has been notified about answer: ${currentAnswer}`;
+                  }
+
+                  notificationMessages[question.id] = notifyMessage;
+                  messages[question.id] = `🔔 NOTIFICATION: ${notifyMessage}`;
                   break
 
                 case "ask_questions":
@@ -1242,12 +1376,27 @@ const QuestionAnswering: React.FC = () => {
                   const subQuestion = rule.subQuestion || (rule as any).sub_question
 
                   if (subQuestion) {
-                    // Use the subQuestion text directly, or rule message as fallback
-                    const questionText = subQuestion.text && subQuestion.text.trim() !== ""
-                      ? subQuestion.text.trim()
-                      : rule.message && rule.message.trim() !== ""
-                        ? rule.message.trim()
-                        : `Please provide additional information about your answer: ${currentAnswer}`
+                    // Use the subQuestion text directly, or try multiple ways to get the message
+                    let questionText = '';
+
+                    if (subQuestion.text && subQuestion.text.trim() !== "") {
+                      questionText = subQuestion.text.trim();
+                    }
+                    else if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                      questionText = rule.message.trim();
+                    }
+                    else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                      questionText = (rule as any).triggerConfig.message.trim();
+                    }
+                    else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                      questionText = (rule as any).trigger_config.message.trim();
+                    }
+                    else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                      questionText = (rule as any).config.message.trim();
+                    }
+                    else {
+                      questionText = `Please provide additional information about your answer: ${currentAnswer}`;
+                    }
 
                     // Handle both responseType and response_type
                     let responseType = subQuestion.responseType || subQuestion.response_type || 'Text'
@@ -1285,19 +1434,48 @@ const QuestionAnswering: React.FC = () => {
 
                     // Don't add a generic message for ask_questions - let the conditional question speak for itself
                   } else {
-                    // If there's a rule message but no subQuestion, show the rule message
-                    if (rule.message && rule.message.trim() !== "") {
-                      messages[question.id] = rule.message.trim()
-                    } else {
-                      // Still show a message even if subQuestion is missing
-                      messages[question.id] = `Additional information required for answer: ${currentAnswer}`
+                    // If there's no subQuestion, try multiple ways to get the message
+                    let fallbackMessage = '';
+
+                    if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                      fallbackMessage = rule.message.trim();
                     }
+                    else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                      fallbackMessage = (rule as any).triggerConfig.message.trim();
+                    }
+                    else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                      fallbackMessage = (rule as any).trigger_config.message.trim();
+                    }
+                    else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                      fallbackMessage = (rule as any).config.message.trim();
+                    }
+                    else {
+                      fallbackMessage = `Additional information required for answer: ${currentAnswer}`;
+                    }
+
+                    messages[question.id] = fallbackMessage;
                   }
                   break
 
                 case "take_action":
-                  if (rule.message && rule.message.trim() !== "") {
-                    messages[question.id] = `🎯 TAKE ACTION: ${rule.message.trim()}`
+                  // Try multiple ways to get the message for take action
+                  let takeActionMessage = '';
+
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    takeActionMessage = rule.message.trim();
+                  }
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    takeActionMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    takeActionMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    takeActionMessage = (rule as any).config.message.trim();
+                  }
+
+                  if (takeActionMessage) {
+                    messages[question.id] = `🎯 TAKE ACTION: ${takeActionMessage}`;
                   }
                   break
 
@@ -1313,6 +1491,21 @@ const QuestionAnswering: React.FC = () => {
         }
       })
     })
+
+    console.log('🔍 Setting activeMessages:', messages);
+    console.log('🔍 Messages object keys:', Object.keys(messages));
+    console.log('🔍 Messages object values:', Object.values(messages));
+    console.log('🔍 Total messages to set:', Object.keys(messages).length);
+
+    // Additional debugging for each message
+    Object.entries(messages).forEach(([questionId, message]) => {
+      console.log(`🔍 Message for question ${questionId}:`, {
+        message,
+        messageType: typeof message,
+        messageLength: message ? message.length : 0,
+        isEmpty: !message || message.trim() === ""
+      });
+    });
 
     setActiveMessages(messages)
     setActiveConditionalFields(conditionalFields)
@@ -2126,6 +2319,27 @@ const QuestionAnswering: React.FC = () => {
     const error = validationErrors[question.id]
     const message = activeMessages[question.id]
 
+    console.log(`🔍 Rendering question ${question.id}:`, {
+      questionText: question.text,
+      hasMessage: !!message,
+      message: message,
+      messageType: typeof message,
+      messageLength: message ? message.length : 0,
+      messageEmpty: !message || message.trim() === "",
+      activeMessagesKeys: Object.keys(activeMessages),
+      activeMessages: activeMessages,
+      currentAnswer: answers[question.id],
+      hasLogicRules: !!(question.logicRules && question.logicRules.length > 0)
+    });
+
+    // Debug message display condition
+    console.log(`🔍 Message display check for question ${question.id}:`, {
+      hasMessage: !!message,
+      messageNotEmpty: message && message.trim() !== "",
+      willDisplay: !!(message && message.trim() !== ""),
+      message: message
+    });
+
     return (
       <div className="inspection-question-container" key={question.id}>
         <div className="inspection-question-header">
@@ -2197,12 +2411,16 @@ const QuestionAnswering: React.FC = () => {
             </div>
           )}
 
-          {message && (
+          {message && message.trim() !== "" && (
             <div className={getMessageClassName(message)}>
               {getMessageIcon(message)}
               <span>{message}</span>
             </div>
           )}
+
+
+
+
 
 
         </div>
