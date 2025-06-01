@@ -179,7 +179,14 @@ class TemplateAPI(APIView):
         # Only return templates that the user has access to
         templates = Template.objects.filter(user=request.user)
         serializer = TemplateSerializer(templates, many=True)
-        return Response(serializer.data)
+        response = Response(serializer.data)
+
+        # Add cache-control headers to ensure fresh data
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+
+        return response
 
 
 from rest_framework.authentication import SessionAuthentication

@@ -157,6 +157,11 @@ def has_template_permission(user, template_id, required_level=None, permission_c
             print(f"🔍 User is template owner, granting access")
             return True
 
+        # Check if user is admin - admin users have access to all templates
+        if user.user_role == 'admin':
+            print(f"🔍 User is admin, granting access to all templates")
+            return True
+
         # Check if user is an inspector with an assignment for this template
         if user.user_role == 'inspector':
             print(f"🔍 User is inspector, checking assignments...")

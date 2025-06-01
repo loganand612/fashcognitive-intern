@@ -150,8 +150,7 @@ const Schedule: React.FC = () => {
   }, []);
 
   // Fetch assignments based on user role
-  useEffect(() => {
-    const fetchAssignments = async () => {
+  const fetchAssignments = async () => {
       if (!currentUser) return;
 
       setLoading(true);
@@ -275,7 +274,11 @@ const Schedule: React.FC = () => {
       }
     };
 
-    fetchAssignments();
+  // useEffect to fetch assignments when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      fetchAssignments();
+    }
   }, [currentUser]);
 
   const handleScheduleInspections = () => {
@@ -314,14 +317,13 @@ const Schedule: React.FC = () => {
   };
 
   // Fetch templates for assignment
-  useEffect(() => {
-    const fetchTemplates = async () => {
+  const fetchTemplates = async () => {
       try {
-        // Use the same endpoints as Dashboard.tsx
+        // Use the same endpoints as Dashboard.tsx with the same fetchData approach
         const endpointsToTry = [
-          "/api/users/dashboard/templates/",
-          "/api/users/templates/",
-          "/api/templates/",
+          "users/dashboard/templates/",
+          "users/templates/",
+          "templates/",
         ];
 
         let templatesData = [];
@@ -329,38 +331,42 @@ const Schedule: React.FC = () => {
         for (const endpoint of endpointsToTry) {
           try {
             console.log(`Schedule: Trying endpoint: ${endpoint}`);
-            const fullUrl = `http://localhost:8000${endpoint}`;
-            const response = await fetch(fullUrl, {
-              credentials: 'include'
-            });
 
-            if (response.ok) {
-              const data = await response.json();
-              console.log("Schedule: Template data received:", data);
+            const data = await fetchData(endpoint);
+            console.log(`Schedule: SUCCESS with endpoint ${endpoint}:`, data);
+            console.log(`Schedule: Response data type:`, typeof data);
+            console.log(`Schedule: Is array:`, Array.isArray(data));
+            console.log(`Schedule: Data keys:`, Object.keys(data || {}));
 
-              // Check if the response has the new format with owned_templates and shared_templates
-              if (data.owned_templates && data.shared_templates) {
-                console.log("Schedule: Using new API format with owned and shared templates");
-                templatesData = [...data.owned_templates, ...data.shared_templates];
-              } else if (Array.isArray(data)) {
-                templatesData = data;
-              } else {
-                console.log("Schedule: Unknown data format");
-                templatesData = [];
-              }
-
-              console.log("Schedule: Final templates to set:", templatesData);
-              setTemplates(templatesData);
-              return;
+            // Check if the response has the new format with owned_templates and shared_templates
+            if (data.owned_templates && data.shared_templates) {
+              console.log("Schedule: Using new API format with owned and shared templates");
+              console.log("Schedule: Owned templates:", data.owned_templates.length);
+              console.log("Schedule: Shared templates:", data.shared_templates.length);
+              templatesData = [...data.owned_templates, ...data.shared_templates];
+            } else if (Array.isArray(data)) {
+              console.log("Schedule: Using direct array format");
+              templatesData = data;
+            } else {
+              console.log("Schedule: Unknown data format, trying to extract templates");
+              console.log("Schedule: Available keys:", Object.keys(data));
+              templatesData = [];
             }
+
+            console.log("Schedule: Final templates to set:", templatesData);
+            console.log("Schedule: Template count:", templatesData.length);
+            console.log("Schedule: Template titles:", templatesData.map(t => t.title || 'No title'));
+            setTemplates(templatesData);
+            return;
           } catch (error) {
-            console.error(`Schedule: Error with endpoint ${endpoint}:`, error);
+            console.error(`Schedule: ❌ Error with endpoint ${endpoint}:`, error);
             continue;
           }
         }
 
         // If all endpoints fail, set demo data
-        console.log("Schedule: All endpoints failed, using demo data");
+        console.log("Schedule: ❌ ALL ENDPOINTS FAILED, using demo data");
+        console.log("Schedule: Endpoints tried:", endpointsToTry);
         setTemplates([
           {
             id: 1,
@@ -411,6 +417,8 @@ const Schedule: React.FC = () => {
       }
     };
 
+  // useEffect to fetch templates on component mount
+  useEffect(() => {
     fetchTemplates();
   }, []);
 
@@ -910,7 +918,9 @@ const Schedule: React.FC = () => {
           onAssignmentCreated={() => {
             // Refresh the page data after assignment
             setShowScheduleModal(false);
-            window.location.reload();
+            // Refresh both templates and assignments instead of full page reload
+            fetchAssignments();
+            fetchTemplates();
           }}
         />
       )}
@@ -949,7 +959,9 @@ const Schedule: React.FC = () => {
                           // Refresh assignments after assignment
                           setShowAssignmentModal(false);
                           setSelectedTemplateForAssignment(null);
-                          window.location.reload();
+                          // Refresh both templates and assignments instead of full page reload
+                          fetchAssignments();
+                          fetchTemplates();
                         }}
                       />
                     </div>
@@ -973,7 +985,9 @@ const Schedule: React.FC = () => {
                             // Refresh assignments after assignment
                             setShowAssignmentModal(false);
                             setSelectedTemplateForAssignment(null);
-                            window.location.reload();
+                            // Refresh both templates and assignments instead of full page reload
+                            fetchAssignments();
+                            fetchTemplates();
                           }}
                         />
                       </div>

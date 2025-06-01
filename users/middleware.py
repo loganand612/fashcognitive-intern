@@ -118,11 +118,13 @@ class AccessVerificationMiddleware(MiddlewareMixin):
             return None
 
         # Check if the user has the required permission
+        print(f"🔍 Middleware: Checking permission for user={request.user}, template_id={template_id}, required_level={required_permission}")
         has_permission = has_template_permission(
             request.user,
             template_id,
             required_level=required_permission
         )
+        print(f"🔍 Middleware: Permission result={has_permission}")
 
         if not has_permission:
             # Log the failed access attempt
