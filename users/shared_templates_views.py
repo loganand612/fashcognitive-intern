@@ -76,7 +76,14 @@ def all_accessible_templates(request):
         access.save(update_fields=['last_accessed'])
 
     serializer = TemplateSerializer(all_templates, many=True)
-    return Response(serializer.data)
+    response = Response(serializer.data)
+
+    # Add cache-control headers to ensure fresh data
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+
+    return response
 
 
 @api_view(["GET"])

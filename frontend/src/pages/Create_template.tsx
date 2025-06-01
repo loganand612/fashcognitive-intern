@@ -4,6 +4,7 @@ import type React from "react"
 import { useParams } from "react-router-dom"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
+import api from "../axiosConfig"
 import axios from "axios"
 import "./Create_template.css"
 import AccessManager from './components/AccessManager'
@@ -2247,8 +2248,8 @@ const CreateTemplate: React.FC = () => {
     // Only load template if user has access and no access error
     if (currentUser && !accessError) {
       if (id) {
-        axios
-          .get(`http://localhost:8000/api/users/templates/${id}/`)
+        api
+          .get(`users/templates/${id}/`)
           .then((res) => {
             setTemplate(res.data);
             setTemplateData(res.data);
@@ -4098,38 +4099,6 @@ const CreateTemplate: React.FC = () => {
           </div>
         </div>
         <div className="nav-right">
-          <button
-            className="debug-button"
-            onClick={() => {
-              console.log('🔍 CURRENT TEMPLATE STATE:');
-              console.log(JSON.stringify(template, null, 2));
-
-              // Check for logic rules with messages
-              template.sections.forEach((section, sIndex) => {
-                section.questions.forEach((question, qIndex) => {
-                  if (question.logicRules && question.logicRules.length > 0) {
-                    console.log(`🔍 Section ${sIndex} Question ${qIndex} Logic Rules:`, question.logicRules);
-                    question.logicRules.forEach((rule, rIndex) => {
-                      if (rule.trigger === 'display_message' || rule.trigger === 'require_action') {
-                        console.log(`🔍 Rule ${rIndex} - Trigger: ${rule.trigger}, Message: "${rule.message}"`);
-                      }
-                    });
-                  }
-                });
-              });
-            }}
-            style={{
-              backgroundColor: '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              padding: '8px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              marginRight: '8px'
-            }}
-          >
-            🔍 Debug
-          </button>
           <button
             className="save-button"
             onClick={handleSave}
