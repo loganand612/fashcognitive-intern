@@ -104,8 +104,8 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* Modal styles */
-.modal-overlay {
+/* Modal styles - unique to ConnectionsPanel */
+.connections-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -116,6 +116,27 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease-out;
+  /* Ensure modal is only visible when explicitly shown */
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Hidden state for modal overlay */
+.connections-modal-overlay.hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .connection-modal {
@@ -127,6 +148,18 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .all-connections-modal {

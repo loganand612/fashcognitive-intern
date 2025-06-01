@@ -24,11 +24,22 @@ const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({
   onRemoveConnection,
   maxDisplayed = 3
 }) => {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showAllConnections, setShowAllConnections] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Force modal states to always be false initially
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [showAllConnections, setShowAllConnections] = useState<boolean>(false);
+
+  // Force close any modals that might be open
+  React.useEffect(() => {
+    setShowAddModal(false);
+    setShowAllConnections(false);
+  }, []);
+  const [newEmail, setNewEmail] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'pending'>('all');
+
+
+
+
 
   const activeConnections = connections.filter(c => c.status === 'active');
   const pendingConnections = connections.filter(c => c.status === 'pending');
@@ -57,8 +68,32 @@ const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({
     }
   };
 
+  // Handle clicking outside modal to close it
+  const handleModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowAddModal(false);
+      setShowAllConnections(false);
+    }
+  };
+
+  // Handle escape key to close modals
+  React.useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowAddModal(false);
+        setShowAllConnections(false);
+      }
+    };
+
+    if (showAddModal || showAllConnections) {
+      document.addEventListener('keydown', handleEscapeKey);
+      return () => document.removeEventListener('keydown', handleEscapeKey);
+    }
+  }, [showAddModal, showAllConnections]);
+
   return (
     <div className="connections-panel">
+      {/* Debug removed - clean version */}
       <div className="connections-container">
         <div className="connections-display">
         {displayedConnections.map(connection => (
@@ -74,7 +109,11 @@ const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({
         {remainingCount > 0 && (
           <div
             className="connection-more"
-            onClick={() => setShowAllConnections(true)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowAllConnections(true);
+            }}
             title="View all connections"
           >
             +{remainingCount}
@@ -83,7 +122,11 @@ const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({
 
         <button
           className="add-connection-button"
-          onClick={() => setShowAddModal(true)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowAddModal(true);
+          }}
           title="Add connection"
         >
           <Plus size={16} />
@@ -91,16 +134,23 @@ const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({
       </div>
       <button
         className="view-connections-button"
-        onClick={() => setShowAllConnections(true)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowAllConnections(true);
+        }}
       >
         View Connections
       </button>
+
+
+
     </div>
 
-      {/* Add Connection Modal */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="connection-modal">
+      {/* Add Connection Modal - TEMPORARILY DISABLED */}
+      {false && showAddModal === true && (
+        <div className="connections-modal-overlay" onClick={handleModalOverlayClick}>
+          <div className="connection-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Add Connection</h3>
               <button className="close-button" onClick={() => setShowAddModal(false)}>
@@ -160,10 +210,10 @@ const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({
         </div>
       )}
 
-      {/* View All Connections Modal */}
-      {showAllConnections && (
-        <div className="modal-overlay">
-          <div className="connection-modal all-connections-modal">
+      {/* View All Connections Modal - TEMPORARILY DISABLED */}
+      {false && showAllConnections === true && (
+        <div className="connections-modal-overlay" onClick={handleModalOverlayClick}>
+          <div className="connection-modal all-connections-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>My Connections</h3>
               <button className="close-button" onClick={() => setShowAllConnections(false)}>

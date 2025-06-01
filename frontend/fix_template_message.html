@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Template 117 Message</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .info {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Template 117 Message</h1>
+        <p>This tool will fix the empty message in Template 117's display_message rule.</p>
+        
+        <div>
+            <button class="button" onclick="checkTemplate()">1. Check Current Template</button>
+            <button class="button" onclick="fixTemplate()">2. Fix Empty Message</button>
+            <button class="button" onclick="testTemplate()">3. Test Fixed Template</button>
+        </div>
+        
+        <div id="log" class="log">Ready to fix template...\n</div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            log.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        async function getCsrfToken() {
+            try {
+                const response = await fetch('/api/templates/get-csrf-token/', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.csrfToken;
+                }
+            } catch (error) {
+                addLog('Failed to get CSRF token: ' + error.message, 'error');
+            }
+            return null;
+        }
+        
+        async function checkTemplate() {
+            addLog('🔍 Checking Template 117...', 'info');
+            
+            try {
+                const response = await fetch('/api/users/templates/117/', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const template = await response.json();
+                addLog(`✅ Template found: ${template.title}`, 'success');
+                
+                let foundDisplayMessage = false;
+                let emptyMessages = 0;
+                
+                for (const section of template.sections || []) {
+                    for (const question of section.questions || []) {
+                        if (question.logic_rules && Array.isArray(question.logic_rules)) {
+                            for (const rule of question.logic_rules) {
+                                if (rule.trigger === 'display_message') {
+                                    foundDisplayMessage = true;
+                                    addLog(`📋 Question: "${question.text}"`, 'info');
+                                    addLog(`   Rule ID: ${rule.id}`, 'info');
+                                    addLog(`   Condition: ${rule.condition} ${rule.value}`, 'info');
+                                    addLog(`   Message: "${rule.message || 'EMPTY'}"`, rule.message ? 'success' : 'error');
+                                    
+                                    if (!rule.message || rule.message.trim() === '') {
+                                        emptyMessages++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (foundDisplayMessage) {
+                    addLog(`📊 Found display_message rules with ${emptyMessages} empty messages`, emptyMessages > 0 ? 'error' : 'success');
+                } else {
+                    addLog('❌ No display_message rules found', 'error');
+                }
+                
+            } catch (error) {
+                addLog('❌ Error checking template: ' + error.message, 'error');
+            }
+        }
+        
+        async function fixTemplate() {
+            addLog('🔧 Fixing Template 117...', 'info');
+            
+            try {
+                // First, get the current template
+                const response = await fetch('/api/users/templates/117/', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch template: HTTP ${response.status}`);
+                }
+                
+                const template = await response.json();
+                addLog('✅ Template fetched successfully', 'success');
+                
+                // Find and fix empty messages
+                let fixed = false;
+                
+                for (const section of template.sections || []) {
+                    for (const question of section.questions || []) {
+                        if (question.logic_rules && Array.isArray(question.logic_rules)) {
+                            for (const rule of question.logic_rules) {
+                                if (rule.trigger === 'display_message' && (!rule.message || rule.message.trim() === '')) {
+                                    const newMessage = `🎉 Perfect! You entered ${rule.value}. This message has been fixed!`;
+                                    rule.message = newMessage;
+                                    fixed = true;
+                                    addLog(`✅ Fixed message for rule ${rule.id}: "${newMessage}"`, 'success');
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (!fixed) {
+                    addLog('ℹ️ No empty messages found to fix', 'info');
+                    return;
+                }
+                
+                // Get CSRF token
+                const csrfToken = await getCsrfToken();
+                if (!csrfToken) {
+                    throw new Error('Failed to get CSRF token');
+                }
+                
+                // Prepare the update data
+                const formData = new FormData();
+                formData.append('title', template.title);
+                formData.append('description', template.description || '');
+                formData.append('sections', JSON.stringify(template.sections));
+                
+                // Update the template
+                const updateResponse = await fetch('/api/users/templates/117/', {
+                    method: 'PATCH',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                if (updateResponse.ok) {
+                    const result = await updateResponse.json();
+                    addLog('🎉 Template updated successfully!', 'success');
+                    addLog('🔄 Please refresh the inspection page and test again', 'info');
+                } else {
+                    const errorText = await updateResponse.text();
+                    throw new Error(`Update failed: ${updateResponse.status} - ${errorText}`);
+                }
+                
+            } catch (error) {
+                addLog('❌ Error fixing template: ' + error.message, 'error');
+            }
+        }
+        
+        async function testTemplate() {
+            addLog('🧪 Testing fixed template...', 'info');
+            
+            try {
+                const response = await fetch('/api/users/templates/117/', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const template = await response.json();
+                
+                let testsPassed = 0;
+                let totalTests = 0;
+                
+                for (const section of template.sections || []) {
+                    for (const question of section.questions || []) {
+                        if (question.logic_rules && Array.isArray(question.logic_rules)) {
+                            for (const rule of question.logic_rules) {
+                                if (rule.trigger === 'display_message') {
+                                    totalTests++;
+                                    if (rule.message && rule.message.trim() !== '') {
+                                        testsPassed++;
+                                        addLog(`✅ Test passed: Rule ${rule.id} has message: "${rule.message}"`, 'success');
+                                    } else {
+                                        addLog(`❌ Test failed: Rule ${rule.id} still has empty message`, 'error');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                addLog(`📊 Test Results: ${testsPassed}/${totalTests} tests passed`, testsPassed === totalTests ? 'success' : 'error');
+                
+                if (testsPassed === totalTests && totalTests > 0) {
+                    addLog('🎉 All tests passed! Template is fixed.', 'success');
+                    addLog('🔗 Go to: http://localhost:3000/inspection?templateId=117', 'info');
+                    addLog('📝 Enter the value "4" to see the custom message', 'info');
+                }
+                
+            } catch (error) {
+                addLog('❌ Error testing template: ' + error.message, 'error');
+            }
+        }
+        
+        // Add some initial instructions
+        addLog('📋 Instructions:', 'info');
+        addLog('1. Click "Check Current Template" to see the current state', 'info');
+        addLog('2. Click "Fix Empty Message" to fix any empty messages', 'info');
+        addLog('3. Click "Test Fixed Template" to verify the fix worked', 'info');
+        addLog('4. Refresh the inspection page and test with value "4"', 'info');
+        addLog('', 'info');
+    </script>
+</body>
+</html>
