@@ -821,6 +821,9 @@ class GarmentTemplateCreateView(APIView):
                     template.logo = logo_file
                 template.template_type = 'garment'
                 template.save()
+
+                # Clear existing sections when updating
+                template.sections.all().delete()
             else:
                 template = Template.objects.create(
                     user=request.user,
@@ -856,15 +859,18 @@ class GarmentTemplateCreateView(APIView):
                 # If standard, process questions
                 if section_type == "standard":
                     for q_index, question_data in enumerate(content.get("questions", [])):
+                        # Ensure response_type is never null
+                        response_type = question_data.get("response_type") or question_data.get("responseType") or "Text"
+
                         question = Question.objects.create(
                             section=section,
-                            text=question_data.get("text"),
-                            response_type=question_data.get("responseType"),
+                            text=question_data.get("text", "Type question"),
+                            response_type=response_type,
                             required=question_data.get("required", False),
                             order=q_index,
                             logic_rules=question_data.get("logic_rules") or question_data.get("logicRules"),
                             flagged=question_data.get("flagged", False),
-                            multiple_selection=question_data.get("multipleSelection", False),
+                            multiple_selection=question_data.get("multiple_selection") or question_data.get("multipleSelection", False),
                         )
                         for o_index, option in enumerate(question_data.get("options", [])):
                             QuestionOption.objects.create(
@@ -883,10 +889,13 @@ class GarmentTemplateCreateView(APIView):
             return Response({"error": str(e)}, status=400)
 
     def put(self, request, pk=None):
-        if not pk:
+        # For garment templates, the ID can come from either URL parameter or form data
+        template_id = pk or request.data.get("id")
+        if not template_id:
             return Response({"error": "Template ID is required for update"}, status=400)
+
         request.data._mutable = True
-        request.data["id"] = pk
+        request.data["id"] = template_id
         return self.post(request)
 
     def publish_template(self, request):
