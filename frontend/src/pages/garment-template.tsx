@@ -1899,17 +1899,11 @@ const Garment_Template: React.FC = () => {
       const templateDbId = hasNumericId ? template.id : id;
 
       // Set the appropriate URL and method based on whether we're creating or updating
-      // For garment templates, always use the garment-template endpoint
       const url = isNew
         ? "http://localhost:8000/api/users/garment-template/"
-        : `http://localhost:8000/api/users/garment-template/`;
+        : `http://localhost:8000/api/users/templates/${templateDbId}/`;
 
-      const method = isNew ? "POST" : "PUT";
-
-      // For updates, add the template ID to the form data
-      if (!isNew && templateDbId) {
-        formData.append("id", templateDbId.toString());
-      }
+      const method = isNew ? "POST" : "PATCH";
 
       // Make API request
       const response = await fetch(url, {
@@ -4763,23 +4757,15 @@ const Garment_Template: React.FC = () => {
   }
 
   const renderAccessTab = () => {
-    const handlePublish = async () => {
-      try {
-        // First save the template to the database
-        await handleSave();
+    const handlePublish = () => {
+      // Save the template
+      updateTemplate({
+        ...template,
+        lastSaved: new Date()
+      });
 
-        // Update local state to mark as published
-        updateTemplate({
-          ...template,
-          lastSaved: new Date()
-        });
-
-        alert('Template published successfully!');
-        window.location.href = '/dashboard';
-      } catch (error) {
-        console.error('Error publishing template:', error);
-        alert('Failed to publish template. Please try again.');
-      }
+      alert('Template published successfully!');
+      window.location.href = '/dashboard';
     };
 
     return (

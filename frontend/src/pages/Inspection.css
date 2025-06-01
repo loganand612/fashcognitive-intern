@@ -2515,6 +2515,32 @@
   box-shadow: var(--shadow-md);
 }
 
+/* AQL Header Buttons */
+.aql-header-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.aql-table-button {
+  padding: 6px 12px;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.aql-table-button:hover {
+  background-color: var(--primary-blue-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
 /* Size Header with Edit Controls */
 .inspection-size-header-content {
   display: flex;
@@ -2649,4 +2675,246 @@
 .garment-table-preview tbody tr td {
   vertical-align: middle;
   padding: 12px 8px;
+}
+
+/* AQL Table Popup Modal Styles */
+.inspection-aql-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.inspection-aql-popup-content {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.inspection-aql-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-gray);
+  background: linear-gradient(135deg, var(--bg-light) 0%, #e2e8f0 100%);
+}
+
+.inspection-aql-popup-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  letter-spacing: -0.025em;
+}
+
+.inspection-aql-popup-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  color: var(--text-gray);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inspection-aql-popup-close:hover {
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  transform: scale(1.1);
+}
+
+.inspection-aql-popup-body {
+  padding: 24px;
+  overflow: auto;
+  flex: 1;
+}
+
+.inspection-aql-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-gray);
+}
+
+.inspection-aql-table th,
+.inspection-aql-table td {
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid var(--border-light);
+  vertical-align: middle;
+  font-weight: 500;
+}
+
+.inspection-aql-table th {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-hover) 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.inspection-aql-table tbody tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, 0.5);
+}
+
+.inspection-aql-table tbody tr:hover {
+  background-color: var(--primary-blue-light);
+  transform: scale(1.01);
+  transition: all 0.2s ease;
+}
+
+.inspection-aql-table td:first-child {
+  font-weight: 600;
+  background-color: rgba(248, 250, 252, 0.8);
+  text-align: left;
+  padding-left: 16px;
+}
+
+.inspection-aql-table td:nth-child(2),
+.inspection-aql-table td:nth-child(3) {
+  font-weight: 600;
+  background-color: rgba(248, 250, 252, 0.6);
+}
+
+.inspection-aql-table td:empty {
+  background-color: rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.inspection-aql-table td:empty::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.inspection-aql-table-footer {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background-color: var(--bg-light);
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+}
+
+.inspection-aql-table-footer p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-gray);
+  font-style: italic;
+  text-align: center;
+}
+
+.inspection-aql-table-footer strong {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+/* Responsive styles for AQL popup */
+@media (max-width: 768px) {
+  .inspection-aql-popup-overlay {
+    padding: 10px;
+  }
+
+  .inspection-aql-popup-content {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+
+  .inspection-aql-popup-header {
+    padding: 16px 20px;
+  }
+
+  .inspection-aql-popup-header h3 {
+    font-size: 18px;
+  }
+
+  .inspection-aql-popup-body {
+    padding: 16px;
+  }
+
+  .inspection-aql-table {
+    font-size: 12px;
+  }
+
+  .inspection-aql-table th,
+  .inspection-aql-table td {
+    padding: 8px 4px;
+  }
+
+  .inspection-aql-table th {
+    font-size: 11px;
+  }
+
+  .inspection-aql-table-footer {
+    margin-top: 12px;
+    padding: 10px 12px;
+  }
+
+  .inspection-aql-table-footer p {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inspection-aql-popup-overlay {
+    padding: 5px;
+  }
+
+  .inspection-aql-popup-header {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .inspection-aql-popup-header h3 {
+    font-size: 16px;
+  }
+
+  .inspection-aql-popup-body {
+    padding: 12px;
+  }
+
+  .inspection-aql-table {
+    font-size: 11px;
+  }
+
+  .inspection-aql-table th,
+  .inspection-aql-table td {
+    padding: 6px 2px;
+  }
+
+  .inspection-aql-table th {
+    font-size: 10px;
+  }
+
+  .inspection-aql-table-footer {
+    margin-top: 10px;
+    padding: 8px 10px;
+  }
+
+  .inspection-aql-table-footer p {
+    font-size: 10px;
+  }
 }
