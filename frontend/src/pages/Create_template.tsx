@@ -4,6 +4,7 @@ import type React from "react"
 import { useParams } from "react-router-dom"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
+import api from "../axiosConfig"
 import axios from "axios"
 import "./Create_template.css"
 import AccessManager from './components/AccessManager'
@@ -826,10 +827,16 @@ const EnhancedLogicTriggerConfig: React.FC<{
 
   useEffect(() => {
     if (trigger === "display_message") {
-      onConfigChange({ ...config, message })
+      console.log('🔧 EnhancedLogicTriggerConfig: display_message trigger with message:', message);
+      console.log('🔧 Calling onConfigChange with message:', message);
+      onConfigChange({ message })
+    } else if (trigger === "require_action") {
+      console.log('🔧 EnhancedLogicTriggerConfig: require_action trigger with message:', message);
+      console.log('🔧 Calling onConfigChange with message:', message);
+      onConfigChange({ message })
     } else if (trigger === "ask_questions") {
+      console.log('🔧 EnhancedLogicTriggerConfig: ask_questions trigger');
       onConfigChange({
-        ...config,
         subQuestion: {
           text: questionText,
           responseType,
@@ -837,7 +844,7 @@ const EnhancedLogicTriggerConfig: React.FC<{
         },
       })
     }
-  }, [trigger, message, questionText, responseType, options, config, onConfigChange])
+  }, [trigger, message, questionText, responseType, options, onConfigChange])
 
   const addOption = () => {
     if (newOption.trim() === "") return;
@@ -864,8 +871,39 @@ const EnhancedLogicTriggerConfig: React.FC<{
         <textarea
           className="enhanced-logic-text-input"
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => {
+            const newMessage = e.target.value;
+            console.log('💬 Display Message input changed to:', newMessage);
+            setMessage(newMessage);
+
+            // Immediately call onConfigChange to save the message
+            console.log('💬 Immediately calling onConfigChange with message:', newMessage);
+            onConfigChange({ message: newMessage });
+          }}
           placeholder="Enter message to display to the user"
+          rows={3}
+        />
+      </div>
+    )
+  }
+
+  if (trigger === "require_action") {
+    return (
+      <div className="enhanced-trigger-config">
+        <label className="enhanced-trigger-config-label">Action required message:</label>
+        <textarea
+          className="enhanced-logic-text-input"
+          value={message}
+          onChange={(e) => {
+            const newMessage = e.target.value;
+            console.log('💬 Require Action message input changed to:', newMessage);
+            setMessage(newMessage);
+
+            // Immediately call onConfigChange to save the message
+            console.log('💬 Immediately calling onConfigChange with message:', newMessage);
+            onConfigChange({ message: newMessage });
+          }}
+          placeholder="Enter message describing the required action"
           rows={3}
         />
       </div>
@@ -960,10 +998,14 @@ const EnhancedLogicRuleBuilder: React.FC<{
   }, [onRuleChange])
 
   useEffect(() => {
+    console.log('🔄 EnhancedLogicRuleBuilder: localRule changed, calling handleRuleChange');
+    console.log('🔄 localRule:', localRule);
     handleRuleChange(localRule)
   }, [localRule, handleRuleChange])
 
   useEffect(() => {
+    console.log('🔄 EnhancedLogicRuleBuilder: rule prop changed, updating localRule');
+    console.log('🔄 New rule prop:', rule);
     setLocalRule(rule)
   }, [rule])
 
@@ -990,31 +1032,47 @@ const EnhancedLogicRuleBuilder: React.FC<{
           <EnhancedLogicTriggerSelector
             selectedTrigger={localRule.trigger}
             onTriggerSelect={(trigger) => {
-              // If removing a trigger, hide config panel first to prevent flickering
+              console.log('🎯 Trigger selected:', trigger);
+              console.log('🎯 Current localRule:', localRule);
+
+              // If removing a trigger (trigger is null)
               if (!trigger) {
-                setShowConfig(false)
-                // Small delay before updating the rule state to prevent UI flicker
-                setTimeout(() => {
-                  setLocalRule({
-                    ...localRule,
+                console.log('🎯 REMOVING trigger - cleaning up state');
+
+                // Update state immediately without setTimeout to prevent glitches
+                setLocalRule(prevRule => {
+                  const cleanedRule = {
+                    ...prevRule,
                     trigger: null,
                     triggerConfig: undefined,
                     message: undefined,
                     subQuestion: undefined,
-                  })
-                }, 10)
+                  };
+                  console.log('🎯 Cleaned rule:', cleanedRule);
+                  return cleanedRule;
+                });
+
+                // Hide config panel immediately
+                setShowConfig(false);
+
               } else {
+                console.log('🎯 ADDING trigger:', trigger);
+
                 // For adding a trigger, update state immediately
-                setLocalRule({
-                  ...localRule,
-                  trigger,
-                  triggerConfig: trigger ? {} : undefined,
-                  message: trigger === "display_message" ? localRule.message || "" : undefined,
-                  subQuestion:
-                    trigger === "ask_questions" ? localRule.subQuestion || { text: "", responseType: "Text" } : undefined,
-                })
-                // Always show config when a trigger is selected
-                setShowConfig(true)
+                setLocalRule(prevRule => {
+                  const updatedRule = {
+                    ...prevRule,
+                    trigger,
+                    triggerConfig: trigger ? {} : undefined,
+                    message: (trigger === "display_message" || trigger === "require_action") ? (prevRule.message || "") : undefined,
+                    subQuestion: trigger === "ask_questions" ? (prevRule.subQuestion || { text: "", responseType: "Text" }) : undefined,
+                  };
+                  console.log('🎯 Updated rule with trigger:', updatedRule);
+                  return updatedRule;
+                });
+
+                // Show config when a trigger is selected
+                setShowConfig(true);
               }
             }}
             onConfigChange={(config) => setLocalRule({ ...localRule, triggerConfig: config })}
@@ -1022,28 +1080,65 @@ const EnhancedLogicRuleBuilder: React.FC<{
 
         </div>
         <div className={`enhanced-logic-config-panel ${showConfig && localRule.trigger ? "" : "hidden"}`}>
-          {localRule.trigger && (
+          {showConfig && localRule.trigger && (
             <div className="enhanced-logic-config-row">
               <EnhancedLogicTriggerConfig
+                key={`${localRule.id}-${localRule.trigger}`} // Force re-render when trigger changes
                 trigger={localRule.trigger}
                 config={{
                   message: localRule.message,
                   subQuestion: localRule.subQuestion,
                 }}
                 onConfigChange={(config) => {
-                  setLocalRule({
-                    ...localRule,
-                    message: config.message,
-                    subQuestion: config.subQuestion,
-                  })
+                  console.log('🔧 Parent onConfigChange received config:', config);
+                  console.log('🔧 Setting localRule.message to:', config.message);
+
+                  // Only update if the trigger still exists to prevent glitches
+                  if (localRule.trigger) {
+                    console.log('🔧 Parent onConfigChange: Updating localRule with message:', config.message);
+
+                    const updatedRule = {
+                      ...localRule,
+                      message: config.message,
+                      subQuestion: config.subQuestion,
+                    };
+
+                    console.log('🔧 Parent onConfigChange: Updated rule:', updatedRule);
+                    setLocalRule(updatedRule);
+
+                    // Force immediate save to parent
+                    console.log('🔧 Parent onConfigChange: Force calling onRuleChange');
+                    onRuleChange(updatedRule);
+                  }
                 }}
               />
             </div>
           )}
         </div>
       </div>
-      <button className="enhanced-delete-rule-button" onClick={onRuleDelete} aria-label="Delete rule">
-        <Trash2 className="delete-icon" />
+      <button
+        className="enhanced-delete-rule-button"
+        onClick={(e) => {
+          console.log(`🗑️ DELETE BUTTON CLICKED - Event triggered`);
+          console.log(`🗑️ Rule ID:`, rule.id);
+          e.preventDefault();
+          e.stopPropagation();
+          onRuleDelete();
+        }}
+        aria-label="Delete rule"
+        style={{
+          backgroundColor: '#ef4444',
+          color: 'white',
+          border: 'none',
+          padding: '8px',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Trash2 className="delete-icon" size={16} />
       </button>
     </div>
   )
@@ -1074,18 +1169,45 @@ const EnhancedLogicRulesContainer: React.FC<{
   }
 
   const updateRule = (index: number, updatedRule: LogicRule) => {
+    console.log('🔄 updateRule called with:', updatedRule);
+    console.log('🔄 Rule message:', updatedRule.message);
+    console.log('🔄 Rule trigger:', updatedRule.trigger);
+
     const newRules = [...rules]
     newRules[index] = updatedRule
+
+    console.log('🔄 Updated rules array:', newRules);
     onRulesChange(newRules)
   }
 
   const deleteRule = (index: number) => {
+    console.log(`🗑️ DELETE BUTTON CLICKED for index: ${index}`);
+    console.log(`🗑️ Current rules:`, rules);
+
     // Add confirmation dialog to prevent accidental deletions
-    if (window.confirm('Are you sure you want to delete this logic rule?')) {
-      const newRules = [...rules]
-      newRules.splice(index, 1)
-      console.log(`Deleting rule at index ${index}. Rules before:`, rules.length, 'Rules after:', newRules.length)
-      onRulesChange(newRules)
+    const confirmed = window.confirm('Are you sure you want to delete this logic rule?');
+    console.log(`🗑️ User confirmed deletion: ${confirmed}`);
+
+    if (confirmed) {
+      console.log(`🗑️ BEFORE DELETE: Rules array:`, rules);
+      console.log(`🗑️ DELETING: Rule at index ${index}:`, rules[index]);
+
+      // Create new array without the deleted rule
+      const newRules = rules.filter((_, i) => i !== index);
+
+      console.log(`🗑️ AFTER DELETE: New rules array:`, newRules);
+      console.log(`🗑️ Rules count - Before: ${rules.length}, After: ${newRules.length}`);
+
+      // Force immediate update
+      console.log(`🗑️ CALLING onRulesChange with:`, newRules);
+
+      // Use setTimeout to ensure the state update happens after the current render cycle
+      setTimeout(() => {
+        onRulesChange(newRules);
+        console.log(`🗑️ DELETE COMPLETE - onRulesChange called`);
+      }, 0);
+    } else {
+      console.log(`🗑️ DELETE CANCELLED by user`);
     }
   }
 
@@ -2119,13 +2241,15 @@ const CreateTemplate: React.FC = () => {
     checkUserAccess();
   }, []);
 
+
+
   // Backend API integration - Load template from server
   useEffect(() => {
     // Only load template if user has access and no access error
     if (currentUser && !accessError) {
       if (id) {
-        axios
-          .get(`http://localhost:8000/api/users/templates/${id}/`)
+        api
+          .get(`users/templates/${id}/`)
           .then((res) => {
             setTemplate(res.data);
             setTemplateData(res.data);
@@ -2193,6 +2317,38 @@ const CreateTemplate: React.FC = () => {
       return;
     }
 
+    // Validate logic rules for empty messages
+    const validationErrors: string[] = [];
+    template.sections.forEach((section, sectionIndex) => {
+      section.questions.forEach((question, questionIndex) => {
+        if (question.logicRules && question.logicRules.length > 0) {
+          question.logicRules.forEach((rule, ruleIndex) => {
+            if (rule.trigger === 'display_message' || rule.trigger === 'require_action') {
+              if (!rule.message || rule.message.trim() === '') {
+                validationErrors.push(
+                  `Section "${section.title}" → Question "${question.text}" → Rule ${ruleIndex + 1}: ` +
+                  `${rule.trigger === 'display_message' ? 'Display message' : 'Action required message'} cannot be empty`
+                );
+              }
+            }
+          });
+        }
+      });
+    });
+
+    if (validationErrors.length > 0) {
+      console.log('🚨 VALIDATION ERRORS FOUND:');
+      console.log('🚨 Template state:', JSON.stringify(template, null, 2));
+      console.log('🚨 Validation errors:', validationErrors);
+
+      alert(
+        "Please fix the following validation errors:\n\n" +
+        validationErrors.join('\n\n') +
+        "\n\nAll display messages and action required messages must have content."
+      );
+      return;
+    }
+
     try {
       const csrfToken = await fetchCSRFToken();
       const formData = new FormData();
@@ -2214,7 +2370,9 @@ const CreateTemplate: React.FC = () => {
 
       // Add sections (correctly cleaned + snake_cased)
       const cleaned = cleanTemplateForSave(template, isNew);
+      console.log('🔧 Cleaned template before snake_case:', JSON.stringify(cleaned, null, 2));
       const snakeCaseSections = toSnakeCase(cleaned.sections);
+      console.log('🔧 Snake_case sections being saved:', JSON.stringify(snakeCaseSections, null, 2));
       formData.append("sections", JSON.stringify(snakeCaseSections));
 
       const url = isNew
@@ -2262,6 +2420,34 @@ const CreateTemplate: React.FC = () => {
   };
 
   const handlePublishTemplate = async () => {
+    // Validate logic rules for empty messages before publishing
+    const validationErrors: string[] = [];
+    template.sections.forEach((section, sectionIndex) => {
+      section.questions.forEach((question, questionIndex) => {
+        if (question.logicRules && question.logicRules.length > 0) {
+          question.logicRules.forEach((rule, ruleIndex) => {
+            if (rule.trigger === 'display_message' || rule.trigger === 'require_action') {
+              if (!rule.message || rule.message.trim() === '') {
+                validationErrors.push(
+                  `Section "${section.title}" → Question "${question.text}" → Rule ${ruleIndex + 1}: ` +
+                  `${rule.trigger === 'display_message' ? 'Display message' : 'Action required message'} cannot be empty`
+                );
+              }
+            }
+          });
+        }
+      });
+    });
+
+    if (validationErrors.length > 0) {
+      alert(
+        "Cannot publish template with validation errors:\n\n" +
+        validationErrors.join('\n\n') +
+        "\n\nAll display messages and action required messages must have content."
+      );
+      return;
+    }
+
     try {
       // 1. First, get a fresh CSRF token
       const csrfToken = await fetchCSRFToken()
@@ -2799,9 +2985,13 @@ const CreateTemplate: React.FC = () => {
               rules={question.logicRules || []}
               options={question.options || []}
               onRulesChange={(rules) => {
-                console.log('Logic rules changed for question:', question.id);
-                console.log('New rules:', rules);
+                console.log('🔄 PARENT onRulesChange called for question:', question.id);
+                console.log('🔄 PARENT received rules:', rules);
+                console.log('🔄 PARENT current question logicRules before update:', question.logicRules);
+
                 updateQuestion(sectionId, question.id, { logicRules: rules });
+
+                console.log('🔄 PARENT updateQuestion called with rules:', rules);
               }}
               questions={template.sections.flatMap((s) => s.questions.map((q) => ({ id: q.id, text: q.text })))}
               onClose={() => setShowLogicPanel(null)}

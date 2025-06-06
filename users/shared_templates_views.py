@@ -76,7 +76,14 @@ def all_accessible_templates(request):
         access.save(update_fields=['last_accessed'])
 
     serializer = TemplateSerializer(all_templates, many=True)
-    return Response(serializer.data)
+    response = Response(serializer.data)
+
+    # Add cache-control headers to ensure fresh data
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+
+    return response
 
 
 @api_view(["GET"])
@@ -133,8 +140,8 @@ def template_detail_with_access_check(request, template_id):
 
 
 @api_view(["GET"])
-@authentication_classes([])
-@permission_classes([])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def user_templates_with_shared(request):
     """
     Get templates owned by the user and templates shared with the user

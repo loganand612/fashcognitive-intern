@@ -202,6 +202,7 @@ const QuestionAnswering: React.FC = () => {
   const [, setError] = useState<string | null>(null)
   const [currentInspector, setCurrentInspector] = useState<Inspector | null>(null)
   const [templateLoaded, setTemplateLoaded] = useState(false) // Track if template is already loaded
+  const [showAqlTablePopup, setShowAqlTablePopup] = useState(false) // State for AQL table popup
 
   // Get template ID from URL if available
   const getTemplateIdFromUrl = () => {
@@ -413,13 +414,25 @@ const QuestionAnswering: React.FC = () => {
                   let logicRules: LogicRule[] = []
                   if (question.logic_rules && Array.isArray(question.logic_rules)) {
                     logicRules = question.logic_rules.map((rule: any) => {
-                      // Get message from multiple possible sources
-                      const message = rule.message || rule.triggerConfig?.message || ''
 
-                      // Get subQuestion from multiple possible sources
-                      const subQuestion = rule.subQuestion || rule.sub_question || rule.triggerConfig?.subQuestion || rule.triggerConfig?.sub_question
+                      // Get message from multiple possible sources (handle both camelCase and snake_case)
+                      const message = rule.message ||
+                                    rule.triggerConfig?.message ||
+                                    rule.trigger_config?.message ||
+                                    (rule as any).triggerConfig?.message ||
+                                    (rule as any).trigger_config?.message || ''
 
-                      return {
+                      // Get subQuestion from multiple possible sources (handle both camelCase and snake_case)
+                      const subQuestion = rule.subQuestion ||
+                                        rule.sub_question ||
+                                        rule.triggerConfig?.subQuestion ||
+                                        rule.triggerConfig?.sub_question ||
+                                        rule.trigger_config?.subQuestion ||
+                                        rule.trigger_config?.sub_question ||
+                                        (rule as any).triggerConfig?.subQuestion ||
+                                        (rule as any).trigger_config?.sub_question
+
+                      const transformedRule = {
                         id: rule.id,
                         condition: rule.condition,
                         value: rule.value,
@@ -432,6 +445,7 @@ const QuestionAnswering: React.FC = () => {
                           options: subQuestion.options || subQuestion.choices || []
                         } : undefined
                       }
+                      return transformedRule;
                     })
                   }
 
@@ -1123,6 +1137,11 @@ const QuestionAnswering: React.FC = () => {
     }))
   }
 
+  // AQL table popup functions
+  const toggleAqlTablePopup = () => {
+    setShowAqlTablePopup(!showAqlTablePopup)
+  }
+
   // Update answers when template changes
   useEffect(() => {
     if (!template) return
@@ -1197,44 +1216,113 @@ const QuestionAnswering: React.FC = () => {
 
               switch (rule.trigger) {
                 case "display_message":
-                  if (rule.message && rule.message.trim() !== "") {
-                    // Show only the custom message without any prefix
-                    messages[question.id] = rule.message.trim()
-                  } else {
-                    // Fallback message if empty
-                    messages[question.id] = `Logic rule triggered for answer: ${currentAnswer}`
+                  // Try multiple ways to get the message
+                  let displayMessage = '';
+
+                  // First try rule.message
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    displayMessage = rule.message.trim();
                   }
+                  // Try triggerConfig.message
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    displayMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  // Try trigger_config.message
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    displayMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  // Try config.message
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    displayMessage = (rule as any).config.message.trim();
+                  }
+                  // Try message property with different casing
+                  else if ((rule as any).Message && typeof (rule as any).Message === 'string' && (rule as any).Message.trim() !== "") {
+                    displayMessage = (rule as any).Message.trim();
+                  }
+
+                  // If no message found anywhere, use fallback
+                  if (!displayMessage || displayMessage.trim() === "") {
+                    displayMessage = `✅ Condition met! You entered ${currentAnswer}.`;
+                  }
+
+                  messages[question.id] = displayMessage;
                   break
 
                 case "require_evidence":
                   activeRules.push(rule)
-                  if (rule.message && rule.message.trim() !== "") {
-                    messages[question.id] = `📸 EVIDENCE REQUIRED: ${rule.message.trim()}`
-                  } else {
-                    // Fallback message if empty
-                    messages[question.id] = `📸 EVIDENCE REQUIRED: Please upload proof for answer: ${currentAnswer}`
+
+                  // Try multiple ways to get the message for evidence requirement
+                  let evidenceMessage = '';
+
+                  // First try rule.message
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    evidenceMessage = rule.message.trim();
                   }
+                  // Try triggerConfig.message
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    evidenceMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  // Try trigger_config.message
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    evidenceMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  // Try config.message
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    evidenceMessage = (rule as any).config.message.trim();
+                  }
+                  // Fallback message
+                  else {
+                    evidenceMessage = `Please upload proof for answer: ${currentAnswer}`;
+                  }
+
+                  messages[question.id] = `📸 EVIDENCE REQUIRED: ${evidenceMessage}`;
                   break
 
                 case "require_action":
-                  if (rule.message && rule.message.trim() !== "") {
-                    messages[question.id] = `⚠️ ACTION REQUIRED: ${rule.message.trim()}`
-                  } else {
-                    // Fallback message if empty
-                    messages[question.id] = `⚠️ ACTION REQUIRED: Please take action for answer: ${currentAnswer}`
+                  // Try multiple ways to get the message for action requirement
+                  let actionMessage = '';
+
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    actionMessage = rule.message.trim();
                   }
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    actionMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    actionMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    actionMessage = (rule as any).config.message.trim();
+                  }
+                  else {
+                    actionMessage = `Please take action for answer: ${currentAnswer}`;
+                  }
+
+                  messages[question.id] = `⚠️ ACTION REQUIRED: ${actionMessage}`;
                   break
 
                 case "notify":
-                  if (rule.message && rule.message.trim() !== "") {
-                    notificationMessages[question.id] = rule.message.trim()
-                    messages[question.id] = `🔔 NOTIFICATION: ${rule.message.trim()}`
-                  } else {
-                    // Fallback message if empty
-                    const fallbackMessage = `Admin has been notified about answer: ${currentAnswer}`
-                    notificationMessages[question.id] = fallbackMessage
-                    messages[question.id] = `🔔 NOTIFICATION: ${fallbackMessage}`
+                  // Try multiple ways to get the message for notification
+                  let notifyMessage = '';
+
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    notifyMessage = rule.message.trim();
                   }
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    notifyMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    notifyMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    notifyMessage = (rule as any).config.message.trim();
+                  }
+                  else {
+                    notifyMessage = `Admin has been notified about answer: ${currentAnswer}`;
+                  }
+
+                  notificationMessages[question.id] = notifyMessage;
+                  messages[question.id] = `🔔 NOTIFICATION: ${notifyMessage}`;
                   break
 
                 case "ask_questions":
@@ -1242,12 +1330,27 @@ const QuestionAnswering: React.FC = () => {
                   const subQuestion = rule.subQuestion || (rule as any).sub_question
 
                   if (subQuestion) {
-                    // Use the subQuestion text directly, or rule message as fallback
-                    const questionText = subQuestion.text && subQuestion.text.trim() !== ""
-                      ? subQuestion.text.trim()
-                      : rule.message && rule.message.trim() !== ""
-                        ? rule.message.trim()
-                        : `Please provide additional information about your answer: ${currentAnswer}`
+                    // Use the subQuestion text directly, or try multiple ways to get the message
+                    let questionText = '';
+
+                    if (subQuestion.text && subQuestion.text.trim() !== "") {
+                      questionText = subQuestion.text.trim();
+                    }
+                    else if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                      questionText = rule.message.trim();
+                    }
+                    else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                      questionText = (rule as any).triggerConfig.message.trim();
+                    }
+                    else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                      questionText = (rule as any).trigger_config.message.trim();
+                    }
+                    else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                      questionText = (rule as any).config.message.trim();
+                    }
+                    else {
+                      questionText = `Please provide additional information about your answer: ${currentAnswer}`;
+                    }
 
                     // Handle both responseType and response_type
                     let responseType = subQuestion.responseType || subQuestion.response_type || 'Text'
@@ -1285,19 +1388,48 @@ const QuestionAnswering: React.FC = () => {
 
                     // Don't add a generic message for ask_questions - let the conditional question speak for itself
                   } else {
-                    // If there's a rule message but no subQuestion, show the rule message
-                    if (rule.message && rule.message.trim() !== "") {
-                      messages[question.id] = rule.message.trim()
-                    } else {
-                      // Still show a message even if subQuestion is missing
-                      messages[question.id] = `Additional information required for answer: ${currentAnswer}`
+                    // If there's no subQuestion, try multiple ways to get the message
+                    let fallbackMessage = '';
+
+                    if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                      fallbackMessage = rule.message.trim();
                     }
+                    else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                      fallbackMessage = (rule as any).triggerConfig.message.trim();
+                    }
+                    else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                      fallbackMessage = (rule as any).trigger_config.message.trim();
+                    }
+                    else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                      fallbackMessage = (rule as any).config.message.trim();
+                    }
+                    else {
+                      fallbackMessage = `Additional information required for answer: ${currentAnswer}`;
+                    }
+
+                    messages[question.id] = fallbackMessage;
                   }
                   break
 
                 case "take_action":
-                  if (rule.message && rule.message.trim() !== "") {
-                    messages[question.id] = `🎯 TAKE ACTION: ${rule.message.trim()}`
+                  // Try multiple ways to get the message for take action
+                  let takeActionMessage = '';
+
+                  if (rule.message && typeof rule.message === 'string' && rule.message.trim() !== "") {
+                    takeActionMessage = rule.message.trim();
+                  }
+                  else if ((rule as any).triggerConfig?.message && typeof (rule as any).triggerConfig.message === 'string' && (rule as any).triggerConfig.message.trim() !== "") {
+                    takeActionMessage = (rule as any).triggerConfig.message.trim();
+                  }
+                  else if ((rule as any).trigger_config?.message && typeof (rule as any).trigger_config.message === 'string' && (rule as any).trigger_config.message.trim() !== "") {
+                    takeActionMessage = (rule as any).trigger_config.message.trim();
+                  }
+                  else if ((rule as any).config?.message && typeof (rule as any).config.message === 'string' && (rule as any).config.message.trim() !== "") {
+                    takeActionMessage = (rule as any).config.message.trim();
+                  }
+
+                  if (takeActionMessage) {
+                    messages[question.id] = `🎯 TAKE ACTION: ${takeActionMessage}`;
                   }
                   break
 
@@ -1313,6 +1445,8 @@ const QuestionAnswering: React.FC = () => {
         }
       })
     })
+
+
 
     setActiveMessages(messages)
     setActiveConditionalFields(conditionalFields)
@@ -2126,6 +2260,8 @@ const QuestionAnswering: React.FC = () => {
     const error = validationErrors[question.id]
     const message = activeMessages[question.id]
 
+
+
     return (
       <div className="inspection-question-container" key={question.id}>
         <div className="inspection-question-header">
@@ -2197,12 +2333,16 @@ const QuestionAnswering: React.FC = () => {
             </div>
           )}
 
-          {message && (
+          {message && message.trim() !== "" && (
             <div className={getMessageClassName(message)}>
               {getMessageIcon(message)}
               <span>{message}</span>
             </div>
           )}
+
+
+
+
 
 
         </div>
@@ -2924,9 +3064,14 @@ const QuestionAnswering: React.FC = () => {
             <div className="aql-result-preview">
               <div className="aql-header">
                 <h5>AQL Result</h5>
-                <button className="edit-aql-button" onClick={toggleAqlEditing}>
-                  <Edit size={16} />
-                </button>
+                <div className="aql-header-buttons">
+                  <button className="aql-table-button" onClick={toggleAqlTablePopup}>
+                    AQL Table
+                  </button>
+                  <button className="edit-aql-button" onClick={toggleAqlEditing}>
+                    <Edit size={16} />
+                  </button>
+                </div>
               </div>
               <div className="aql-info">
                 {reportData.editingAql ? (
@@ -3132,6 +3277,209 @@ const QuestionAnswering: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* AQL Table Popup Modal */}
+      {showAqlTablePopup && (
+        <div className="inspection-aql-popup-overlay" onClick={toggleAqlTablePopup}>
+          <div className="inspection-aql-popup-content" onClick={(e) => e.stopPropagation()}>
+            <div className="inspection-aql-popup-header">
+              <h3>Acceptable Quality Level (AQL) Table</h3>
+              <button className="inspection-aql-popup-close" onClick={toggleAqlTablePopup}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="inspection-aql-popup-body">
+              <table className="inspection-aql-table">
+                <thead>
+                  <tr>
+                    <th rowSpan={3}>Lot or Batch Size</th>
+                    <th rowSpan={3}>Sample Code</th>
+                    <th rowSpan={3}>Sample Size</th>
+                    <th colSpan={8}>Acceptable Quality Level</th>
+                  </tr>
+                  <tr>
+                    <th colSpan={2}>1.5</th>
+                    <th colSpan={2}>2.5</th>
+                    <th colSpan={2}>4</th>
+                    <th colSpan={2}>6.5</th>
+                  </tr>
+                  <tr>
+                    <th>Ac</th>
+                    <th>Re</th>
+                    <th>Ac</th>
+                    <th>Re</th>
+                    <th>Ac</th>
+                    <th>Re</th>
+                    <th>Ac</th>
+                    <th>Re</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>2 – 8</td>
+                    <td>A</td>
+                    <td>2</td>
+                    <td></td>
+                    <td></td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td>1</td>
+                  </tr>
+                  <tr>
+                    <td>9 – 15</td>
+                    <td>B</td>
+                    <td>3</td>
+                    <td></td>
+                    <td></td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td>1</td>
+                  </tr>
+                  <tr>
+                    <td>15 – 25</td>
+                    <td>C</td>
+                    <td>5</td>
+                    <td></td>
+                    <td></td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td>1</td>
+                  </tr>
+                  <tr>
+                    <td>26 – 50</td>
+                    <td>D</td>
+                    <td>8</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>1</td>
+                    <td>2</td>
+                  </tr>
+                  <tr>
+                    <td>51-90</td>
+                    <td>E</td>
+                    <td>13</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>2</td>
+                    <td>3</td>
+                  </tr>
+                  <tr>
+                    <td>91-150</td>
+                    <td>F</td>
+                    <td>20</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>3</td>
+                    <td>4</td>
+                  </tr>
+                  <tr>
+                    <td>151-280</td>
+                    <td>G</td>
+                    <td>32</td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>6</td>
+                  </tr>
+                  <tr>
+                    <td>251-500</td>
+                    <td>H</td>
+                    <td>50</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>6</td>
+                    <td>7</td>
+                    <td>8</td>
+                  </tr>
+                  <tr>
+                    <td>501-1200</td>
+                    <td>J</td>
+                    <td>80</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>6</td>
+                    <td>7</td>
+                    <td>8</td>
+                    <td>10</td>
+                    <td>11</td>
+                  </tr>
+                  <tr>
+                    <td>1201-3200</td>
+                    <td>K</td>
+                    <td>125</td>
+                    <td>5</td>
+                    <td>6</td>
+                    <td>7</td>
+                    <td>8</td>
+                    <td>10</td>
+                    <td>11</td>
+                    <td>14</td>
+                    <td>15</td>
+                  </tr>
+                  <tr>
+                    <td>3201-10000</td>
+                    <td>L</td>
+                    <td>200</td>
+                    <td>7</td>
+                    <td>8</td>
+                    <td>10</td>
+                    <td>11</td>
+                    <td>14</td>
+                    <td>15</td>
+                    <td>21</td>
+                    <td>22</td>
+                  </tr>
+                  <tr>
+                    <td>10001-35000</td>
+                    <td>M</td>
+                    <td>315</td>
+                    <td>10</td>
+                    <td>11</td>
+                    <td>14</td>
+                    <td>15</td>
+                    <td>21</td>
+                    <td>22</td>
+                    <td>21</td>
+                    <td>22</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div className="inspection-aql-table-footer">
+                <p><strong>Source:</strong> ANSI/ASQ Z1.4 The Sampling procedures and table for inspection by attributes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Signature Modal */}
       {showSignatureModal && activeQuestion && (

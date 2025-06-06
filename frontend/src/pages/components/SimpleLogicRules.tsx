@@ -182,8 +182,25 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
   };
 
   const handleDeleteRule = (index: number) => {
+    if (window.confirm('Are you sure you want to delete this logic rule?')) {
+      const newRules = [...rules];
+      newRules.splice(index, 1);
+      // Close any open trigger menus
+      setActiveTriggerIndex(null);
+      setTriggerMenuPosition(null);
+      onRulesChange(newRules);
+    }
+  };
+
+  const handleRemoveTrigger = (index: number) => {
     const newRules = [...rules];
-    newRules.splice(index, 1);
+    newRules[index].trigger = null;
+    // Clear trigger-specific properties
+    delete newRules[index].message;
+    delete newRules[index].subQuestion;
+    // Close any open trigger menus
+    setActiveTriggerIndex(null);
+    setTriggerMenuPosition(null);
     onRulesChange(newRules);
   };
 
@@ -221,6 +238,16 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
     } else {
       // Clear subQuestion for other triggers
       delete newRules[index].subQuestion;
+    }
+
+    // Initialize or clear message property based on trigger type
+    if (trigger === "display_message") {
+      newRules[index].message = newRules[index].message || "";
+    } else if (trigger === "require_action") {
+      newRules[index].message = newRules[index].message || "";
+    } else {
+      // Clear message for triggers that don't use it
+      delete newRules[index].message;
     }
 
     onRulesChange(newRules);
@@ -376,12 +403,33 @@ const SimpleLogicRules: React.FC<SimpleLogicRulesProps> = ({ onClose, rules, onR
                 <div className="Logic-Rules-then">then</div>
                 <div className="Logic-Rules-trigger">
                   {rule.trigger ? (
-                    <div className="Logic-Rules-selected-trigger">
-                      {rule.trigger === "require_action" && "Require action"}
-                      {rule.trigger === "require_evidence" && "Require evidence"}
-                      {rule.trigger === "notify" && "Notify"}
-                      {rule.trigger === "ask_questions" && "Ask questions"}
-                      {rule.trigger === "display_message" && "Display message"}
+                    <div className="Logic-Rules-selected-trigger-container" style={{ display: 'flex', alignItems: 'center' }}>
+                      <div className="Logic-Rules-selected-trigger">
+                        {rule.trigger === "require_action" && "Require action"}
+                        {rule.trigger === "require_evidence" && "Require evidence"}
+                        {rule.trigger === "notify" && "Notify"}
+                        {rule.trigger === "ask_questions" && "Ask questions"}
+                        {rule.trigger === "display_message" && "Display message"}
+                      </div>
+                      <button
+                        className="Logic-Rules-remove-trigger"
+                        onClick={() => handleRemoveTrigger(index)}
+                        title="Remove trigger"
+                        style={{
+                          marginLeft: '8px',
+                          padding: '4px',
+                          border: 'none',
+                          background: '#ef4444',
+                          color: 'white',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={12} />
+                      </button>
                     </div>
                   ) : (
                     <div className="trigger-container" style={{ position: 'relative' }}>

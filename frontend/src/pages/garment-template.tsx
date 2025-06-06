@@ -1254,10 +1254,10 @@ const EnhancedLogicTriggerConfig: React.FC<{
 
   useEffect(() => {
     if (trigger === "display_message") {
-      onConfigChange({ ...config, message })
+      console.log('🔧 Garment EnhancedLogicTriggerConfig: display_message trigger with message:', message);
+      onConfigChange({ message })
     } else if (trigger === "ask_questions") {
       onConfigChange({
-        ...config,
         subQuestion: {
           text: questionText,
           responseType,
@@ -1265,7 +1265,7 @@ const EnhancedLogicTriggerConfig: React.FC<{
         },
       })
     }
-  }, [trigger, message, questionText, responseType, options, config, onConfigChange])
+  }, [trigger, message, questionText, responseType, options, onConfigChange])
 
   const addOption = () => {
     if (newOption.trim() === "") return;
@@ -1831,6 +1831,37 @@ const Garment_Template: React.FC = () => {
   };
 
   const handleSave = async () => {
+    // Validate logic rules for empty messages
+    const validationErrors: string[] = [];
+    template.sections.forEach((section, sectionIndex) => {
+      if (section.type === "standard" && section.content) {
+        const standardContent = section.content as StandardSectionContent;
+        standardContent.questions.forEach((question, questionIndex) => {
+          if (question.logicRules && question.logicRules.length > 0) {
+            question.logicRules.forEach((rule, ruleIndex) => {
+              if (rule.trigger === 'display_message' || rule.trigger === 'require_action') {
+                if (!rule.message || rule.message.trim() === '') {
+                  validationErrors.push(
+                    `Section "${section.title}" → Question "${question.text}" → Rule ${ruleIndex + 1}: ` +
+                    `${rule.trigger === 'display_message' ? 'Display message' : 'Action required message'} cannot be empty`
+                  );
+                }
+              }
+            });
+          }
+        });
+      }
+    });
+
+    if (validationErrors.length > 0) {
+      alert(
+        "Please fix the following validation errors:\n\n" +
+        validationErrors.join('\n\n') +
+        "\n\nAll display messages and action required messages must have content."
+      );
+      return;
+    }
+
     try {
       // Get CSRF token
       const csrfToken = await fetchCSRFToken();

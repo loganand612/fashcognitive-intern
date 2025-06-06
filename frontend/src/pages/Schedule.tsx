@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Schedule.css';
 import {
   Home,
@@ -82,24 +82,7 @@ const Schedule: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [selectedTemplateForAssignment, setSelectedTemplateForAssignment] = useState<TemplateWithStatus | null>(null);
-  const [templates, setTemplates] = useState<Template[]>([
-    {
-      id: 1,
-      title: "Safety Inspection Template (Initial Demo)",
-      description: "Demo template for safety inspections",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      owner: 1
-    },
-    {
-      id: 2,
-      title: "Equipment Check Template (Initial Demo)",
-      description: "Demo template for equipment checks",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      owner: 1
-    }
-  ]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [templatesWithStatus, setTemplatesWithStatus] = useState<TemplateWithStatus[]>([]);
 
   // Menu items for the sidebar
@@ -120,23 +103,17 @@ const Schedule: React.FC = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        console.log("Fetching current user...");
         const data = await fetchData("users/auth-status/");
-        console.log("Auth status response:", data);
 
         // Extract user data from the response
         if (data.authenticated && data.user) {
           setCurrentUser(data.user);
-          console.log("Current user set:", data.user);
-          console.log("User role:", data.user.user_role);
         } else {
-          console.warn("User not authenticated or user data missing");
           setCurrentUser(null);
         }
       } catch (error) {
         console.error("Error fetching current user:", error);
         // Set a default user for demo purposes
-        console.log("Setting default user due to error");
         setCurrentUser({
           id: 1,
           username: "demouser",
@@ -150,133 +127,105 @@ const Schedule: React.FC = () => {
   }, []);
 
   // Fetch assignments based on user role
-  useEffect(() => {
-    const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
       if (!currentUser) return;
 
       setLoading(true);
       setError(null);
 
       try {
-        console.log("Current user:", currentUser);
-
         // For admin users, fetch all assignments they've created
         if (currentUser.user_role === 'admin') {
           const data = await fetchData("users/template-assignments/");
-          console.log("Admin assignments data:", data);
           setAssignments(data || []);
         } else if (currentUser.user_role === 'inspector') {
           // For inspectors, fetch their assigned templates
-          try {
-            const data = await fetchData("users/my-assignments/");
-            console.log("Inspector assignments data:", data);
-
-            // If no assignments found, create demo assignments for testing
-            if (!data || data.length === 0) {
-              console.log("No assignments found for inspector, creating demo assignments");
-              setAssignments([
-                {
-                  id: 1,
-                  template: 1,
-                  template_title: "Safety Inspection Template (Demo)",
-                  inspector: currentUser.id,
-                  inspector_name: currentUser.username || "Inspector User",
-                  inspector_email: currentUser.email || "inspector@example.com",
-                  assigned_by: 1,
-                  assigned_by_name: "Admin User",
-                  assigned_by_email: "admin@example.com",
-                  status: "assigned",
-                  status_display: "Assigned",
-                  assigned_at: new Date().toISOString(),
-                  started_at: null,
-                  completed_at: null,
-                  revoked_at: null,
-                  due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-                  notes: "Demo assignment for inspector testing"
-                },
-                {
-                  id: 2,
-                  template: 2,
-                  template_title: "Equipment Check Template (Demo)",
-                  inspector: currentUser.id,
-                  inspector_name: currentUser.username || "Inspector User",
-                  inspector_email: currentUser.email || "inspector@example.com",
-                  assigned_by: 1,
-                  assigned_by_name: "Admin User",
-                  assigned_by_email: "admin@example.com",
-                  status: "in_progress",
-                  status_display: "In Progress",
-                  assigned_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-                  started_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-                  completed_at: null,
-                  revoked_at: null,
-                  due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-                  notes: "Demo assignment in progress"
-                }
-              ]);
-            } else {
-              setAssignments(data);
-            }
-          } catch (error) {
-            console.error("Error fetching inspector assignments:", error);
-            // Create demo assignments on error
-            setAssignments([
-              {
-                id: 1,
-                template: 1,
-                template_title: "Safety Inspection Template (Demo)",
-                inspector: currentUser.id,
-                inspector_name: currentUser.username || "Inspector User",
-                inspector_email: currentUser.email || "inspector@example.com",
-                assigned_by: 1,
-                assigned_by_name: "Admin User",
-                assigned_by_email: "admin@example.com",
-                status: "assigned",
-                status_display: "Assigned",
-                assigned_at: new Date().toISOString(),
-                started_at: null,
-                completed_at: null,
-                revoked_at: null,
-                due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                notes: "Demo assignment for inspector testing"
-              }
-            ]);
-          }
+          const data = await fetchData("users/my-assignments/");
+          setAssignments(data || []);
         } else {
           setAssignments([]);
         }
       } catch (error) {
         console.error("Error loading assignments:", error);
         setError("Failed to load scheduled inspections");
-        // Set demo data for display
-        setAssignments([
-          {
-            id: 1,
-            template: 1,
-            template_title: "Safety Inspection Template (Demo)",
-            inspector: 2,
-            inspector_name: "John Inspector",
-            inspector_email: "john@example.com",
-            assigned_by: 1,
-            assigned_by_name: "Admin User",
-            assigned_by_email: "admin@example.com",
-            status: "assigned",
-            status_display: "Assigned",
-            assigned_at: new Date().toISOString(),
-            started_at: null,
-            completed_at: null,
-            revoked_at: null,
-            due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-            notes: "Demo assignment"
-          }
-        ]);
+        setAssignments([]);
       } finally {
         setLoading(false);
       }
-    };
+    }, [currentUser?.user_role]);
 
-    fetchAssignments();
-  }, [currentUser]);
+  // Get the logged-in user from localStorage (same as Dashboard)
+  const loggedInUser = localStorage.getItem("username");
+
+  // Fetch templates for assignment (only for admin users)
+  const fetchTemplates = useCallback(async () => {
+      // Only fetch templates for admin users
+      if (!currentUser || currentUser.user_role !== 'admin') {
+        setTemplates([]);
+        return;
+      }
+
+      try {
+        // Use the same endpoints as Dashboard.tsx
+        const endpointsToTry = [
+          "users/dashboard/templates/",
+          "users/templates/",
+          "templates/",
+        ];
+
+        // For admin users, fetch created templates (same as Dashboard)
+        for (const endpoint of endpointsToTry) {
+          try {
+            const data = await fetchData(endpoint);
+
+            // Filter templates by the logged-in user (same as Dashboard)
+            const userTemplates = data.filter((template: any) => template.createdBy === loggedInUser);
+
+            setTemplates(userTemplates);
+            return;
+
+          } catch (err) {
+            console.error("Schedule: Error fetching from endpoint:", endpoint, err);
+          }
+        }
+
+        // If we couldn't fetch from any endpoint, set empty array
+        setTemplates([]);
+      } catch (error) {
+        console.error("Schedule: Error in fetchTemplates:", error);
+        setTemplates([]);
+      }
+    }, [currentUser?.user_role, loggedInUser]);
+
+  // Combined data fetching function to prevent multiple simultaneous calls
+  const fetchAllData = useCallback(async () => {
+    if (!currentUser) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch assignments first
+      await fetchAssignments();
+
+      // Then fetch templates if user is admin
+      if (currentUser.user_role === 'admin') {
+        await fetchTemplates();
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser, fetchAssignments, fetchTemplates]);
+
+  // useEffect to fetch all data when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      fetchAllData();
+    }
+  }, [currentUser?.user_role]); // Only depend on user_role to prevent infinite loops
 
   const handleScheduleInspections = () => {
     setShowScheduleModal(true);
@@ -312,107 +261,6 @@ const Schedule: React.FC = () => {
       window.location.href = '/login';
     }
   };
-
-  // Fetch templates for assignment
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        // Use the same endpoints as Dashboard.tsx
-        const endpointsToTry = [
-          "/api/users/dashboard/templates/",
-          "/api/users/templates/",
-          "/api/templates/",
-        ];
-
-        let templatesData = [];
-
-        for (const endpoint of endpointsToTry) {
-          try {
-            console.log(`Schedule: Trying endpoint: ${endpoint}`);
-            const fullUrl = `http://localhost:8000${endpoint}`;
-            const response = await fetch(fullUrl, {
-              credentials: 'include'
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              console.log("Schedule: Template data received:", data);
-
-              // Check if the response has the new format with owned_templates and shared_templates
-              if (data.owned_templates && data.shared_templates) {
-                console.log("Schedule: Using new API format with owned and shared templates");
-                templatesData = [...data.owned_templates, ...data.shared_templates];
-              } else if (Array.isArray(data)) {
-                templatesData = data;
-              } else {
-                console.log("Schedule: Unknown data format");
-                templatesData = [];
-              }
-
-              console.log("Schedule: Final templates to set:", templatesData);
-              setTemplates(templatesData);
-              return;
-            }
-          } catch (error) {
-            console.error(`Schedule: Error with endpoint ${endpoint}:`, error);
-            continue;
-          }
-        }
-
-        // If all endpoints fail, set demo data
-        console.log("Schedule: All endpoints failed, using demo data");
-        setTemplates([
-          {
-            id: 1,
-            title: "Safety Inspection Template (Demo)",
-            description: "Demo template for safety inspections",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            owner: 1
-          },
-          {
-            id: 2,
-            title: "Equipment Check Template (Demo)",
-            description: "Demo template for equipment checks",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            owner: 1
-          },
-          {
-            id: 3,
-            title: "Fire Safety Audit Template (Demo)",
-            description: "Demo template for fire safety audits",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            owner: 1
-          }
-        ]);
-      } catch (error) {
-        console.error("Schedule: Error fetching templates:", error);
-        // Set demo data as fallback
-        setTemplates([
-          {
-            id: 1,
-            title: "Safety Inspection Template (Demo)",
-            description: "Demo template for safety inspections",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            owner: 1
-          },
-          {
-            id: 2,
-            title: "Equipment Check Template (Demo)",
-            description: "Demo template for equipment checks",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            owner: 1
-          }
-        ]);
-      }
-    };
-
-    fetchTemplates();
-  }, []);
 
   // Combine templates with assignment status
   useEffect(() => {
@@ -611,16 +459,7 @@ const Schedule: React.FC = () => {
 
   const tabTemplates = getTabTemplates();
 
-  // Debug logging (can be removed in production)
-  console.log("=== SCHEDULE DEBUG INFO ===");
-  console.log("Current user:", currentUser);
-  console.log("Templates:", templates);
-  console.log("Assignments:", assignments);
-  console.log("Templates with status:", templatesWithStatus);
-  console.log("Filtered templates:", filteredTemplates);
-  console.log("Display templates:", displayTemplates);
-  console.log("Tab templates:", tabTemplates);
-  console.log("Active tab:", activeTab);
+
 
   return (
     <div className="schedule-container">
@@ -673,25 +512,7 @@ const Schedule: React.FC = () => {
         <div className="schedule-header">
           <h1 className="schedule-page-title">Schedules</h1>
 
-          {/* Test button to switch user role - FOR TESTING ONLY */}
-          <button
-            onClick={() => {
-              const newRole = currentUser?.user_role === 'inspector' ? 'admin' : 'inspector';
-              setCurrentUser({...currentUser, user_role: newRole});
-            }}
-            style={{
-              padding: '0.5rem 1rem',
-              marginRight: '1rem',
-              backgroundColor: currentUser?.user_role === 'inspector' ? '#ef4444' : '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.5rem',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
-          >
-            Test as {currentUser?.user_role === 'inspector' ? 'Admin' : 'Inspector'}
-          </button>
+
 
           <div className="schedule-header-actions">
             {currentUser?.user_role === 'admin' && (
@@ -774,14 +595,14 @@ const Schedule: React.FC = () => {
               </div>
             </div>
             <h2 className="schedule-empty-title">
-              {activeTab === 'my-schedules' && currentUser?.user_role === 'inspector' && 'No scheduled inspections due in the next 7 days'}
+              {activeTab === 'my-schedules' && currentUser?.user_role === 'inspector' && 'No assigned inspections'}
               {activeTab === 'my-schedules' && currentUser?.user_role === 'admin' && 'No templates available'}
               {activeTab === 'manage-schedules' && 'No active assignments to manage'}
               {activeTab === 'missed-late' && 'No missed or late inspections'}
               {activeTab === 'completed-inspections' && 'No completed inspections found'}
             </h2>
             <p className="schedule-empty-description">
-              {activeTab === 'my-schedules' && currentUser?.user_role === 'inspector' && "You don't have any assigned inspections due in the next 7 days."}
+              {activeTab === 'my-schedules' && currentUser?.user_role === 'inspector' && "You don't have any inspections assigned to you yet. Contact your admin to get templates assigned."}
               {activeTab === 'my-schedules' && currentUser?.user_role === 'admin' && "No templates have been created yet."}
               {activeTab === 'manage-schedules' && "All assignments are either completed or not yet started."}
               {activeTab === 'missed-late' && "All inspections are on track with their schedules."}
@@ -795,7 +616,8 @@ const Schedule: React.FC = () => {
             {/* Unified display for both admin and inspector users */}
             <div className="schedule-assignments-list">
               <h3 className="schedule-list-title">
-                {activeTab === 'my-schedules' && `All Templates (${tabTemplates.length})`}
+                {activeTab === 'my-schedules' && currentUser?.user_role === 'inspector' && `My Assigned Inspections (${tabTemplates.length})`}
+                {activeTab === 'my-schedules' && currentUser?.user_role === 'admin' && `All Templates (${tabTemplates.length})`}
                 {activeTab === 'manage-schedules' && `Templates & Assignments (${tabTemplates.length})`}
                 {activeTab === 'missed-late' && `Overdue Inspections (${tabTemplates.length})`}
                 {activeTab === 'completed-inspections' && `Completed Inspections (${tabTemplates.length})`}
@@ -910,7 +732,8 @@ const Schedule: React.FC = () => {
           onAssignmentCreated={() => {
             // Refresh the page data after assignment
             setShowScheduleModal(false);
-            window.location.reload();
+            // Refresh all data using unified function
+            fetchAllData();
           }}
         />
       )}
@@ -949,7 +772,8 @@ const Schedule: React.FC = () => {
                           // Refresh assignments after assignment
                           setShowAssignmentModal(false);
                           setSelectedTemplateForAssignment(null);
-                          window.location.reload();
+                          // Refresh all data using unified function
+                          fetchAllData();
                         }}
                       />
                     </div>
@@ -973,7 +797,8 @@ const Schedule: React.FC = () => {
                             // Refresh assignments after assignment
                             setShowAssignmentModal(false);
                             setSelectedTemplateForAssignment(null);
-                            window.location.reload();
+                            // Refresh all data using unified function
+                            fetchAllData();
                           }}
                         />
                       </div>
