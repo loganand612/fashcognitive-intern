@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ChevronDown, ChevronUp, Edit, Plus, Calendar, User, MapPin, X, Check, ImageIcon, Trash2, Clock, ArrowLeft, ArrowRight, CheckCircle, Settings, Ruler, Box, List, Shirt, FileText, Printer, Hash, CircleDot, Equal, ListFilter, Bell, MessageSquare, AlertTriangle, Upload, ClipboardCheck, Save } from 'lucide-react'
 import "./garment-template.css"
@@ -1253,8 +1253,7 @@ const EnhancedLogicTriggerConfig: React.FC<{
   const [newOption, setNewOption] = useState<string>("")
 
   useEffect(() => {
-    if (trigger === "display_message") {
-      console.log('🔧 Garment EnhancedLogicTriggerConfig: display_message trigger with message:', message);
+    if (trigger === "display_message" || trigger === "require_action") {
       onConfigChange({ message })
     } else if (trigger === "ask_questions") {
       onConfigChange({
@@ -1292,8 +1291,33 @@ const EnhancedLogicTriggerConfig: React.FC<{
         <textarea
           className="enhanced-logic-text-input"
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => {
+            const newMessage = e.target.value;
+            setMessage(newMessage);
+            // Immediately call onConfigChange to save the message
+            onConfigChange({ message: newMessage });
+          }}
           placeholder="Enter message to display to the user"
+          rows={3}
+        />
+      </div>
+    )
+  }
+
+  if (trigger === "require_action") {
+    return (
+      <div className="enhanced-trigger-config">
+        <label className="enhanced-trigger-config-label">Action required message:</label>
+        <textarea
+          className="enhanced-logic-text-input"
+          value={message}
+          onChange={(e) => {
+            const newMessage = e.target.value;
+            setMessage(newMessage);
+            // Immediately call onConfigChange to save the message
+            onConfigChange({ message: newMessage });
+          }}
+          placeholder="Enter message describing the required action"
           rows={3}
         />
       </div>
@@ -1383,18 +1407,18 @@ const EnhancedLogicRuleBuilder: React.FC<{
 
   // Use questions parameter for future implementation of cross-question logic
 
-  // Use useCallback to memoize the onRuleChange call
-  const handleRuleChange = useCallback((updatedRule: LogicRule) => {
-    onRuleChange(updatedRule)
-  }, [onRuleChange])
-
-  useEffect(() => {
-    handleRuleChange(localRule)
-  }, [localRule, handleRuleChange])
-
+  // Sync localRule with rule prop when rule changes from parent
   useEffect(() => {
     setLocalRule(rule)
   }, [rule])
+
+  // Call onRuleChange when localRule changes, but avoid infinite loops
+  useEffect(() => {
+    // Only call onRuleChange if localRule is different from the original rule
+    if (JSON.stringify(localRule) !== JSON.stringify(rule)) {
+      onRuleChange(localRule)
+    }
+  }, [localRule, rule, onRuleChange])
 
   return (
     <div className={`enhanced-logic-rule-builder ${className}`}>
@@ -1438,7 +1462,7 @@ const EnhancedLogicRuleBuilder: React.FC<{
                   ...localRule,
                   trigger,
                   triggerConfig: trigger ? {} : undefined,
-                  message: trigger === "display_message" ? localRule.message || "" : undefined,
+                  message: (trigger === "display_message" || trigger === "require_action") ? localRule.message || "" : undefined,
                   subQuestion:
                     trigger === "ask_questions" ? localRule.subQuestion || { text: "", responseType: "Text" } : undefined,
                 })
@@ -1446,7 +1470,14 @@ const EnhancedLogicRuleBuilder: React.FC<{
                 setShowConfig(true)
               }
             }}
-            onConfigChange={(config) => setLocalRule({ ...localRule, triggerConfig: config })}
+            onConfigChange={(config) => {
+              setLocalRule({
+                ...localRule,
+                triggerConfig: config,
+                // Also save message directly to rule for compatibility
+                message: config.message || localRule.message
+              });
+            }}
           />
 
         </div>
@@ -1464,7 +1495,7 @@ const EnhancedLogicRuleBuilder: React.FC<{
                     ...localRule,
                     message: config.message,
                     subQuestion: config.subQuestion,
-                  })
+                  });
                 }}
               />
             </div>
@@ -1833,14 +1864,19 @@ const Garment_Template: React.FC = () => {
   const handleSave = async () => {
     // Validate logic rules for empty messages
     const validationErrors: string[] = [];
+
     template.sections.forEach((section, sectionIndex) => {
       if (section.type === "standard" && section.content) {
         const standardContent = section.content as StandardSectionContent;
+
         standardContent.questions.forEach((question, questionIndex) => {
           if (question.logicRules && question.logicRules.length > 0) {
             question.logicRules.forEach((rule, ruleIndex) => {
               if (rule.trigger === 'display_message' || rule.trigger === 'require_action') {
-                if (!rule.message || rule.message.trim() === '') {
+                // Check for message in multiple possible locations
+                const message = rule.message || rule.triggerConfig?.message || '';
+
+                if (!message || message.trim() === '') {
                   validationErrors.push(
                     `Section "${section.title}" → Question "${question.text}" → Rule ${ruleIndex + 1}: ` +
                     `${rule.trigger === 'display_message' ? 'Display message' : 'Action required message'} cannot be empty`

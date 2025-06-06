@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle, Trash2, Plus, MapPin } from "lucide-react"
 import { fetchData, postData } from "../utils/api"
 import "./Inspection.css"
+import "./garment-template.css"
 
 // Types
 type ResponseType =
@@ -922,7 +923,8 @@ const QuestionAnswering: React.FC = () => {
     const hasSizes = 'sizes' in content && Array.isArray(content.sizes)
     const hasColors = 'colors' in content && Array.isArray(content.colors)
 
-    return hasAqlSettings && hasSizes && hasColors
+    // Be more lenient - if it has at least sizes or colors, consider it garment content
+    return hasAqlSettings || hasSizes || hasColors
   }
 
   const handleQuantityChange = (color: string, size: string, field: 'orderQty' | 'offeredQty', value: string) => {
@@ -942,32 +944,71 @@ const QuestionAnswering: React.FC = () => {
   }
 
   const updateDefect = (index: number, field: string, value: any) => {
-    setReportData(prev => ({
-      ...prev,
-      defects: prev.defects.map((defect, i) =>
+    setReportData(prev => {
+      const updatedDefects = prev.defects.map((defect, i) =>
         i === index ? { ...defect, [field]: value } : defect
       )
-    }))
+
+      // Check for critical defects and auto-set AQL result to FAIL if any critical defects found
+      const hasCriticalDefects = updatedDefects.some(defect => {
+        const criticalCount = typeof defect.critical === 'number' ? defect.critical : parseInt(defect.critical?.toString() || '0', 10)
+        return criticalCount > 0
+      })
+
+      return {
+        ...prev,
+        defects: updatedDefects,
+        aqlSettings: {
+          ...prev.aqlSettings,
+          status: hasCriticalDefects ? "FAIL" : prev.aqlSettings.status
+        }
+      }
+    })
   }
 
   const addDefect = () => {
-    setReportData(prev => ({
-      ...prev,
-      defects: [...prev.defects, {
+    setReportData(prev => {
+      const newDefect = {
         type: "",
         remarks: "",
         critical: 0,
         major: 0,
         minor: 0
-      }]
-    }))
+      }
+
+      const updatedDefects = [...prev.defects, newDefect]
+
+      // Since we're adding a defect with 0 critical count, no need to change AQL status
+      return {
+        ...prev,
+        defects: updatedDefects
+      }
+    })
   }
 
   const removeDefect = (index: number) => {
-    setReportData(prev => ({
-      ...prev,
-      defects: prev.defects.filter((_, i) => i !== index)
-    }))
+    setReportData(prev => {
+      const updatedDefects = prev.defects.filter((_, i) => i !== index)
+
+      // Check for critical defects after removal
+      const hasCriticalDefects = updatedDefects.some(defect => {
+        const criticalCount = typeof defect.critical === 'number' ? defect.critical : parseInt(defect.critical?.toString() || '0', 10)
+        return criticalCount > 0
+      })
+
+      // If no critical defects remain, we could potentially set status back to PASS
+      // But we'll be conservative and only auto-set to FAIL, not back to PASS
+      // The user can manually change it back to PASS if needed
+      return {
+        ...prev,
+        defects: updatedDefects,
+        aqlSettings: {
+          ...prev.aqlSettings,
+          // Only auto-fail, don't auto-pass
+          status: hasCriticalDefects ? "FAIL" : prev.aqlSettings.status
+        }
+      }
+    })
   }
 
   const calculateColumnTotal = (size: string, field: 'orderQty' | 'offeredQty'): number => {
@@ -2767,17 +2808,14 @@ const QuestionAnswering: React.FC = () => {
 
   // Render garment details section - matching garment-template.tsx report section exactly
   const renderGarmentDetails = (section: Section) => {
-    if (!section.content || !isGarmentDetailsContent(section.content)) {
-      return <div>Invalid garment details section</div>
-    }
-
-    const garmentContent = section.content
+    // Always render garment details if this is a garment section, even with default values
+    const garmentContent = section.content as GarmentDetailsContent
 
     // Handle both camelCase and snake_case property names with defaults
-    const sizes = garmentContent.sizes || ['S', 'M', 'L', 'XL', 'XXL']
-    const colors = garmentContent.colors || ['BLUE', 'RED', 'BLACK']
-    const includeCartonOffered = garmentContent.includeCartonOffered ?? true
-    const includeCartonInspected = garmentContent.includeCartonInspected ?? true
+    const sizes = garmentContent?.sizes || ['S', 'M', 'L', 'XL', 'XXL']
+    const colors = garmentContent?.colors || ['BLUE', 'RED', 'BLACK']
+    const includeCartonOffered = garmentContent?.includeCartonOffered ?? true
+    const includeCartonInspected = garmentContent?.includeCartonInspected ?? true
 
     return (
       <>
@@ -2785,28 +2823,28 @@ const QuestionAnswering: React.FC = () => {
           <h4>Garment Details</h4>
 
           {/* Add/Edit Size and Color Controls - matching garment-template.tsx */}
-          <div className="inspection-garment-grid-actions">
-            <div className="inspection-grid-action-item">
+          <div className="grid-actions">
+            <div className="grid-action-item">
               <input
                 type="text"
                 placeholder="Add Size"
                 value={reportData.newSize}
                 onChange={(e) => setReportData((prev) => ({ ...prev, newSize: e.target.value }))}
-                className="inspection-grid-action-input"
+                className="grid-action-input"
               />
-              <button className="inspection-grid-action-button" onClick={addReportSize}>
+              <button className="grid-action-button" onClick={addReportSize}>
                 Add Size
               </button>
             </div>
-            <div className="inspection-grid-action-item">
+            <div className="grid-action-item">
               <input
                 type="text"
                 placeholder="Add Color"
                 value={reportData.newColor}
                 onChange={(e) => setReportData((prev) => ({ ...prev, newColor: e.target.value }))}
-                className="inspection-grid-action-input"
+                className="grid-action-input"
               />
-              <button className="inspection-grid-action-button" onClick={addReportColor}>
+              <button className="grid-action-button" onClick={addReportColor}>
                 Add Color
               </button>
             </div>
@@ -2816,28 +2854,26 @@ const QuestionAnswering: React.FC = () => {
             <table className="garment-table-preview">
               <thead>
                 <tr>
-                  <th>Color</th>
+                  <th>
+                    Color
+                    <div className="table-header-actions">
+                      <button className="table-edit-button" title="Edit Colors">
+                        <Edit size={12} />
+                      </button>
+                    </div>
+                  </th>
                   {sizes.map((size: string) => (
                     <React.Fragment key={size}>
                       <th colSpan={2} className="size-header">
-                        <div className="inspection-size-header-content">
-                          <span>{size}</span>
-                          <div className="inspection-size-actions">
-                            <button
-                              className="inspection-size-edit-btn"
-                              onClick={() => editReportSize(size)}
-                              title={`Edit size ${size}`}
-                            >
-                              <Edit size={12} />
-                            </button>
-                            <button
-                              className="inspection-size-remove-btn"
-                              onClick={() => removeReportSize(size)}
-                              title={`Remove size ${size}`}
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
+                        {size}
+                        <div className="table-header-actions">
+                          <button
+                            className="table-delete-button"
+                            title={`Remove ${size}`}
+                            onClick={() => removeReportSize(size)}
+                          >
+                            <X size={12} />
+                          </button>
                         </div>
                       </th>
                     </React.Fragment>
@@ -2860,24 +2896,14 @@ const QuestionAnswering: React.FC = () => {
                 {colors.map((color: string) => (
                   <tr key={color}>
                     <td className="color-column">
-                      <div className="inspection-color-cell">
+                      <div className="color-cell">
                         <span>{color}</span>
-                        <div className="inspection-color-actions">
-                          <button
-                            className="inspection-color-edit-btn"
-                            onClick={() => editReportColor(color)}
-                            title={`Edit color ${color}`}
-                          >
-                            <Edit size={12} />
-                          </button>
-                          <button
-                            className="inspection-color-remove-btn"
-                            onClick={() => removeReportColor(color)}
-                            title={`Remove color ${color}`}
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
+                        <button
+                          title={`Remove ${color}`}
+                          onClick={() => removeReportColor(color)}
+                        >
+                          <X size={12} />
+                        </button>
                       </div>
                     </td>
                     {sizes.map((size: string) => (
@@ -3286,7 +3312,7 @@ const QuestionAnswering: React.FC = () => {
         {currentSection?.description && <p className="inspection-section-description">{currentSection.description}</p>}
 
         {/* Render questions for standard sections or garment details for garment sections */}
-        {currentSection?.type === "garmentDetails" ? (
+        {(currentSection?.type === "garmentDetails" || currentSection?.title === "Garment Inspection Details") ? (
           <div className="inspection-garment-details-container">
             {renderGarmentDetails(currentSection)}
           </div>
