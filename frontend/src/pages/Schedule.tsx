@@ -178,9 +178,26 @@ const Schedule: React.FC = () => {
           try {
             const data = await fetchData(endpoint);
 
-            // Filter templates by the logged-in user (same as Dashboard)
-            const userTemplates = data.filter((template: any) => template.createdBy === loggedInUser);
+            // Filter templates by the logged-in user
+            // Note: createdBy contains the user's email, but loggedInUser might be username
+            // So we filter by checking if the template belongs to the current user
+            const userTemplates = data.filter((template: any) => {
+              // If createdBy matches loggedInUser directly (username case)
+              if (template.createdBy === loggedInUser) {
+                return true;
+              }
+              // If loggedInUser is an email and matches createdBy
+              if (loggedInUser && loggedInUser.includes('@') && template.createdBy === loggedInUser) {
+                return true;
+              }
+              // If currentUser is available, check against their email
+              if (currentUser && template.createdBy === currentUser.email) {
+                return true;
+              }
+              return false;
+            });
 
+            console.log(`Schedule: Found ${userTemplates.length} templates for user ${loggedInUser} from endpoint ${endpoint}`);
             setTemplates(userTemplates);
             return;
 

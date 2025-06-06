@@ -4757,15 +4757,65 @@ const Garment_Template: React.FC = () => {
   }
 
   const renderAccessTab = () => {
-    const handlePublish = () => {
-      // Save the template
-      updateTemplate({
-        ...template,
-        lastSaved: new Date()
-      });
+    const handlePublish = async () => {
+      try {
+        // First save the template to ensure it exists in the database
+        await handleSave();
 
-      alert('Template published successfully!');
-      window.location.href = '/dashboard';
+        // Get the template ID (either from URL or from the saved template)
+        const hasNumericId = String(template.id).match(/^\d+$/);
+        const templateDbId = hasNumericId ? template.id : id;
+
+        if (!templateDbId) {
+          throw new Error("Template must be saved before publishing");
+        }
+
+        // Then publish it using the dedicated publish endpoint
+        const csrfToken = await fetchCSRFToken();
+        const formData = new FormData();
+
+        // Add template ID and publish flag
+        formData.append("template_id", templateDbId.toString());
+        formData.append("title", template.title);
+        formData.append("publish", "true");
+
+        const response = await fetch("http://localhost:8000/api/users/garment-template/", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+          body: formData,
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to publish template");
+        }
+
+        // Get the response data
+        let responseData;
+        try {
+          responseData = await response.json();
+          console.log("Template published successfully:", responseData);
+        } catch (error) {
+          console.warn("Could not parse response as JSON:", error);
+          responseData = {};
+        }
+
+        // Update local state with published status
+        updateTemplate({
+          ...template,
+          lastSaved: new Date(),
+          lastPublished: new Date()
+        });
+
+        alert('Template published successfully! It will now appear in the schedule page for assignment.');
+        window.location.href = '/dashboard';
+      } catch (error: any) {
+        console.error("Error publishing template:", error);
+        alert(`Failed to publish template: ${error.message || "Unknown error"}`);
+      }
     };
 
     return (
@@ -4905,7 +4955,15 @@ const Garment_Template: React.FC = () => {
         <div className="nav-right">
           {/* Show save button only in Access tab (tab 2) */}
           {activeTab === 2 && (
-            <button className="nav-save-button" onClick={handleSave}>
+            <button className="nav-save-button" onClick={async () => {
+              try {
+                await handleSave();
+                alert('Template saved successfully!');
+              } catch (error: any) {
+                console.error("Error saving template:", error);
+                alert(`Failed to save template: ${error.message || "Unknown error"}`);
+              }
+            }}>
               <Save size={16} />
               Save Template
             </button>

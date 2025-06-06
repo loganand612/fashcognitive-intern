@@ -349,23 +349,60 @@ const QuestionAnswering: React.FC = () => {
             description: data.description || "Complete all required fields in this inspection",
             logo: data.logo || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCAyMEM0Ni42Mjc0IDIwIDUyIDI1LjM3MjYgNTIgMzJDNTIgMzguNjI3NCA0Ni42Mjc0IDQ0IDQwIDQ0QzMzLjM3MjYgNDQgMjggMzguNjI3NCAyOCAzMkMyOCAyNS4zNzI2IDMzLjM3MjYgMjAgNDAgMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0yMCA1NkMyMCA1MC40NzcyIDI0LjQ3NzIgNDYgMzAgNDZINTBDNTUuNTIyOCA0NiA2MCA1MC40NzcyIDYwIDU2VjYwSDIwVjU2WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K",
             sections: uniqueSections.map((section: any, index: number) => {
-              // Handle garment details section
-              if (section.type === "garmentDetails") {
+              // Handle garment details section - check both type field and is_garment_section boolean
+              const isGarmentSection = section.type === "garmentDetails" || section.is_garment_section === true;
+
+              if (isGarmentSection) {
                 // Ensure garment details section has proper content
                 let garmentContent = section.content
+
+                // If no content exists, check if garment data is stored directly in section fields
                 if (!garmentContent) {
+                  // Check if garment data is stored directly in the section object
+                  if (section.sizes || section.colors || section.aql_level) {
+                    garmentContent = {
+                      aqlSettings: {
+                        aqlLevel: section.aql_level || "2.5" as AQLLevel,
+                        inspectionLevel: section.inspection_level || "II" as InspectionLevel,
+                        samplingPlan: section.sampling_plan || "Single" as SamplingPlan,
+                        severity: section.severity || "Normal" as Severity
+                      },
+                      sizes: section.sizes || ['S', 'M', 'L', 'XL', 'XXL'],
+                      colors: section.colors || ['BLUE', 'RED', 'BLACK'],
+                      includeCartonOffered: section.include_carton_offered ?? true,
+                      includeCartonInspected: section.include_carton_inspected ?? true,
+                      defaultDefects: section.default_defects || ['Stitching', 'Fabric', 'Color', 'Measurement', 'Packing']
+                    }
+                  } else {
+                    // Create default content
+                    garmentContent = {
+                      aqlSettings: {
+                        aqlLevel: "2.5" as AQLLevel,
+                        inspectionLevel: "II" as InspectionLevel,
+                        samplingPlan: "Single" as SamplingPlan,
+                        severity: "Normal" as Severity
+                      },
+                      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+                      colors: ['BLUE', 'RED', 'BLACK'],
+                      includeCartonOffered: true,
+                      includeCartonInspected: true,
+                      defaultDefects: ['Stitching', 'Fabric', 'Color', 'Measurement', 'Packing']
+                    }
+                  }
+                } else {
+                  // Ensure the content has all required fields with proper structure
                   garmentContent = {
-                    aqlSettings: {
-                      aqlLevel: "2.5" as AQLLevel,
-                      inspectionLevel: "II" as InspectionLevel,
-                      samplingPlan: "Single" as SamplingPlan,
-                      severity: "Normal" as Severity
+                    aqlSettings: garmentContent.aqlSettings || garmentContent.aql_settings || {
+                      aqlLevel: garmentContent.aql_level || section.aql_level || "2.5" as AQLLevel,
+                      inspectionLevel: garmentContent.inspection_level || section.inspection_level || "II" as InspectionLevel,
+                      samplingPlan: garmentContent.sampling_plan || section.sampling_plan || "Single" as SamplingPlan,
+                      severity: garmentContent.severity || section.severity || "Normal" as Severity
                     },
-                    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-                    colors: ['BLUE', 'RED', 'BLACK'],
-                    includeCartonOffered: true,
-                    includeCartonInspected: true,
-                    defaultDefects: ['Stitching', 'Fabric', 'Color', 'Measurement', 'Packing']
+                    sizes: garmentContent.sizes || section.sizes || ['S', 'M', 'L', 'XL', 'XXL'],
+                    colors: garmentContent.colors || section.colors || ['BLUE', 'RED', 'BLACK'],
+                    includeCartonOffered: garmentContent.includeCartonOffered ?? garmentContent.include_carton_offered ?? section.include_carton_offered ?? true,
+                    includeCartonInspected: garmentContent.includeCartonInspected ?? garmentContent.include_carton_inspected ?? section.include_carton_inspected ?? true,
+                    defaultDefects: garmentContent.defaultDefects || garmentContent.default_defects || section.default_defects || ['Stitching', 'Fabric', 'Color', 'Measurement', 'Packing']
                   }
                 }
 
@@ -376,7 +413,7 @@ const QuestionAnswering: React.FC = () => {
                   questions: [],
                   type: "garmentDetails" as SectionType,
                   content: garmentContent
-                }
+                };
               }
 
               if (!section.questions || !Array.isArray(section.questions)) {
@@ -473,6 +510,7 @@ const QuestionAnswering: React.FC = () => {
 
           // Initialize garment report data if this is a garment template
           const garmentSection = transformedTemplate.sections.find(s => s.type === "garmentDetails")
+
           if (garmentSection && garmentSection.content && isGarmentDetailsContent(garmentSection.content)) {
             const garmentContent = garmentSection.content
 
@@ -3474,7 +3512,7 @@ const QuestionAnswering: React.FC = () => {
                 </tbody>
               </table>
               <div className="inspection-aql-table-footer">
-                <p><strong>Source:</strong> ANSI/ASQ Z1.4 The Sampling procedures and table for inspection by attributes</p>
+                <p><strong>Source:</strong> Streamlineer @ The Sampling procedures and table for inspection by attributes</p>
               </div>
             </div>
           </div>
