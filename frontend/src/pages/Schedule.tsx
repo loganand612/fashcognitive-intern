@@ -92,7 +92,7 @@ const Schedule: React.FC = () => {
     { icon: Bell, label: "Notifications", href: "/notifications" },
     { icon: FileText, label: "Templates", href: "/templates" },
     { icon: Calendar, label: "Schedule", href: "/schedule", active: true },
-    { icon: ClipboardCheck, label: "Inspections", href: "/inspection" },
+    { icon: ClipboardCheck, label: "Inspections", href: null }, // Removed href to prevent navigation
     { icon: Play, label: "Actions", href: "/actions" },
     { icon: BookOpen, label: "Training", href: "/training" },
     { icon: Package, label: "Assets", href: "/assets" },
@@ -504,10 +504,10 @@ const Schedule: React.FC = () => {
       <aside className="schedule-sidebar">
         <nav className="schedule-sidebar-nav">
           {menuItems.map((item, index) => {
-            // Make Inspections link inactive for inspector users
+            // Make Inspections link inactive for inspector users or when href is null
             const isInspectionsLink = item.label === 'Inspections';
             const isInspectorUser = currentUser?.user_role === 'inspector';
-            const shouldDisableLink = isInspectionsLink && isInspectorUser;
+            const shouldDisableLink = (isInspectionsLink && isInspectorUser) || !item.href;
 
             return shouldDisableLink ? (
               <span key={index} className={`schedule-nav-link schedule-nav-link-disabled ${item.active ? 'active' : ''}`}>

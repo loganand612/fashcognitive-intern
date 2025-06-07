@@ -370,7 +370,7 @@ const Dashboard: React.FC = () => {
     { icon: Bell, label: 'Notifications', href: '/notifications' },
     { icon: FileText, label: 'Templates', href: '/templates' },
     { icon: Calendar, label: 'Schedule', href: '/schedule' },
-    { icon: ClipboardCheck, label: 'Inspections', href: '/inspection' },
+    { icon: ClipboardCheck, label: 'Inspections', href: null }, // Removed href to prevent navigation
     { icon: Play, label: 'Actions', href: '/actions' },
     { icon: BookOpen, label: 'Training', href: '/training' },
     { icon: Package, label: 'Assets', href: '/assets' },
@@ -440,10 +440,10 @@ const Dashboard: React.FC = () => {
       <aside className="dashboard-sidebar">
         <nav className="dashboard-sidebar-nav">
           {menuItems.map((item, index) => {
-            // Make Inspections link inactive for inspector users
+            // Make Inspections link inactive for inspector users or when href is null
             const isInspectionsLink = item.label === 'Inspections';
             const isInspectorUser = currentUser?.user_role === 'inspector';
-            const shouldDisableLink = isInspectionsLink && isInspectorUser;
+            const shouldDisableLink = (isInspectionsLink && isInspectorUser) || !item.href;
 
             return shouldDisableLink ? (
               <span key={index} className="dashboard-nav-link dashboard-nav-link-disabled">
