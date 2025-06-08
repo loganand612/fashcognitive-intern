@@ -17,7 +17,8 @@ import {
   Plus,
   Clock,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Menu
 } from 'lucide-react';
 import ScheduleInspectionModal from './components/ScheduleInspectionModal';
 import TemplateAssignmentManager from './components/TemplateAssignmentManager';
@@ -84,6 +85,7 @@ const Schedule: React.FC = () => {
   const [selectedTemplateForAssignment, setSelectedTemplateForAssignment] = useState<TemplateWithStatus | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templatesWithStatus, setTemplatesWithStatus] = useState<TemplateWithStatus[]>([]);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   // Menu items for the sidebar
   const menuItems = [
@@ -278,6 +280,8 @@ const Schedule: React.FC = () => {
       window.location.href = '/login';
     }
   };
+
+
 
   // Combine templates with assignment status
   useEffect(() => {
@@ -482,7 +486,15 @@ const Schedule: React.FC = () => {
     <div className="schedule-container">
       {/* Top Navigation */}
       <nav className="schedule-navbar">
-        <div className="schedule-navbar-brand">STREAMLINEER</div>
+        <div className="schedule-navbar-left">
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+          >
+            <Menu size={24} />
+          </button>
+          <div className="schedule-navbar-brand">STREAMLINEER</div>
+        </div>
         <div className="schedule-navbar-actions">
           <button className="schedule-nav-button" title="Profile">
             <User className="schedule-nav-icon" />
@@ -500,8 +512,10 @@ const Schedule: React.FC = () => {
         </div>
       </nav>
 
+
+
       {/* Sidebar */}
-      <aside className="schedule-sidebar">
+      <aside className={`schedule-sidebar ${showMobileSidebar ? 'mobile-open' : ''}`}>
         <nav className="schedule-sidebar-nav">
           {menuItems.map((item, index) => {
             // Make Inspections link inactive for inspector users or when href is null

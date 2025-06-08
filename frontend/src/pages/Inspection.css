@@ -19,6 +19,30 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
+/* GLOBAL OVERRIDE: Completely disable scrolling for AQL and photograph sections */
+.aql-result-preview,
+.photograph-section {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  min-width: auto !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: auto !important;
+  scroll-behavior: auto !important;
+}
+
+.aql-result-preview::-webkit-scrollbar,
+.photograph-section::-webkit-scrollbar,
+.aql-result-preview *::-webkit-scrollbar,
+.photograph-section *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 .inspection-question-answering-container {
   max-width: 1000px;
   margin: 0 auto;
@@ -1901,107 +1925,1070 @@
   border-color: var(--error-red);
 }
 
+/* Mobile Navigation Styles */
+.inspection-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+}
+
+.inspection-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Mobile menu button */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.mobile-menu-btn:hover {
+  background-color: rgba(72, 149, 239, 0.1);
+  color: var(--primary-color);
+}
+
+.inspection-navbar-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.inspection-navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inspection-nav-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inspection-nav-button:hover {
+  background-color: rgba(72, 149, 239, 0.1);
+  color: var(--primary-color);
+}
+
+.inspection-nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Mobile Sidebar */
+.inspection-sidebar {
+  position: fixed;
+  left: 0;
+  top: 70px;
+  height: calc(100vh - 70px);
+  width: 280px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 100;
+  background: var(--bg-color);
+  border-right: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  display: none;
+}
+
+.inspection-sidebar-mobile-open {
+  transform: translateX(0);
+}
+
+.inspection-sidebar-nav {
+  padding: 1rem 0;
+}
+
+.inspection-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  color: var(--text-color);
+  text-decoration: none;
+  transition: var(--transition);
+  border-left: 3px solid transparent;
+}
+
+.inspection-nav-link:hover {
+  background-color: rgba(72, 149, 239, 0.05);
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
+}
+
+.inspection-nav-link.active {
+  background-color: rgba(72, 149, 239, 0.1);
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.inspection-nav-link-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.inspection-nav-link-disabled:hover {
+  background-color: transparent;
+  color: var(--text-color);
+  border-left-color: transparent;
+}
+
+/* Mobile sidebar overlay */
+.inspection-mobile-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+  cursor: pointer;
+}
+
+/* Main content wrapper */
+.inspection-main-content {
+  padding-top: 0;
+}
+
 /* Responsive styles for garment details */
-@media (max-width: 768px) {
-  .inspection-garment-details-container {
-    padding: 20px;
+@media (max-width: 1024px) {
+  .mobile-menu-btn {
+    display: block !important;
   }
 
-  .inspection-garment-details {
-    gap: 24px;
+  .inspection-navbar {
+    display: flex;
   }
 
-  .inspection-garment-table-container {
-    font-size: 13px;
-    border-radius: 8px;
+  .inspection-sidebar {
+    display: none;
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    width: 280px;
+    height: calc(100vh - var(--header-height));
+    z-index: 999;
+    background: white;
+    border-right: 1px solid #ccc;
   }
 
-  .inspection-garment-table th,
-  .inspection-garment-table td {
-    padding: 12px 8px;
+  .inspection-sidebar.mobile-open {
+    display: block !important;
   }
 
-  .inspection-qty-input {
-    width: 70px;
-    font-size: 13px;
-    padding: 6px 8px;
+  .inspection-main-content {
+    padding-top: 70px;
   }
 
-  .inspection-carton-info {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 20px;
-  }
-
-  .inspection-aql-info {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .inspection-aql-item {
-    padding: 14px 16px;
-  }
-
-  .inspection-defects-header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-    padding: 16px 20px;
-  }
-
-  .inspection-defects-header h4 {
-    font-size: 16px;
-  }
-
-  .inspection-add-defect-btn {
-    width: 100%;
-    padding: 12px 20px;
+  .inspection-question-answering-container {
+    padding-top: 0;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .inspection-navbar-brand {
+    font-size: 1.1rem;
+  }
+
+  /* Override desktop table styles for mobile */
+  .garment-grid-preview {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1) !important;
+    background: white !important;
+    border: 1px solid #e0e0e0 !important;
+    position: relative !important;
+    margin-top: 16px !important;
+  }
+
+  .garment-table-preview {
+    min-width: 800px !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 13px !important;
+    table-layout: auto !important;
+  }
+
+  /* COMPLETELY remove horizontal scrolling from AQL table and photograph sections */
+  .aql-result-preview,
+  .photograph-section {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .aql-result-preview *,
+  .photograph-section * {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    max-width: 100% !important;
+    width: auto !important;
+    min-width: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .aql-result-preview table,
+  .photograph-section table,
+  .aql-result-preview .aql-info,
+  .aql-result-preview .aql-header,
+  .photograph-section .defect-images-grid,
+  .photograph-section h5 {
+    width: 100% !important;
+    min-width: auto !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Force no scrollbars on AQL and photograph containers */
+  .aql-result-preview::-webkit-scrollbar,
+  .photograph-section::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Professional mobile responsive styles for defect log table ONLY */
+  .defect-log-preview {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    background: white !important;
+    border: 1px solid #e0e0e0 !important;
+    position: relative !important;
+    margin: 20px 0 !important;
+    padding: 0 !important;
+  }
+
+  .defect-table-preview {
+    min-width: 800px !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 14px !important;
+    table-layout: auto !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .defect-table-preview th,
+  .defect-table-preview td {
+    padding: 12px 10px !important;
+    font-size: 14px !important;
+    border: 1px solid #e8e8e8 !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
+
+  .defect-table-preview th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    font-weight: 700 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    font-size: 12px !important;
+    color: #495057 !important;
+    border-bottom: 2px solid #dee2e6 !important;
+  }
+
+  .defect-table-preview th:first-child,
+  .defect-table-preview td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%) !important;
+    z-index: 3 !important;
+    border-right: 3px solid #3f51b5 !important;
+    min-width: 140px !important;
+    font-weight: 700 !important;
+    color: #3f51b5 !important;
+  }
+
+  .defect-input {
+    width: 100% !important;
+    min-width: 90px !important;
+    font-size: 14px !important;
+    padding: 8px 10px !important;
+    border: 2px solid #e9ecef !important;
+    border-radius: 6px !important;
+    text-align: center !important;
+    background-color: white !important;
+    transition: all 0.2s ease !important;
+    font-weight: 500 !important;
+  }
+
+  .defect-input:focus {
+    border-color: #3f51b5 !important;
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1) !important;
+    outline: none !important;
+  }
+
+  /* Keep AQL and photograph sections normal (no horizontal scrolling) */
+  .aql-result-preview,
+  .photograph-section {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    border-radius: 8px !important;
+    background: white !important;
+    border: 1px solid #e0e0e0 !important;
+    margin: 16px 0 !important;
+    padding: 20px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Override any inherited scrolling styles */
+  .aql-result-preview,
+  .photograph-section,
+  .aql-result-preview > *,
+  .photograph-section > * {
+    -webkit-overflow-scrolling: auto !important;
+    scroll-behavior: auto !important;
+    position: static !important;
+  }
+
+  .aql-result-preview::-webkit-scrollbar,
+  .photograph-section::-webkit-scrollbar,
+  .aql-result-preview *::-webkit-scrollbar,
+  .photograph-section *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+
+  .inspection-template-header {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .inspection-template-title {
+    font-size: 1.5rem;
+  }
+
+  .inspection-template-description {
+    font-size: 0.9rem;
+  }
+
+  .inspection-progress-indicator {
+    margin: 0 1rem 1rem 1rem;
+  }
+
+  .inspection-section-container {
+    margin: 0 1rem;
+    padding: 1rem;
+  }
+
+  .inspection-section-title {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .inspection-question-container {
+    margin-bottom: 1.5rem;
+  }
+
+  .inspection-question-text {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .inspection-text-input,
+  .inspection-number-input,
+  .inspection-dropdown-input,
+  .inspection-date-time-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.75rem;
+  }
+
+  .inspection-yes-no-options {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .inspection-option-button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .inspection-multiple-choice-options {
+    gap: 0.75rem;
+  }
+
+  .inspection-choice-option {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .inspection-navigation-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    margin: 0 1rem;
+  }
+
+  .inspection-primary-button,
+  .inspection-secondary-button {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+
   .inspection-garment-details-container {
-    padding: 16px;
+    padding: 1rem;
   }
 
   .inspection-garment-details {
-    gap: 20px;
+    gap: 1.5rem;
   }
 
-  .inspection-garment-table th,
-  .inspection-garment-table td {
-    padding: 10px 6px;
-    font-size: 12px;
+  /* Mobile responsive styles for garment table */
+  .garment-grid-preview {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    border-radius: 8px;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+    background: white;
+    border: 1px solid #e0e0e0;
+    position: relative;
   }
 
-  .inspection-qty-input {
-    width: 60px;
-    font-size: 12px;
-    padding: 6px;
+  .garment-table-preview {
+    min-width: 800px;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+
+  .garment-table-preview th,
+  .garment-table-preview td {
+    padding: 10px 8px;
+    font-size: 13px;
+    border: 1px solid #e0e0e0;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .garment-table-preview th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .garment-table-preview th:first-child,
+  .garment-table-preview td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f8f9fa;
+    z-index: 3;
+    border-right: 2px solid #d0d0d0;
+  }
+
+  .qty-input {
+    width: 70px !important;
+    font-size: 13px !important;
+    padding: 6px 8px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    text-align: center !important;
+    background-color: white !important;
   }
 
   .inspection-carton-info {
-    padding: 16px;
-    gap: 12px;
-  }
-
-  .inspection-aql-settings {
-    padding: 16px;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
   }
 
   .inspection-aql-info {
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .inspection-aql-item {
-    padding: 12px 14px;
-    flex-direction: column;
-    gap: 8px;
+    padding: 1rem;
     text-align: center;
   }
 
   .inspection-defects-header {
-    padding: 16px;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .inspection-defects-header h4 {
+    font-size: 1.1rem;
+  }
+
+  .inspection-add-defect-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+  }
+
+  .inspection-media-upload-container {
+    text-align: center;
+  }
+
+  .inspection-media-upload-button {
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .inspection-signature-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .inspection-signature-canvas {
+    width: 100%;
+    max-width: 350px;
+  }
+
+  .inspection-aql-popup-content {
+    width: 95%;
+    margin: 1rem;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .inspection-aql-table {
+    font-size: 12px;
+  }
+
+  .inspection-aql-table th,
+  .inspection-aql-table td {
+    padding: 6px 4px;
+  }
+
+  /* Enhanced mobile table scrolling */
+  .garment-grid-preview::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .garment-grid-preview::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .garment-grid-preview::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+
+  .garment-grid-preview::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  /* Subtle enhanced mobile defect table scrolling */
+  .defect-log-preview::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .defect-log-preview::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .defect-log-preview::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+
+  .defect-log-preview::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  .defect-log-preview::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+  }
+
+  /* Mobile table visual enhancements */
+  .garment-table-preview tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .garment-table-preview tbody tr:hover {
+    background-color: #f0f7ff;
+  }
+
+  .defect-table-preview tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .defect-table-preview tbody tr:hover {
+    background-color: #f0f7ff;
+  }
+
+  /* Mobile scroll indicators */
+  .garment-grid-preview::after {
+    content: "← Swipe to view all columns →";
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #666;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  .defect-log-preview::after {
+    content: "← Scroll horizontally to view all defect columns →";
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 500;
+    color: #3f51b5;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.95) 100%);
+    padding: 8px 16px;
+    border-radius: 20px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0.9;
+    border: 1px solid rgba(63, 81, 181, 0.2);
+    box-shadow: 0 2px 8px rgba(63, 81, 181, 0.15);
+    backdrop-filter: blur(4px);
+  }
+
+  .report-section-preview {
+    position: relative;
+    padding-bottom: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inspection-navbar {
+    padding: 0 0.75rem;
+  }
+
+  .inspection-navbar-brand {
+    font-size: 1rem;
+  }
+
+  /* FORCE AQL and photograph sections to remain non-scrollable on small screens */
+  .aql-result-preview,
+  .photograph-section {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: auto !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: auto !important;
+    scroll-behavior: auto !important;
+  }
+
+  .aql-result-preview *,
+  .photograph-section * {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    width: auto !important;
+    min-width: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .aql-result-preview table,
+  .photograph-section table,
+  .aql-result-preview .aql-info,
+  .photograph-section .defect-images-grid {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    width: 100% !important;
+    min-width: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide any scrollbars completely */
+  .aql-result-preview::-webkit-scrollbar,
+  .photograph-section::-webkit-scrollbar,
+  .aql-result-preview *::-webkit-scrollbar,
+  .photograph-section *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .inspection-sidebar {
+    width: 260px;
+  }
+
+  .inspection-template-header {
+    padding: 0.75rem;
+  }
+
+  .inspection-template-title {
+    font-size: 1.25rem;
+  }
+
+  .inspection-template-description {
+    font-size: 0.85rem;
+  }
+
+  .inspection-section-container {
+    padding: 0.75rem;
+  }
+
+  .inspection-section-title {
+    font-size: 1.1rem;
+  }
+
+  .inspection-question-text {
+    font-size: 0.9rem;
+  }
+
+  .inspection-text-input,
+  .inspection-number-input,
+  .inspection-dropdown-input,
+  .inspection-date-time-input {
+    padding: 0.625rem;
+    font-size: 16px;
+  }
+
+  .inspection-option-button {
+    padding: 0.625rem;
+    font-size: 0.9rem;
+  }
+
+  .inspection-choice-option {
+    padding: 0.625rem;
+    font-size: 0.9rem;
+  }
+
+  .inspection-primary-button,
+  .inspection-secondary-button {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .inspection-garment-details-container {
+    padding: 0.75rem;
+  }
+
+  .inspection-garment-details {
+    gap: 1rem;
+  }
+
+  .garment-grid-preview {
+    border-radius: 6px;
+    margin: 0 -0.75rem;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .garment-table-preview {
+    min-width: 900px;
+    font-size: 11px;
+  }
+
+  .garment-table-preview th,
+  .garment-table-preview td {
+    padding: 8px 6px;
+    font-size: 11px;
+    min-width: 60px;
+  }
+
+  .garment-table-preview th {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .garment-table-preview th:first-child,
+  .garment-table-preview td:first-child {
+    min-width: 80px;
+    font-weight: 600;
+  }
+
+  .qty-input {
+    width: 55px !important;
+    font-size: 11px !important;
+    padding: 4px 6px !important;
+    border-radius: 3px !important;
+    min-height: 28px !important;
+  }
+
+  /* Professional mobile defect table styles for 480px */
+  .defect-log-preview {
+    border-radius: 10px !important;
+    margin: 16px -0.75rem !important;
+    box-shadow: 0 6px 16px rgba(63, 81, 181, 0.15) !important;
+  }
+
+  .defect-table-preview {
+    min-width: 850px !important;
+    font-size: 12px !important;
+  }
+
+  .defect-table-preview th,
+  .defect-table-preview td {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    min-width: 80px !important;
+  }
+
+  .defect-table-preview th {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .defect-table-preview th:first-child,
+  .defect-table-preview td:first-child {
+    min-width: 120px !important;
+    font-weight: 700 !important;
+  }
+
+  .defect-input {
+    min-width: 70px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+    border-radius: 5px !important;
+    min-height: 32px !important;
+    border-width: 2px !important;
+  }
+
+  /* Mobile table header enhancements */
+  .garment-table-preview th:first-child {
+    background-color: #e8eaf6 !important;
+    color: #3f51b5;
+    font-weight: 700;
+  }
+
+  .garment-table-preview .size-header {
+    background-color: #f0f2f5 !important;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .garment-table-preview .qty-header {
+    background-color: #f5f5f5 !important;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  /* Mobile total row styling */
+  .garment-table-preview .total-row {
+    background-color: #f0f2f5 !important;
+    font-weight: 600;
+    border-top: 2px solid #d0d0d0;
+  }
+
+  .garment-table-preview .total-row td {
+    background-color: #f0f2f5 !important;
+    font-weight: 600;
+  }
+
+  /* Professional mobile defect table header enhancements */
+  .defect-table-preview th:first-child {
+    background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%) !important;
+    color: #3f51b5 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(63, 81, 181, 0.1) !important;
+  }
+
+  .defect-table-preview th:nth-child(2) {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%) !important;
+    color: #424242 !important;
+    font-weight: 700 !important;
+  }
+
+  .defect-table-preview th:nth-child(3),
+  .defect-table-preview th:nth-child(4),
+  .defect-table-preview th:nth-child(5) {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%) !important;
+    color: #e65100 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(230, 81, 0, 0.1) !important;
+  }
+
+  .defect-table-preview th:nth-child(6) {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%) !important;
+    color: #7b1fa2 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(123, 31, 162, 0.1) !important;
+  }
+
+  .defect-table-preview th:nth-child(7) {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%) !important;
+    color: #2e7d32 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(46, 125, 50, 0.1) !important;
+  }
+
+  /* Professional mobile defect table total row styling */
+  .defect-table-preview .total-row {
+    background: linear-gradient(135deg, #f0f2f5 0%, #e3f2fd 100%) !important;
+    font-weight: 700 !important;
+    border-top: 3px solid #3f51b5 !important;
+    box-shadow: 0 -2px 4px rgba(63, 81, 181, 0.1) !important;
+  }
+
+  .defect-table-preview .total-row td {
+    background: linear-gradient(135deg, #f0f2f5 0%, #e3f2fd 100%) !important;
+    font-weight: 700 !important;
+    color: #3f51b5 !important;
+    text-shadow: 0 1px 2px rgba(63, 81, 181, 0.1) !important;
+  }
+
+  /* Professional mobile defect actions styling */
+  .defect-actions {
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 4px !important;
+  }
+
+  .defect-action-button,
+  .image-upload-label {
+    padding: 10px !important;
+    border-radius: 8px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border: 2px solid #dee2e6 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .defect-action-button:hover,
+  .image-upload-label:hover {
+    background: linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%) !important;
+    border-color: #3949ab !important;
+    color: white !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(63, 81, 181, 0.3) !important;
+  }
+
+  .defect-action-button:active,
+  .image-upload-label:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 4px rgba(63, 81, 181, 0.2) !important;
+  }
+
+  .inspection-carton-info {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .inspection-aql-settings {
+    padding: 0.75rem;
+  }
+
+  .inspection-aql-info {
+    gap: 0.75rem;
+  }
+
+  .inspection-aql-item {
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .inspection-defects-header {
+    padding: 0.75rem;
+  }
+
+  .inspection-defects-header h4 {
+    font-size: 1rem;
+  }
+
+  .inspection-add-defect-btn {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9rem;
+  }
+
+  .inspection-signature-modal-content {
+    padding: 0.75rem;
+  }
+
+  .inspection-signature-canvas {
+    max-width: 300px;
+    height: 150px;
+  }
+
+  .inspection-aql-popup-content {
+    margin: 0.5rem;
+  }
+
+  .inspection-aql-table {
+    font-size: 10px;
+  }
+
+  .inspection-aql-table th,
+  .inspection-aql-table td {
+    padding: 4px 2px;
   }
 }
 
@@ -2916,5 +3903,143 @@
 
   .inspection-aql-table-footer p {
     font-size: 10px;
+  }
+}
+
+/* Extra small mobile devices (320px and below) - Enhanced garment table */
+@media (max-width: 320px) {
+  .garment-grid-preview {
+    margin: 0 -1rem;
+    border-radius: 4px;
+  }
+
+  .garment-table-preview {
+    min-width: 950px;
+    font-size: 10px;
+  }
+
+  .garment-table-preview th,
+  .garment-table-preview td {
+    padding: 6px 4px;
+    font-size: 10px;
+    min-width: 50px;
+  }
+
+  .garment-table-preview th {
+    font-size: 9px;
+  }
+
+  .garment-table-preview th:first-child,
+  .garment-table-preview td:first-child {
+    min-width: 70px;
+  }
+
+  .qty-input {
+    width: 50px !important;
+    font-size: 10px !important;
+    padding: 3px 4px !important;
+    min-height: 24px !important;
+  }
+
+  .inspection-garment-details-container {
+    padding: 0.5rem;
+  }
+
+  .garment-grid-preview::after {
+    font-size: 10px;
+    bottom: -22px;
+  }
+
+  /* Professional extra small mobile defect table styles */
+  .defect-log-preview {
+    margin: 12px -1rem !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(63, 81, 181, 0.2) !important;
+  }
+
+  .defect-table-preview {
+    min-width: 900px !important;
+    font-size: 11px !important;
+  }
+
+  .defect-table-preview th,
+  .defect-table-preview td {
+    padding: 8px 6px !important;
+    font-size: 11px !important;
+    min-width: 70px !important;
+  }
+
+  .defect-table-preview th {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+  }
+
+  .defect-table-preview th:first-child,
+  .defect-table-preview td:first-child {
+    min-width: 110px !important;
+    font-weight: 800 !important;
+  }
+
+  .defect-input {
+    min-width: 60px !important;
+    font-size: 11px !important;
+    padding: 5px 6px !important;
+    min-height: 28px !important;
+    border-width: 2px !important;
+    border-radius: 4px !important;
+  }
+
+  .defect-log-preview::after {
+    font-size: 11px !important;
+    bottom: -30px !important;
+    padding: 6px 12px !important;
+  }
+
+  /* FORCE AQL and photograph sections to remain non-scrollable on extra small screens */
+  .aql-result-preview,
+  .photograph-section {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: auto !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: auto !important;
+    scroll-behavior: auto !important;
+  }
+
+  .aql-result-preview *,
+  .photograph-section * {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    width: auto !important;
+    min-width: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .aql-result-preview table,
+  .photograph-section table,
+  .aql-result-preview .aql-info,
+  .photograph-section .defect-images-grid {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    width: 100% !important;
+    min-width: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Completely hide scrollbars */
+  .aql-result-preview::-webkit-scrollbar,
+  .photograph-section::-webkit-scrollbar,
+  .aql-result-preview *::-webkit-scrollbar,
+  .photograph-section *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
   }
 }

@@ -831,20 +831,78 @@
   color: #6b7280;
 }
 
+/* Mobile navbar improvements */
+.schedule-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Mobile menu button */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.mobile-menu-btn:hover {
+  background-color: rgba(72, 149, 239, 0.1);
+  color: var(--primary-color);
+}
+
+/* Mobile sidebar overlay */
+.schedule-mobile-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
 /* Responsive design - enhanced for mobile */
 @media (max-width: 1024px) {
-  .schedule-main-content {
-    margin-left: 0;
-    padding: 1.5rem;
+  .mobile-menu-btn {
+    display: block !important;
   }
 
   .schedule-sidebar {
-    transform: translateX(-100%);
-    transition: var(--transition);
+    display: none;
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    width: 280px;
+    height: calc(100vh - var(--header-height));
+    z-index: 999;
+    background: white;
+    border-right: 1px solid #ccc;
   }
 
-  .schedule-sidebar.open {
-    transform: translateX(0);
+  .schedule-sidebar.mobile-open {
+    display: block !important;
+  }
+
+  .schedule-main-content {
+    margin-left: 0;
+    padding: 1.5rem;
   }
 
   .schedule-assignments-grid {
@@ -856,6 +914,10 @@
 @media (max-width: 768px) {
   .schedule-navbar {
     padding: 0 1rem;
+  }
+
+  .schedule-navbar-brand {
+    font-size: 1.25rem;
   }
 
   .schedule-main-content {
@@ -873,13 +935,21 @@
     justify-content: flex-start;
   }
 
+  .schedule-page-title {
+    font-size: 1.75rem;
+  }
+
   .schedule-tabs {
     flex-direction: column;
     gap: 0.25rem;
+    width: 100%;
   }
 
   .schedule-tab {
     text-align: left;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
   }
 
   .schedule-controls {
@@ -889,6 +959,7 @@
 
   .schedule-search-container {
     max-width: none;
+    width: 100%;
   }
 
   .schedule-assignments-grid {
@@ -897,17 +968,27 @@
 
   .schedule-assignments-table {
     font-size: 0.875rem;
+    overflow-x: auto;
+    display: block;
+    white-space: nowrap;
+  }
+
+  .schedule-assignments-table table {
+    width: 100%;
+    min-width: 600px;
   }
 
   .schedule-assignments-table th,
   .schedule-assignments-table td {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
   }
 
   .schedule-template-cell {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    min-width: 150px;
   }
 
   .schedule-template-icon {
@@ -924,25 +1005,92 @@
   .schedule-assignment-modal-content {
     padding: 1rem;
   }
-}
 
-@media (max-width: 480px) {
-  .schedule-page-title {
-    font-size: 1.5rem;
+  .schedule-inspections-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .schedule-list-title {
+    font-size: 1.1rem;
   }
 
   .schedule-empty-state {
     padding: 2rem 1rem;
   }
+}
+
+@media (max-width: 480px) {
+  .schedule-navbar {
+    padding: 0 0.75rem;
+  }
+
+  .schedule-navbar-brand {
+    font-size: 1.1rem;
+  }
+
+  .schedule-sidebar {
+    width: 260px;
+  }
+
+  .schedule-main-content {
+    padding: 0.75rem;
+  }
+
+  .schedule-page-title {
+    font-size: 1.5rem;
+  }
+
+  .schedule-tab {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9rem;
+  }
+
+  .schedule-inspections-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .schedule-assignments-table {
+    font-size: 0.8rem;
+  }
+
+  .schedule-assignments-table th,
+  .schedule-assignments-table td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .schedule-template-cell {
+    min-width: 120px;
+  }
+
+  .schedule-list-title {
+    font-size: 1rem;
+  }
+
+  .schedule-empty-state {
+    padding: 1.5rem 0.75rem;
+  }
 
   .schedule-illustration-bg {
-    width: 150px;
-    height: 120px;
+    width: 120px;
+    height: 100px;
   }
 
   .schedule-calendar-icon {
-    width: 2rem;
-    height: 2rem;
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .schedule-assignment-modal {
+    width: 98%;
+    margin: 0.5rem;
+  }
+
+  .schedule-assignment-modal-header,
+  .schedule-assignment-modal-content {
+    padding: 0.75rem;
   }
 }
 

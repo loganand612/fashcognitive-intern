@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle, Trash2, Plus, MapPin } from "lucide-react"
+import { ImageIcon, X, ChevronDown, AlertTriangle, ArrowLeft, CheckCircle, Edit, Bell, Camera, HelpCircle, MessageCircle, Trash2, Plus, MapPin, Menu, Home, Search, FileText, Calendar, ClipboardCheck, Play, BookOpen, Package, Settings, User, LogOut } from "lucide-react"
 import { fetchData, postData } from "../utils/api"
 import "./Inspection.css"
 import "./garment-template.css"
@@ -855,6 +855,7 @@ const QuestionAnswering: React.FC = () => {
   const [assignment, setAssignment] = useState<any>(null)
   const [assignmentError, setAssignmentError] = useState<string | null>(null)
   const [showSignatureModal, setShowSignatureModal] = useState(false)
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false)
 
   // Garment inspection specific state
   const [defectImages, setDefectImages] = useState<Record<number, string[]>>({})
@@ -1548,6 +1549,8 @@ const QuestionAnswering: React.FC = () => {
       if (redirectTimer) clearTimeout(redirectTimer);
     };
   }, [isComplete, navigate])
+
+
 
   // If template is still loading or not available, show loading state
   if (!template) {
@@ -3277,8 +3280,75 @@ const QuestionAnswering: React.FC = () => {
     )
   }
 
+
+
+  const menuItems = [
+    { icon: Home, label: 'Home', href: '/dashboard' },
+    { icon: Search, label: 'Search', href: '/search' },
+    { icon: Bell, label: 'Notifications', href: '/notifications' },
+    { icon: FileText, label: 'Templates', href: '/templates' },
+    { icon: Calendar, label: 'Schedule', href: '/schedule' },
+    { icon: ClipboardCheck, label: 'Inspections', href: null, active: true },
+    { icon: Play, label: 'Actions', href: '/actions' },
+    { icon: BookOpen, label: 'Training', href: '/training' },
+    { icon: Package, label: 'Assets', href: '/assets' },
+    { icon: Settings, label: 'Issues', href: '/issues' },
+  ];
+
   return (
     <div className="inspection-question-answering-container">
+      {/* Mobile Navigation */}
+      <nav className="inspection-navbar">
+        <div className="inspection-navbar-left">
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+          >
+            <Menu size={24} />
+          </button>
+          <div className="inspection-navbar-brand">STREAMLINEER</div>
+        </div>
+        <div className="inspection-navbar-actions">
+          <button className="inspection-nav-button" title="Profile">
+            <User className="inspection-nav-icon" />
+          </button>
+          <button className="inspection-nav-button" title="Settings">
+            <Settings className="inspection-nav-icon" />
+          </button>
+          <button
+            className="inspection-nav-button"
+            onClick={() => navigate('/dashboard')}
+            title="Back to Dashboard"
+          >
+            <LogOut className="inspection-nav-icon" />
+          </button>
+        </div>
+      </nav>
+
+
+
+      {/* Sidebar */}
+      <aside className={`inspection-sidebar ${showMobileSidebar ? 'mobile-open' : ''}`}>
+        <nav className="inspection-sidebar-nav">
+          {menuItems.map((item, index) => {
+            const shouldDisableLink = !item.href;
+
+            return shouldDisableLink ? (
+              <span key={index} className={`inspection-nav-link inspection-nav-link-disabled ${item.active ? 'active' : ''}`}>
+                <item.icon className="inspection-nav-icon" />
+                <span>{item.label}</span>
+              </span>
+            ) : (
+              <a key={index} href={item.href} className={`inspection-nav-link ${item.active ? 'active' : ''}`}>
+                <item.icon className="inspection-nav-icon" />
+                <span>{item.label}</span>
+              </a>
+            );
+          })}
+        </nav>
+      </aside>
+
+      <div className="inspection-main-content">
       <div className="inspection-template-header">
         <div className="inspection-template-logo-container">
           {template.logo && (
@@ -3675,6 +3745,7 @@ const QuestionAnswering: React.FC = () => {
         </div>
       )}
 
+      </div>
     </div>
   )
 }

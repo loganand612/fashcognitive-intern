@@ -21,6 +21,7 @@ import {
   Settings,
   ChevronDown,
   LogOut,
+  Menu,
 } from "lucide-react"
 
 interface Template {
@@ -79,6 +80,7 @@ const TemplatePage: React.FC = () => {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
   const [showCreateDropdown, setShowCreateDropdown] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false)
 
   const loggedInUser = localStorage.getItem("username")
 
@@ -345,7 +347,15 @@ const TemplatePage: React.FC = () => {
   return (
     <div className="tp-app-container">
       <nav className="tp-navbar">
-        <div className="tp-navbar-brand">STREAMLINEER</div>
+        <div className="tp-navbar-left">
+          <button
+            className="tp-mobile-menu-btn"
+            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+          >
+            <Menu size={24} />
+          </button>
+          <div className="tp-navbar-brand">STREAMLINEER</div>
+        </div>
         <div className="tp-navbar-actions">
           <button className="tp-nav-button">
             <User className="tp-nav-icon" />
@@ -394,7 +404,7 @@ const TemplatePage: React.FC = () => {
         </div>
       </nav>
 
-      <aside className="dashboard-sidebar">
+      <aside className={`dashboard-sidebar ${showMobileSidebar ? 'mobile-open' : ''}`}>
         <nav className="dashboard-sidebar-nav">
           {menuItems.map((item, i) => {
             // Make Inspections link inactive for inspector users or when href is null
@@ -407,13 +417,26 @@ const TemplatePage: React.FC = () => {
                 <item.icon size={20} /><span>{item.label}</span>
               </span>
             ) : (
-              <a key={i} href={item.href} className={`dashboard-nav-link ${item.active ? "active" : ""}`}>
+              <a
+                key={i}
+                href={item.href}
+                className={`dashboard-nav-link ${item.active ? "active" : ""}`}
+                onClick={() => setShowMobileSidebar(false)}
+              >
                 <item.icon size={20} /><span>{item.label}</span>
               </a>
             );
           })}
         </nav>
       </aside>
+
+      {/* Mobile sidebar overlay */}
+      {showMobileSidebar && (
+        <div
+          className="mobile-sidebar-overlay"
+          onClick={() => setShowMobileSidebar(false)}
+        />
+      )}
 
       <div className="tp-template-container">
         <div className="tp-template-header">

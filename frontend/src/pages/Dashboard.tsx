@@ -14,7 +14,8 @@ import {
   Settings,
   User,
   ChevronRight,
-  LogOut
+  LogOut,
+  Menu
 } from 'lucide-react';
 import ConnectionsPanel, { Connection } from './components/ConnectionsPanel';
 import { fetchData } from '../utils/api';
@@ -332,6 +333,7 @@ const Dashboard: React.FC = () => {
   };
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -339,6 +341,8 @@ const Dashboard: React.FC = () => {
   };
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -364,6 +368,8 @@ const Dashboard: React.FC = () => {
     };
   }, [isDropdownOpen]);
 
+
+
   const menuItems = [
     { icon: Home, label: 'Home', href: '/dashboard' },
     { icon: Search, label: 'Search', href: '/search' },
@@ -388,7 +394,15 @@ const Dashboard: React.FC = () => {
   return (
     <div className="dashboard-container">
       <nav className={`dashboard-navbar ${isScrolled ? 'scrolled' : ''}`}>
-        <div className="dashboard-navbar-brand">STREAMLINEER</div>
+        <div className="dashboard-navbar-left">
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+          >
+            <Menu size={24} />
+          </button>
+          <div className="dashboard-navbar-brand">STREAMLINEER</div>
+        </div>
         <div className="dashboard-navbar-actions">
           <button className="dashboard-nav-button">
             <User className="dashboard-nav-icon" />
@@ -437,7 +451,11 @@ const Dashboard: React.FC = () => {
         </div>
       </nav>
 
-      <aside className="dashboard-sidebar">
+
+
+
+
+      <aside className={`dashboard-sidebar ${showMobileSidebar ? 'mobile-open' : ''}`}>
         <nav className="dashboard-sidebar-nav">
           {menuItems.map((item, index) => {
             // Make Inspections link inactive for inspector users or when href is null

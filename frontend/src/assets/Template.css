@@ -75,6 +75,28 @@
   box-shadow: var(--shadow-md);
 }
 
+.tp-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tp-mobile-menu-btn {
+  display: none;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tp-mobile-menu-btn:hover {
+  background-color: rgba(72, 149, 239, 0.1);
+  color: var(--primary-color);
+}
+
 .tp-navbar-brand {
   font-size: 1.5rem;
   font-weight: 700;
@@ -213,6 +235,20 @@
   color: var(--text-muted) !important;
 }
 
+/* Mobile sidebar overlay */
+.mobile-sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 35;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
 /* Main Content */
 .tp-template-container {
   margin-left: 280px;
@@ -223,7 +259,9 @@
   display: flex;
   flex-direction: column;
   transition: var(--transition);
-  padding: 2.5rem;
+  padding: 0;
+  max-width: calc(100vw - 280px);
+  overflow-x: hidden;
 }
 
 .tp-template-header {
@@ -232,24 +270,26 @@
   background-color: var(--bg-color);
   border-bottom: 1px solid var(--border-color);
   z-index: 30;
-  margin-bottom: 2.5rem;
+  margin-bottom: 0;
   width: 100%;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.8s forwards;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .tp-template-tabs {
   display: flex;
   gap: 2.5rem;
   padding: 0 2rem;
-  height: 60px; /* Fixed height for the tabs */
+  height: 60px;
   align-items: center;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .tp-tab {
@@ -299,10 +339,13 @@
 
 .tp-template-content {
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: 2.5rem;
 }
 
 /* Creation Section */
@@ -1093,6 +1136,16 @@ tr:hover .tp-access-badge {
 
 /* Responsive */
 @media (max-width: 1024px) {
+  .tp-template-container {
+    margin-left: 0;
+    max-width: 100vw;
+    padding: 0;
+  }
+
+  .tp-template-content {
+    padding: 1.5rem;
+  }
+
   .tp-creation-options {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1113,17 +1166,57 @@ tr:hover .tp-access-badge {
 }
 
 @media (max-width: 768px) {
+  /* Show mobile menu button */
+  .tp-mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Adjust navbar for mobile */
+  .tp-navbar {
+    padding: 0 1rem;
+  }
+
+  .tp-navbar-brand {
+    font-size: 1.25rem;
+  }
+
+  /* Hide sidebar by default on mobile */
+  .dashboard-sidebar {
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    z-index: 45 !important;
+  }
+
+  /* Show sidebar when mobile-open class is added */
+  .dashboard-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  /* Show overlay when sidebar is open */
+  .dashboard-sidebar.mobile-open ~ .mobile-sidebar-overlay,
+  .mobile-sidebar-overlay {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Adjust main content for mobile */
+  .tp-template-container {
+    margin-left: 0;
+    margin-top: var(--header-height);
+    max-width: 100vw;
+  }
+
+  .tp-template-content {
+    padding: 1rem;
+  }
+
   .tp-creation-options {
     grid-template-columns: 1fr;
   }
 
   .tp-template-tabs {
-    gap: 16px;
-    padding: 0 16px;
-  }
-
-  .tp-template-content {
-    padding: 16px;
+    gap: 1rem;
+    padding: 0 1rem;
   }
 
   .tp-templates-header {
@@ -1147,5 +1240,51 @@ tr:hover .tp-access-badge {
 
   .tp-filter-button {
     align-self: flex-start;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .tp-navbar {
+    padding: 0 0.75rem;
+  }
+
+  .tp-navbar-brand {
+    font-size: 1.1rem;
+  }
+
+  .tp-template-content {
+    padding: 0.75rem;
+  }
+
+  .tp-template-tabs {
+    padding: 0 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .tp-tab {
+    font-size: 0.9rem;
+  }
+
+  .tp-creation-section,
+  .tp-templates-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .tp-option-card {
+    padding: 1.25rem;
+  }
+
+  .tp-option-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .tp-option-card h3 {
+    font-size: 1rem;
+  }
+
+  .tp-option-card p {
+    font-size: 0.875rem;
   }
 }

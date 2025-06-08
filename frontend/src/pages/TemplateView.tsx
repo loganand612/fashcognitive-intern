@@ -128,7 +128,7 @@ const TemplateView = () => {
 
   if (accessError) {
     return (
-      <div className="tp-app-container">
+      <div className="tv-app-container">
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -168,7 +168,7 @@ const TemplateView = () => {
     );
   }
 
-  if (!template) return <div className="tp-app-container"><p>Loading...</p></div>;
+  if (!template) return <div className="tv-app-container"><p>Loading...</p></div>;
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/" },
@@ -184,7 +184,7 @@ const TemplateView = () => {
   ];
 
   return (
-    <div className="tp-app-container">
+    <div className="tv-app-container">
       {/* Top Navigation */}
       <nav className="dashboard-navbar">
         <div className="dashboard-navbar-brand">FASHCOGNITIVE</div>
@@ -267,21 +267,21 @@ const TemplateView = () => {
         </nav>
       </aside>
 
-      <div className="tp-template-container" style={{ marginLeft: '280px', marginTop: 'var(--header-height)' }}>
-        <div className="tp-template-header" style={{ top: 'var(--header-height)' }}>
-          <div className="tp-template-tabs">
-            <Link to="/templates" className="tp-back-link">
+      <div className="tv-template-container" style={{ marginLeft: '280px', marginTop: 'var(--header-height)' }}>
+        <div className="tv-template-header" style={{ top: 'var(--header-height)' }}>
+          <div className="tv-template-tabs">
+            <Link to="/templates" className="tv-back-link">
               <ArrowLeft size={16} />
               Back to Templates
             </Link>
           </div>
         </div>
 
-        <div className="tp-template-content">
-          <div className="tp-template-view-header">
+        <div className="tv-template-content">
+          <div className="tv-template-view-header">
             <h1>{template.title}</h1>
             <button
-              className="tp-edit-button"
+              className="tv-edit-button"
               onClick={() => {
                 console.log("Edit button clicked");
                 console.log("Template type:", template.template_type);
@@ -307,12 +307,12 @@ const TemplateView = () => {
             </button>
           </div>
 
-          <div className="tp-template-description">
+          <div className="tv-template-description">
             <p>{template.description}</p>
           </div>
 
           {template.logo && (
-            <div className="tp-template-logo">
+            <div className="tv-template-logo">
               <img
                 src={template.logo || "/placeholder.svg"}
                 alt="Template Logo"
@@ -322,13 +322,13 @@ const TemplateView = () => {
           )}
 
           {template.sections.map((section) => (
-            <div key={section.id} className="tp-template-section">
-              <h3 className="tp-section-title">{section.title}</h3>
-              <div className="tp-question-list">
+            <div key={section.id} className="tv-template-section">
+              <h3 className="tv-section-title">{section.title}</h3>
+              <div className="tv-question-list">
                 {section.questions.map((question) => (
-                  <div key={question.id} className="tp-question-item">
-                    <div className="tp-question-text">{question.text}</div>
-                    <div className="tp-question-type">{question.response_type}</div>
+                  <div key={question.id} className="tv-question-item">
+                    <div className="tv-question-text">{question.text}</div>
+                    <div className="tv-question-type">{question.response_type}</div>
                   </div>
                 ))}
               </div>
