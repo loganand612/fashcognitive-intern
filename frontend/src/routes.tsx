@@ -10,6 +10,8 @@ import TemplatePage from "./pages/Create_template";
 import TemplateView from "./pages/TemplateView";
 import GarmentTemplate from "./pages/garment-template";
 import Inspection from "./pages/Inspection";
+import InspectionReport from "./pages/InspectionReport";
+import TemplateResults from "./pages/TemplateResults";
 import Schedule from "./pages/Schedule";
 
 const AppRoutes: React.FC = () => {
@@ -27,6 +29,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/garment-template" element={<GarmentTemplate />} />
       <Route path="/garment-template/edit/:id" element={<GarmentTemplate />} />
       <Route path="/inspection" element={<Inspection />} />
+      <Route path="/inspection-report/:id" element={<InspectionReport />} />
+      <Route path="/template/:templateId/results" element={<TemplateResults />} />
       <Route path="/schedule" element={<Schedule />} />
     </Routes>
   );

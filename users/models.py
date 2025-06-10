@@ -398,6 +398,9 @@ class Inspection(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Garment inspection data stored as JSON
+    garment_data = models.JSONField(blank=True, null=True)
+
     def __str__(self):
         return self.title
 

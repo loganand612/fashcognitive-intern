@@ -1,0 +1,976 @@
+/* Inspection Report Styles */
+.ir-report-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 2rem;
+}
+
+.ir-report-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Header Styles */
+.ir-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.ir-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ir-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ir-back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ir-report-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.ir-generate-pdf-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.ir-generate-pdf-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ir-download-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Report Card Styles */
+.ir-report-card {
+  background: white;
+  border-radius: 8px;
+  margin: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.ir-report-card-header {
+  padding: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.ir-report-title-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.ir-report-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ir-report-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ir-report-title-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.ir-report-date {
+  margin: 0 0 1rem 0;
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+.ir-inspection-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.ir-inspection-details span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ir-report-completion-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.ir-report-completion-badge.complete {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+/* Stats Styles */
+.ir-report-stats {
+  padding: 2rem;
+  background: #f7fafc;
+}
+
+.ir-report-score-container {
+  margin-bottom: 2rem;
+}
+
+.ir-report-stat-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.ir-report-score-bar {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.ir-report-score-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
+  transition: width 0.3s ease;
+}
+
+.ir-report-score-text {
+  font-size: 0.9rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.ir-report-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.ir-report-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.ir-report-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ir-report-stat-icon.flagged {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.ir-report-stat-icon.action {
+  background: #bee3f8;
+  color: #2b6cb0;
+}
+
+.ir-report-stat-icon.media {
+  background: #d6f5d6;
+  color: #22543d;
+}
+
+.ir-report-stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.ir-report-stat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1;
+}
+
+.ir-report-stat-content .ir-report-stat-label {
+  font-size: 0.8rem;
+  color: #718096;
+  margin: 0;
+}
+
+/* Report Content Styles */
+.ir-report-tabs {
+  padding: 2rem;
+}
+
+.ir-report-tab-content {
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 8px;
+  padding: 2rem;
+}
+
+.ir-report-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.ir-report-section {
+  margin-bottom: 2rem;
+}
+
+.ir-report-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 0.5rem 0;
+  position: relative;
+}
+
+.ir-report-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1.5px;
+}
+
+.ir-report-section-description {
+  font-size: 0.9rem;
+  color: #718096;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
+}
+
+/* Question Items */
+.ir-report-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ir-report-question-item {
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.ir-report-question-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ir-report-question-item.flagged {
+  border-color: #fed7d7;
+  background: #fffaf0;
+}
+
+.ir-report-question-item.conditional {
+  border-color: #bee3f8;
+  background: #f0f9ff;
+}
+
+.ir-report-question-item.evidence {
+  border-color: #d6f5d6;
+  background: #f0fff4;
+}
+
+.ir-report-question-header {
+  display: flex;
+  gap: 1rem;
+}
+
+.ir-report-question-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #f7fafc;
+}
+
+.ir-report-question-check {
+  color: #22543d;
+}
+
+.ir-report-question-alert {
+  color: #c53030;
+}
+
+.ir-report-question-info {
+  color: #2b6cb0;
+}
+
+.ir-report-question-content {
+  flex: 1;
+}
+
+.ir-report-question-text {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1a202c;
+  line-height: 1.4;
+}
+
+.ir-report-question-response {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.ir-report-response-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.ir-report-response-value {
+  font-size: 0.9rem;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+/* Inline Conditional Response Styles */
+.ir-report-conditional-response {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f0f9ff;
+  border: 1px solid #bee3f8;
+  border-radius: 6px;
+  border-left: 4px solid #3182ce;
+}
+
+.ir-report-conditional-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ir-report-conditional-icon {
+  color: #3182ce;
+}
+
+.ir-report-conditional-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2b6cb0;
+}
+
+.ir-report-conditional-value {
+  font-size: 0.9rem;
+  color: #2d3748;
+  line-height: 1.4;
+}
+
+/* Inline Evidence Response Styles */
+.ir-report-evidence-response {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f0fff4;
+  border: 1px solid #d6f5d6;
+  border-radius: 6px;
+  border-left: 4px solid #22543d;
+}
+
+.ir-report-evidence-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ir-report-evidence-icon {
+  color: #22543d;
+}
+
+.ir-report-evidence-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #22543d;
+}
+
+/* Inline Display Message Response Styles */
+.ir-report-display-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(72, 149, 239, 0.1) 0%, rgba(76, 201, 240, 0.1) 100%);
+  border: 1px solid rgba(72, 149, 239, 0.3);
+  border-radius: 6px;
+  border-left: 4px solid #4895ef;
+}
+
+.ir-report-display-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ir-report-display-icon {
+  color: #4895ef;
+}
+
+.ir-report-display-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4895ef;
+}
+
+.ir-report-display-value {
+  font-size: 0.9rem;
+  color: #2d3748;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* Media Grid */
+.ir-report-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.ir-report-media-item {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.ir-report-media-thumbnail {
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
+}
+
+.ir-report-media-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ir-report-media-caption {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: #4a5568;
+  margin: 0;
+}
+
+/* Evidence Preview Styles */
+.ir-report-evidence-preview {
+  margin-top: 0.5rem;
+}
+
+.ir-report-evidence-image {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  object-fit: cover;
+}
+
+/* Loading and Error States */
+.ir-loading-container,
+.ir-error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+.ir-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: ir-spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes ir-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ir-error-icon {
+  width: 48px;
+  height: 48px;
+  color: #c53030;
+  margin-bottom: 1rem;
+}
+
+.ir-back-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.ir-back-button:hover {
+  background: #5a67d8;
+}
+
+/* Garment Details Styles */
+.ir-garment-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.ir-garment-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.ir-garment-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.ir-table-container {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.ir-garment-table,
+.ir-defect-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.ir-garment-table th,
+.ir-garment-table td,
+.ir-defect-table th,
+.ir-defect-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ir-garment-table th,
+.ir-defect-table th {
+  background: #f7fafc;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ir-table-label {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.ir-table-total {
+  font-weight: 700;
+  color: #1a202c;
+  background: #f7fafc;
+}
+
+.ir-aql-results {
+  background: #f7fafc;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.ir-aql-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.ir-aql-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.ir-aql-label {
+  font-weight: 500;
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.ir-aql-value {
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.ir-aql-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ir-aql-status.pass {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.ir-aql-status.fail {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+/* Enhanced Garment Table Styles */
+.ir-size-header {
+  background: #f7fafc;
+  font-weight: 600;
+  color: #4a5568;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ir-qty-header {
+  background: #f0f4f8;
+  font-weight: 500;
+  color: #4a5568;
+  text-align: center;
+  font-size: 0.8rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ir-color-column {
+  font-weight: 600;
+  color: #2d3748;
+  background: #f7fafc;
+}
+
+.ir-total-cell {
+  font-weight: 600;
+  color: #1a202c;
+  background: #f0f2f5;
+  text-align: center;
+}
+
+.ir-total-row {
+  background: #f0f2f5;
+  font-weight: 600;
+}
+
+.ir-total-row td {
+  border-bottom: none;
+  color: #333;
+  font-size: 15px;
+  background-color: #f0f2f5 !important;
+}
+
+/* Carton Information Styles */
+.ir-carton-info-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ir-carton-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+}
+
+.ir-carton-info label {
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 180px;
+  color: #4a5568;
+}
+
+.ir-carton-info span {
+  font-weight: 500;
+  color: #1a202c;
+}
+
+/* Defect Log Preview Styles */
+.ir-defect-log-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ir-defect-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ir-defect-table th,
+.ir-defect-table td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.ir-defect-table th {
+  background: #f7fafc;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ir-defect-table .ir-total-row {
+  background: #f0f2f5;
+  font-weight: 600;
+}
+
+.ir-defect-table .ir-total-row td {
+  background-color: #f0f2f5 !important;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Photograph Section Styles */
+.ir-photograph-section {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.ir-photograph-section h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1a202c;
+}
+
+.ir-defect-images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.ir-defect-image-card {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.ir-defect-image-header {
+  padding: 8px 12px;
+  background-color: #f0f0f8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ir-defect-image-type {
+  font-weight: 600;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.ir-defect-image-container {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ir-defect-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ir-defect-image-remarks {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #666;
+  background-color: #f9f9f9;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* AQL Result Preview Styles */
+.ir-aql-result-preview {
+  background: #f7fafc;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.ir-aql-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* No Data Message */
+.ir-no-data {
+  text-align: center;
+  color: #718096;
+  font-style: italic;
+  padding: 2rem;
+  background: #f7fafc;
+  border-radius: 6px;
+  margin: 1rem 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ir-report-wrapper {
+    padding: 1rem;
+  }
+  
+  .ir-report-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .ir-header-left {
+    flex-direction: column;
+  }
+  
+  .ir-report-card {
+    margin: 1rem;
+  }
+  
+  .ir-report-card-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .ir-report-title-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .ir-report-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ir-report-media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .ir-garment-table,
+  .ir-defect-table {
+    font-size: 0.8rem;
+  }
+
+  .ir-garment-table th,
+  .ir-garment-table td,
+  .ir-defect-table th,
+  .ir-defect-table td {
+    padding: 0.5rem;
+  }
+
+  .ir-carton-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ir-carton-info label {
+    min-width: auto;
+  }
+
+  .ir-defect-images-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .ir-aql-info {
+    grid-template-columns: 1fr;
+  }
+}

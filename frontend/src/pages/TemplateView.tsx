@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Edit, FileText, User, Settings, Home, Bell, Calendar, Play, BookOpen, Package, AlertCircle, Search, LogOut, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import './TemplateView.css';
 import '../assets/Dashboard.css';
@@ -28,6 +28,7 @@ interface TemplateData {
 
 const TemplateView = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [template, setTemplate] = useState<TemplateData | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -280,31 +281,44 @@ const TemplateView = () => {
         <div className="tv-template-content">
           <div className="tv-template-view-header">
             <h1>{template.title}</h1>
-            <button
-              className="tv-edit-button"
-              onClick={() => {
-                console.log("Edit button clicked");
-                console.log("Template type:", template.template_type);
-                console.log("Template ID:", template.id);
+            <div className="tv-template-actions">
+              <button
+                className="tv-view-results-button"
+                onClick={() => {
+                  console.log('View Results clicked for template:', template.id);
+                  console.log('Navigating to:', `/template/${template.id}/results`);
+                  navigate(`/template/${template.id}/results`);
+                }}
+              >
+                <FileText size={16} />
+                View Results
+              </button>
+              <button
+                className="tv-edit-button"
+                onClick={() => {
+                  console.log("Edit button clicked");
+                  console.log("Template type:", template.template_type);
+                  console.log("Template ID:", template.id);
 
-                // Force the template type to be set correctly
-                if (!template.template_type) {
-                  console.log("Template type not set, defaulting to standard");
-                }
+                  // Force the template type to be set correctly
+                  if (!template.template_type) {
+                    console.log("Template type not set, defaulting to standard");
+                  }
 
-                const redirectPath = template.template_type === 'garment'
-                  ? `/garment-template/edit/${template.id}`
-                  : `/templates/edit/${template.id}`;
+                  const redirectPath = template.template_type === 'garment'
+                    ? `/garment-template/edit/${template.id}`
+                    : `/templates/edit/${template.id}`;
 
-                console.log("Redirecting to:", redirectPath);
+                  console.log("Redirecting to:", redirectPath);
 
-                // Use direct navigation instead of Link
-                window.location.href = redirectPath;
-              }}
-            >
-              <Edit size={16} />
-              Edit Template
-            </button>
+                  // Use direct navigation instead of Link
+                  window.location.href = redirectPath;
+                }}
+              >
+                <Edit size={16} />
+                Edit Template
+              </button>
+            </div>
           </div>
 
           <div className="tv-template-description">

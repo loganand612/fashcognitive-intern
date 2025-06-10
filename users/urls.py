@@ -22,7 +22,7 @@ from .template_assignment_views import (
     revoke_assignment, reassign_template
 )
 from .inspector_views import InspectorListView, get_inspectors
-from .inspection_views import submit_inspection
+from .inspection_views import submit_inspection, get_inspection, get_template_inspections, get_assignment_inspection
 
 
 urlpatterns = [
@@ -127,5 +127,11 @@ urlpatterns = [
          submit_inspection, name="submit-inspection"),
     path("submit-inspection/",
          submit_inspection, name="api-submit-inspection"),
+    path("inspection/<int:inspection_id>/",
+         get_inspection, name="api-get-inspection"),
+    path("template/<int:template_id>/inspections/",
+         get_template_inspections, name="api-get-template-inspections"),
+    path("assignment/<int:assignment_id>/inspection/",
+         get_assignment_inspection, name="api-get-assignment-inspection"),
 ]
 

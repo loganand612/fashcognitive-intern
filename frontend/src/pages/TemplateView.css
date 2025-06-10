@@ -521,6 +521,12 @@ td {
   margin: 0;
 }
 
+.tv-template-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .tv-edit-button {
   display: flex;
   align-items: center;
@@ -540,6 +546,27 @@ td {
 .tv-edit-button:hover {
   background-color: #e5e7eb;
   border-color: #d1d5db;
+}
+
+.tv-view-results-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.tv-view-results-button:hover {
+  background-color: #059669;
+  border-color: #059669;
 }
 
 .tv-template-description {

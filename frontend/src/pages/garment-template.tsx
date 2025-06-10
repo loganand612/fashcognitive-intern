@@ -2057,9 +2057,9 @@ const Garment_Template: React.FC = () => {
 
     return {
       quantities: {},
-      cartonOffered: "30",
-      cartonInspected: "5",
-      cartonToInspect: "5",
+      cartonOffered: "0",
+      cartonInspected: "0",
+      cartonToInspect: "0",
       defects: initialDefects,
       aqlSettings: {
         aqlLevel: initialAqlLevel,
@@ -2706,25 +2706,25 @@ const Garment_Template: React.FC = () => {
           ...prev,
           quantities: {
             "BLUE": {
-              "S": { orderQty: "5", offeredQty: "44" },
-              "M": { orderQty: "4", offeredQty: "4" },
-              "L": { orderQty: "4", offeredQty: "4" },
-              "XL": { orderQty: "4", offeredQty: "544" },
-              "XXL": { orderQty: "4", offeredQty: "44" }
+              "S": { orderQty: "0", offeredQty: "0" },
+              "M": { orderQty: "0", offeredQty: "0" },
+              "L": { orderQty: "0", offeredQty: "0" },
+              "XL": { orderQty: "0", offeredQty: "0" },
+              "XXL": { orderQty: "0", offeredQty: "0" }
             },
             "RED": {
-              "S": { orderQty: "5", offeredQty: "4" },
-              "M": { orderQty: "54", offeredQty: "44" },
-              "L": { orderQty: "5", offeredQty: "44" },
-              "XL": { orderQty: "55", offeredQty: "3" },
-              "XXL": { orderQty: "5", offeredQty: "22" }
+              "S": { orderQty: "0", offeredQty: "0" },
+              "M": { orderQty: "0", offeredQty: "0" },
+              "L": { orderQty: "0", offeredQty: "0" },
+              "XL": { orderQty: "0", offeredQty: "0" },
+              "XXL": { orderQty: "0", offeredQty: "0" }
             },
             "BLACK": {
-              "S": { orderQty: "5", offeredQty: "55" },
-              "M": { orderQty: "11", offeredQty: "2" },
-              "L": { orderQty: "3", offeredQty: "5" },
-              "XL": { orderQty: "3", offeredQty: "55" },
-              "XXL": { orderQty: "44", offeredQty: "54" }
+              "S": { orderQty: "0", offeredQty: "0" },
+              "M": { orderQty: "0", offeredQty: "0" },
+              "L": { orderQty: "0", offeredQty: "0" },
+              "XL": { orderQty: "0", offeredQty: "0" },
+              "XXL": { orderQty: "0", offeredQty: "0" }
             }
           }
         }));
@@ -2743,7 +2743,7 @@ const Garment_Template: React.FC = () => {
 
       // Set default values for carton information if not provided
       if (!reportData.cartonOffered) {
-        setReportData(prev => ({ ...prev, cartonOffered: "50" }));
+        setReportData(prev => ({ ...prev, cartonOffered: "0" }));
       }
 
       if (!reportData.cartonToInspect) {

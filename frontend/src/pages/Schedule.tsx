@@ -716,13 +716,29 @@ const Schedule: React.FC = () => {
                                   currentUser?.user_role === 'admin' && template.display_status_class === 'unassigned'
                                     ? 'schedule-assign-button' : ''
                                 }`}
-                                onClick={() => {
+                                onClick={async () => {
                                   if (template.display_status_class === 'unassigned' && currentUser?.user_role === 'admin') {
                                     // Store the selected template and open assignment modal
                                     setSelectedTemplateForAssignment(template);
                                     setShowAssignmentModal(true);
-                                  } else if (activeTab === 'completed-inspections') {
-                                    window.location.href = `/inspection?templateId=${template.id}`;
+                                  } else if (activeTab === 'completed-inspections' || template.display_status_class === 'completed') {
+                                    // For completed inspections, get the inspection ID and redirect to report
+                                    if (template.assignment?.id) {
+                                      try {
+                                        const response = await fetchData(`users/assignment/${template.assignment.id}/inspection/`);
+                                        if (response.inspection_id) {
+                                          window.location.href = `/inspection-report/${response.inspection_id}`;
+                                        } else {
+                                          console.error('No inspection ID found for completed assignment');
+                                          window.location.href = `/inspection?templateId=${template.id}`;
+                                        }
+                                      } catch (error) {
+                                        console.error('Error getting inspection for assignment:', error);
+                                        window.location.href = `/inspection?templateId=${template.id}`;
+                                      }
+                                    } else {
+                                      window.location.href = `/inspection?templateId=${template.id}`;
+                                    }
                                   } else {
                                     window.location.href = `/inspection?templateId=${template.id}`;
                                   }

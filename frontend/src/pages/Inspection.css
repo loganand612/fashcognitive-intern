@@ -777,6 +777,35 @@
   line-height: 1.6;
 }
 
+.inspection-completion-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.inspection-completion-actions .inspection-primary-button,
+.inspection-completion-actions .inspection-secondary-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .inspection-completion-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .inspection-completion-actions .inspection-primary-button,
+  .inspection-completion-actions .inspection-secondary-button {
+    width: 100%;
+  }
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .inspection-question-answering-container {

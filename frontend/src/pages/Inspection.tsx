@@ -509,8 +509,12 @@ const QuestionAnswering: React.FC = () => {
           setTemplate(transformedTemplate)
           setTemplateLoaded(true) // Mark template as loaded
 
+          console.log("Loaded template:", transformedTemplate)
+          console.log("Template sections:", transformedTemplate.sections.map(s => ({ id: s.id, title: s.title, type: s.type })))
+
           // Initialize garment report data if this is a garment template
           const garmentSection = transformedTemplate.sections.find(s => s.type === "garmentDetails")
+          console.log("Found garment section:", garmentSection)
 
           if (garmentSection && garmentSection.content && isGarmentDetailsContent(garmentSection.content)) {
             const garmentContent = garmentSection.content
@@ -548,11 +552,13 @@ const QuestionAnswering: React.FC = () => {
         } catch (error) {
           setError('Failed to load template. Using default template.')
           const defaultTemplate = getDefaultTemplate()
+          console.log("Using default template:", defaultTemplate)
           setTemplate(defaultTemplate)
           setTemplateLoaded(true) // Mark template as loaded even for default
         }
       } else {
         const defaultTemplate = getDefaultTemplate()
+        console.log("No template ID, using default template:", defaultTemplate)
         setTemplate(defaultTemplate)
         setTemplateLoaded(true) // Mark template as loaded
       }
@@ -825,6 +831,26 @@ const QuestionAnswering: React.FC = () => {
         ],
       },
       {
+        id: "garment-section",
+        title: "Garment Inspection Details",
+        description: "Complete garment inspection including quantities, defects, and AQL results",
+        type: "garmentDetails",
+        content: {
+          aqlSettings: {
+            aqlLevel: "2.5" as AQLLevel,
+            inspectionLevel: "II" as InspectionLevel,
+            samplingPlan: "Single" as SamplingPlan,
+            severity: "Normal" as Severity
+          },
+          sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+          colors: ['BLUE', 'RED', 'BLACK'],
+          includeCartonOffered: true,
+          includeCartonInspected: true,
+          defaultDefects: ['Stitching', 'Fabric', 'Color', 'Measurement', 'Packing']
+        },
+        questions: []
+      },
+      {
         id: "section-3",
         title: "Additional Comments",
         questions: [
@@ -846,6 +872,7 @@ const QuestionAnswering: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [submittedInspectionId, setSubmittedInspectionId] = useState<number | null>(null)
   const [activeMessages, setActiveMessages] = useState<Record<string, string>>({})
   const [conditionalEvidence, setConditionalEvidence] = useState<Record<string, any>>({})
   const [activeConditionalFields, setActiveConditionalFields] = useState<Record<string, LogicRule[]>>({})
@@ -895,11 +922,24 @@ const QuestionAnswering: React.FC = () => {
   }
 
   const [reportData, setReportData] = useState<ReportData>({
-    quantities: {},
-    cartonOffered: "30",
-    cartonInspected: "5",
-    cartonToInspect: "5",
-    defects: [],
+    quantities: {
+      // Initialize with empty data - users will fill in their own values
+      "BLUE": {
+        "S": { orderQty: "0", offeredQty: "0" },
+        "M": { orderQty: "0", offeredQty: "0" }
+      },
+      "RED": {
+        "S": { orderQty: "0", offeredQty: "0" },
+        "M": { orderQty: "0", offeredQty: "0" }
+      }
+    },
+    cartonOffered: "0",
+    cartonInspected: "0",
+    cartonToInspect: "0",
+    defects: [
+      { type: "Stitching", remarks: "Minor loose threads", critical: 0, major: 2, minor: 5 },
+      { type: "Fabric", remarks: "Small stain", critical: 0, major: 1, minor: 3 }
+    ],
     aqlSettings: {
       aqlLevel: "2.5",
       inspectionLevel: "II",
@@ -929,19 +969,24 @@ const QuestionAnswering: React.FC = () => {
   }
 
   const handleQuantityChange = (color: string, size: string, field: 'orderQty' | 'offeredQty', value: string) => {
-    setReportData(prev => ({
-      ...prev,
-      quantities: {
-        ...prev.quantities,
-        [color]: {
-          ...prev.quantities[color],
-          [size]: {
-            ...prev.quantities[color]?.[size],
-            [field]: value
+    console.log(`Quantity changed: ${color} ${size} ${field} = ${value}`)
+    setReportData(prev => {
+      const newData = {
+        ...prev,
+        quantities: {
+          ...prev.quantities,
+          [color]: {
+            ...prev.quantities[color],
+            [size]: {
+              ...prev.quantities[color]?.[size],
+              [field]: value
+            }
           }
         }
       }
-    }))
+      console.log("Updated reportData:", newData)
+      return newData
+    })
   }
 
   const updateDefect = (index: number, field: string, value: any) => {
@@ -1974,12 +2019,19 @@ const QuestionAnswering: React.FC = () => {
         answers: answers,
         conditional_answers: conditionalAnswers,
         conditional_evidence: conditionalEvidence,
+        display_messages: activeMessages, // Include display messages for report
         completed_by: currentInspector?.id || null,
-        assignment_id: assignmentId
+        assignment_id: assignmentId,
+        garment_data: {
+          ...reportData,
+          defectImages: defectImages // Include defect images
+        } // Include garment inspection data
       }
 
+      console.log("Submitting garment data:", reportData)
+
       // Submit the inspection data to the API
-      await postData('users/submit-inspection/', submissionData);
+      const response = await postData('users/submit-inspection/', submissionData);
 
       // If this was part of an assignment, update the assignment status
       if (assignmentId) {
@@ -1992,9 +2044,18 @@ const QuestionAnswering: React.FC = () => {
 
       setIsComplete(true)
 
-      // Redirect to dashboard after 3 seconds
+      // Store the inspection ID for the completion screen
+      if (response && response.inspection_id) {
+        setSubmittedInspectionId(response.inspection_id);
+      }
+
+      // Redirect to inspection report page after 3 seconds
       setTimeout(() => {
-        navigate('/dashboard');
+        if (response && response.inspection_id) {
+          navigate(`/inspection-report/${response.inspection_id}`);
+        } else {
+          navigate('/dashboard');
+        }
       }, 3000);
 
     } catch (error: any) {
@@ -2820,6 +2881,9 @@ const QuestionAnswering: React.FC = () => {
     const includeCartonOffered = garmentContent?.includeCartonOffered ?? true
     const includeCartonInspected = garmentContent?.includeCartonInspected ?? true
 
+    console.log("Rendering garment details with reportData:", reportData)
+    console.log("Sizes:", sizes, "Colors:", colors)
+
     return (
       <>
         <div className="report-section-preview">
@@ -3247,13 +3311,24 @@ const QuestionAnswering: React.FC = () => {
           </div>
           <h2>Inspection Complete!</h2>
           <p>Thank you for completing this inspection. Your responses have been submitted successfully.</p>
-          <p>Redirecting to dashboard...</p>
-          <button
-            className="inspection-primary-button"
-            onClick={() => navigate('/dashboard')}
-          >
-            Go to Dashboard
-          </button>
+          <p>Redirecting to inspection report...</p>
+          <div className="inspection-completion-actions">
+            {submittedInspectionId && (
+              <button
+                className="inspection-primary-button"
+                onClick={() => navigate(`/inspection-report/${submittedInspectionId}`)}
+              >
+                <FileText size={16} />
+                View Report
+              </button>
+            )}
+            <button
+              className="inspection-secondary-button"
+              onClick={() => navigate('/dashboard')}
+            >
+              Go to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     )
