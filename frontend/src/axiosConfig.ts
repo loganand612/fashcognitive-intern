@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/api/", // Django backend URL
+  baseURL: "/api/", // Use relative URL instead of hardcoded localhost
   headers: {
     "Content-Type": "application/json",
   },

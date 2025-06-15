@@ -4,7 +4,7 @@
 export async function fetchCSRFToken() {
     try {
       // Make a request to the CSRF token endpoint
-      const response = await fetch("http://localhost:8000/api/users/get-csrf-token/", {
+      const response = await fetch("/api/users/get-csrf-token/", {
         method: "GET",
         credentials: "include", // Important: include cookies
       });
@@ -26,10 +26,9 @@ export async function fetchCSRFToken() {
         throw new Error("CSRF token not found in cookies after fetch");
       }
 
-      console.log("Successfully fetched new CSRF token:", csrfToken);
       return csrfToken;
     } catch (error) {
       console.error("Error fetching CSRF token:", error);
       throw error;
     }
-  }
+}

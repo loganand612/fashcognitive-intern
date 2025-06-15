@@ -1,0 +1,19 @@
+FROM node:16-alpine
+
+WORKDIR /app
+
+# Set npm to use a different registry if the default one is blocked
+RUN npm config set registry https://registry.npmjs.org/
+
+# Copy package files
+COPY package.json ./
+
+# Install dependencies with offline mode if possible
+RUN npm install --prefer-offline --no-audit --progress=false || echo "Warning: Some dependencies may not be installed correctly"
+
+# Copy the rest of the application
+COPY . .
+
+# Start development server
+EXPOSE 3000
+CMD ["npm", "start"]

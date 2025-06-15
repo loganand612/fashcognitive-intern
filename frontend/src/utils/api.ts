@@ -3,7 +3,7 @@ import { fetchCSRFToken } from './csrf';
 
 // Create an axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api/',
+  baseURL: '/api/', // Use relative URL instead of hardcoded localhost
   headers: {
     'Content-Type': 'application/json',
   },
@@ -101,3 +101,4 @@ export const deleteData = async (endpoint: string, config?: AxiosRequestConfig) 
 };
 
 export default api;
+

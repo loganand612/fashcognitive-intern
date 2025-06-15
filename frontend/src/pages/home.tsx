@@ -246,19 +246,18 @@ const Home2: React.FC = () => {
   // Mouse move effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e
-      setMousePosition({ x: clientX, y: clientY })
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
 
-      // Update custom cursor position
-      if (cursorRef.current) {
-        cursorRef.current.style.left = `${clientX}px`
-        cursorRef.current.style.top = `${clientY}px`
-      }
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
+    // Store the current cursor ref value in a variable
+    const currentCursor = cursorRef.current;
+    
+    window.addEventListener("mousemove", handleMouseMove);
+    
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
 
   // Intersection Observer for animations
   const useOnScreen = (options = {}) => {

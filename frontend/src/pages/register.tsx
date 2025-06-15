@@ -58,8 +58,8 @@ const Register: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Send POST request to Django backend
-            const response = await axios.post('http://127.0.0.1:8000/api/users/register/', formData);
+            // Send POST request to Django backend using proxy
+            const response = await axios.post('/api/users/register/', formData);
             console.log('Registration successful:', response.data);
             setMessage('Registration successful! Redirecting to login...');
 

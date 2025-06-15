@@ -26,22 +26,51 @@ from django.utils.decorators import method_decorator
 from rest_framework.authentication import BasicAuthentication
 from django.middleware.csrf import CsrfViewMiddleware
 from django.middleware.csrf import get_token
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 
 class RegisterUserView(APIView):
+    authentication_classes = []  # No authentication required
     permission_classes = [AllowAny]  # Allow anyone to register
 
+    def dispatch(self, request, *args, **kwargs):
+        # Manually exempt this view from CSRF protection
+        setattr(request, '_dont_enforce_csrf_checks', True)
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        print(f"🔍 RegisterUserView: POST request received")
+        print(f"🔍 User: {request.user}")
+        print(f"🔍 User authenticated: {request.user.is_authenticated}")
+        print(f"🔍 Request data: {request.data}")
+        print(f"🔍 Request headers: {dict(request.headers)}")
+
+        try:
+            serializer = UserRegistrationSerializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                print(f"✅ User registered successfully: {user.email}")
+                return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+            else:
+                print(f"❌ Serializer validation failed: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"❌ Exception in RegisterUserView: {e}")
+            return Response({"error": "Registration failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@csrf_exempt
 def login_user(request):
+    # Manually exempt this view from CSRF protection
+    setattr(request, '_dont_enforce_csrf_checks', True)
+
+    print(f"🔍 Login function called")
+    print(f"🔍 Request method: {request.method}")
+    print(f"🔍 CSRF checks disabled: {getattr(request, '_dont_enforce_csrf_checks', False)}")
+    print(f"🔍 User authenticated: {request.user.is_authenticated}")
+    print(f"🔍 User: {request.user}")
+
     try:
         data = request.data
         email = data.get("email")

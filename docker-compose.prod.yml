@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=Fash
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: always
+
+  backend:
+    build: .
+    command: gunicorn FC.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    environment:
+      - DJANGO_SETTINGS_MODULE=FC.settings
+      - DATABASE_HOST=db
+      - DATABASE_NAME=Fash
+      - DATABASE_USER=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DEBUG=False
+      - ALLOWED_HOST=${DOMAIN_NAME}
+    depends_on:
+      - db
+    restart: always
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./ssl:/etc/nginx/ssl
+      - static_volume:/static
+      - media_volume:/media
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+
+
