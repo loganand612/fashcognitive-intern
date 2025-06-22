@@ -450,10 +450,7 @@ const TemplatePage: React.FC = () => {
 
         <div className="tp-template-content">
           <section className="tp-creation-section">
-            <div className="tp-section-header">
-              <h2>Create your template from one of the options below.</h2>
-              <button className="tp-close-button"><X size={20} /></button>
-            </div>
+
 
             <div className="tp-creation-options">
               <div
@@ -484,24 +481,7 @@ const TemplatePage: React.FC = () => {
               <h2>Templates <span className="tp-count">(1 - {filteredTemplates.length} of {templates.length})</span></h2>
 
               {/* Test button to switch user role - FOR TESTING ONLY */}
-              <button
-                onClick={() => {
-                  const newRole = currentUser?.user_role === 'inspector' ? 'admin' : 'inspector';
-                  setCurrentUser({...currentUser, user_role: newRole});
-                }}
-                style={{
-                  padding: '0.5rem 1rem',
-                  marginRight: '1rem',
-                  backgroundColor: currentUser?.user_role === 'inspector' ? '#ef4444' : '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Test as {currentUser?.user_role === 'inspector' ? 'Admin' : 'Inspector'}
-              </button>
+              
 
               {currentUser?.user_role !== 'inspector' && (
                 <div className="tp-create-dropdown" ref={dropdownRef}>

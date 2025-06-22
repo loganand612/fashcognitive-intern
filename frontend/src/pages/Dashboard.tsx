@@ -385,8 +385,8 @@ const Dashboard: React.FC = () => {
 
   const summaryCards = [
     { icon: FileText, count: templates.length.toString(), label: 'Templates Created' },
-    { icon: ClipboardCheck, count: '18/25', label: 'Inspections', sublabel: 'Completed/Total' },
-    { icon: AlertCircle, count: '3', label: 'Open Issues' }
+    { icon: ClipboardCheck, count: '0/1', label: 'Inspections', sublabel: 'Completed/Total' },
+    { icon: AlertCircle, count: '1', label: 'Open Issues' }
   ];
 
   // We'll use the templates fetched from the API instead of hardcoded data
