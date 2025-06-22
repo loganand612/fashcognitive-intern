@@ -9,6 +9,8 @@ import {
   Search,
   FileText,
   User,
+  Eye,
+  MoreHorizontal,
   X,
   Home,
   Bell,
@@ -582,6 +584,7 @@ const TemplatePage: React.FC = () => {
                         </div>
                       </td>
                       <td>
+
                         <div className="tp-action-buttons">
                           <button
                             className="tp-start-inspection"
